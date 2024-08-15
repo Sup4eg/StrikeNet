@@ -1,0 +1,1153 @@
+{
+	"folders": [
+		{
+			"name": "Blaster",
+			"path": "."
+		},
+		{
+			"name": "UE5",
+			"path": "D:\\UE_5.4"
+		}
+	],
+	"settings": {
+		"typescript.tsc.autoDetect": "off",
+		"npm.autoDetect": "off"
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-vscode.cpptools",
+			"ms-dotnettools.csharp"
+		]
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "Blaster Win64 Debug Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"Win64",
+					"Debug",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster Win64 Debug Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"Win64",
+					"Debug",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"Blaster Win64 Debug Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster Win64 Debug Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"Blaster",
+					"Win64",
+					"Debug",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster Win64 DebugGame Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"Win64",
+					"DebugGame",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster Win64 DebugGame Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"Win64",
+					"DebugGame",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"Blaster Win64 DebugGame Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster Win64 DebugGame Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"Blaster",
+					"Win64",
+					"DebugGame",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster Win64 Development Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"Win64",
+					"Development",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster Win64 Development Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"Win64",
+					"Development",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"Blaster Win64 Development Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster Win64 Development Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"Blaster",
+					"Win64",
+					"Development",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster Win64 Test Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"Win64",
+					"Test",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster Win64 Test Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"Win64",
+					"Test",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"Blaster Win64 Test Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster Win64 Test Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"Blaster",
+					"Win64",
+					"Test",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster Win64 Shipping Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"Win64",
+					"Shipping",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster Win64 Shipping Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"Win64",
+					"Shipping",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"Blaster Win64 Shipping Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster Win64 Shipping Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"Blaster",
+					"Win64",
+					"Shipping",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster IOS Debug Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"IOS",
+					"Debug",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster IOS Debug Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"IOS",
+					"Debug",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"Blaster IOS Debug Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster IOS Debug Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"Blaster",
+					"IOS",
+					"Debug",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster IOS DebugGame Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"IOS",
+					"DebugGame",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster IOS DebugGame Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"IOS",
+					"DebugGame",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"Blaster IOS DebugGame Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster IOS DebugGame Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"Blaster",
+					"IOS",
+					"DebugGame",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster IOS Development Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"IOS",
+					"Development",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster IOS Development Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"IOS",
+					"Development",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"Blaster IOS Development Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster IOS Development Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"Blaster",
+					"IOS",
+					"Development",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster IOS Test Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"IOS",
+					"Test",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster IOS Test Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"IOS",
+					"Test",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"Blaster IOS Test Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster IOS Test Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"Blaster",
+					"IOS",
+					"Test",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster IOS Shipping Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"IOS",
+					"Shipping",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster IOS Shipping Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"IOS",
+					"Shipping",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"Blaster IOS Shipping Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster IOS Shipping Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"Blaster",
+					"IOS",
+					"Shipping",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster TVOS Debug Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"TVOS",
+					"Debug",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster TVOS Debug Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"TVOS",
+					"Debug",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"Blaster TVOS Debug Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster TVOS Debug Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"Blaster",
+					"TVOS",
+					"Debug",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster TVOS DebugGame Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"TVOS",
+					"DebugGame",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster TVOS DebugGame Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"TVOS",
+					"DebugGame",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"Blaster TVOS DebugGame Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster TVOS DebugGame Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"Blaster",
+					"TVOS",
+					"DebugGame",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster TVOS Development Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"TVOS",
+					"Development",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster TVOS Development Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"TVOS",
+					"Development",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"Blaster TVOS Development Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster TVOS Development Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"Blaster",
+					"TVOS",
+					"Development",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster TVOS Test Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"TVOS",
+					"Test",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster TVOS Test Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"TVOS",
+					"Test",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"Blaster TVOS Test Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster TVOS Test Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"Blaster",
+					"TVOS",
+					"Test",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster TVOS Shipping Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"TVOS",
+					"Shipping",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster TVOS Shipping Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"Blaster",
+					"TVOS",
+					"Shipping",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"Blaster TVOS Shipping Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "Blaster TVOS Shipping Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"Blaster",
+					"TVOS",
+					"Shipping",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "BlasterEditor Win64 Debug Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"BlasterEditor",
+					"Win64",
+					"Debug",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "BlasterEditor Win64 Debug Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"BlasterEditor",
+					"Win64",
+					"Debug",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"BlasterEditor Win64 Debug Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "BlasterEditor Win64 Debug Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"BlasterEditor",
+					"Win64",
+					"Debug",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "BlasterEditor Win64 DebugGame Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"BlasterEditor",
+					"Win64",
+					"DebugGame",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "BlasterEditor Win64 DebugGame Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"BlasterEditor",
+					"Win64",
+					"DebugGame",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"BlasterEditor Win64 DebugGame Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "BlasterEditor Win64 DebugGame Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"BlasterEditor",
+					"Win64",
+					"DebugGame",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "BlasterEditor Win64 Development Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"BlasterEditor",
+					"Win64",
+					"Development",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "BlasterEditor Win64 Development Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"BlasterEditor",
+					"Win64",
+					"Development",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"BlasterEditor Win64 Development Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			},
+			{
+				"label": "BlasterEditor Win64 Development Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"BlasterEditor",
+					"Win64",
+					"Development",
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "D:\\UE_5.4"
+				}
+			}
+		]
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "Launch Blaster (Debug)",
+				"request": "launch",
+				"program": "D:\\UEProjects\\MultiplayerCourse\\Blaster\\Binaries\\Win64\\UnrealGame-Win64-Debug.exe",
+				"preLaunchTask": "Blaster Win64 Debug Build",
+				"args": [
+				],
+				"cwd": "D:\\UE_5.4",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "D:\\UE_5.4\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis",
+				"sourceFileMap": {
+					"D:\\build\\++UE5\\Sync": "D:\\UE_5.4"
+				}
+			},
+			{
+				"name": "Launch Blaster (DebugGame)",
+				"request": "launch",
+				"program": "D:\\UEProjects\\MultiplayerCourse\\Blaster\\Binaries\\Win64\\UnrealGame-Win64-DebugGame.exe",
+				"preLaunchTask": "Blaster Win64 DebugGame Build",
+				"args": [
+				],
+				"cwd": "D:\\UE_5.4",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "D:\\UE_5.4\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis",
+				"sourceFileMap": {
+					"D:\\build\\++UE5\\Sync": "D:\\UE_5.4"
+				}
+			},
+			{
+				"name": "Launch Blaster (Development)",
+				"request": "launch",
+				"program": "D:\\UEProjects\\MultiplayerCourse\\Blaster\\Binaries\\Win64\\UnrealGame.exe",
+				"preLaunchTask": "Blaster Win64 Development Build",
+				"args": [
+				],
+				"cwd": "D:\\UE_5.4",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "D:\\UE_5.4\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis",
+				"sourceFileMap": {
+					"D:\\build\\++UE5\\Sync": "D:\\UE_5.4"
+				}
+			},
+			{
+				"name": "Launch Blaster (Test)",
+				"request": "launch",
+				"program": "D:\\UEProjects\\MultiplayerCourse\\Blaster\\Binaries\\Win64\\UnrealGame-Win64-Test.exe",
+				"preLaunchTask": "Blaster Win64 Test Build",
+				"args": [
+				],
+				"cwd": "D:\\UE_5.4",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "D:\\UE_5.4\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis",
+				"sourceFileMap": {
+					"D:\\build\\++UE5\\Sync": "D:\\UE_5.4"
+				}
+			},
+			{
+				"name": "Launch Blaster (Shipping)",
+				"request": "launch",
+				"program": "D:\\UEProjects\\MultiplayerCourse\\Blaster\\Binaries\\Win64\\UnrealGame-Win64-Shipping.exe",
+				"preLaunchTask": "Blaster Win64 Shipping Build",
+				"args": [
+				],
+				"cwd": "D:\\UE_5.4",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "D:\\UE_5.4\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis",
+				"sourceFileMap": {
+					"D:\\build\\++UE5\\Sync": "D:\\UE_5.4"
+				}
+			},
+			{
+				"name": "Launch BlasterEditor (Debug)",
+				"request": "launch",
+				"program": "D:\\UE_5.4\\Engine\\Binaries\\Win64\\UnrealEditor-Win64-Debug.exe",
+				"preLaunchTask": "BlasterEditor Win64 Debug Build",
+				"args": [
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject"
+				],
+				"cwd": "D:\\UE_5.4",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "D:\\UE_5.4\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis",
+				"sourceFileMap": {
+					"D:\\build\\++UE5\\Sync": "D:\\UE_5.4"
+				}
+			},
+			{
+				"name": "Launch BlasterEditor (DebugGame)",
+				"request": "launch",
+				"program": "D:\\UE_5.4\\Engine\\Binaries\\Win64\\UnrealEditor-Win64-DebugGame.exe",
+				"preLaunchTask": "BlasterEditor Win64 DebugGame Build",
+				"args": [
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject"
+				],
+				"cwd": "D:\\UE_5.4",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "D:\\UE_5.4\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis",
+				"sourceFileMap": {
+					"D:\\build\\++UE5\\Sync": "D:\\UE_5.4"
+				}
+			},
+			{
+				"name": "Launch BlasterEditor (Development)",
+				"request": "launch",
+				"program": "D:\\UE_5.4\\Engine\\Binaries\\Win64\\UnrealEditor.exe",
+				"preLaunchTask": "BlasterEditor Win64 Development Build",
+				"args": [
+					"D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject"
+				],
+				"cwd": "D:\\UE_5.4",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "D:\\UE_5.4\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis",
+				"sourceFileMap": {
+					"D:\\build\\++UE5\\Sync": "D:\\UE_5.4"
+				}
+			},
+			{
+				"name": "Generate Project Files",
+				"type": "coreclr",
+				"request": "launch",
+				"preLaunchTask": "UnrealBuildTool Win64 Development Build",
+				"program": "D:\\UE_5.4\\Engine\\Build\\BatchFiles\\RunUBT.bat",
+				"args": [
+					"-projectfiles",
+					"-vscode",
+					"-project=D:\\UEProjects\\MultiplayerCourse\\Blaster\\Blaster.uproject",
+					"-game",
+					"-engine",
+					"-dotnet"
+				],
+				"console": "integratedTerminal",
+				"stopAtEntry": false,
+				"cwd": "D:\\UE_5.4"
+			}
+		]
+	}
+}
