@@ -2,7 +2,6 @@
 
 #include "Components/TextBlock.h"
 #include "GameFramework/Pawn.h"
-#include "GameFramework/PlayerState.h"
 #include "Engine/Engine.h"
 #include "OverheadWidget.h"
 
@@ -14,10 +13,8 @@ void UOverheadWidget::SetDisplayText(const FString& TextToDisplay)
 
 void UOverheadWidget::ShowPlayerNetRole(APawn* InPawn)
 {
-    if (!InPawn->GetPlayerState()) return;
     ENetRole LocalRole = InPawn->GetLocalRole();
     FString LocalRoleString = FString::Printf(TEXT("Local Role: %s"), *GetLocalRoleString(LocalRole));
-    if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 120.f, FColor::Green, InPawn->GetPlayerState()->GetPlayerName());
     SetDisplayText(LocalRoleString);
 }
 

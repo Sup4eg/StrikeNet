@@ -16,7 +16,10 @@ public class Blaster : ModuleRules
 		PublicIncludePaths.AddRange(new string[] {
 			"Blaster/Public/Character",
 			"Blaster/Public/GameMode",
-			"Blaster/Public/HUD"
+			"Blaster/Public/HUD",
+			"Blaster/Public/Weapon",
+			"Blaster/Public/BlasterComponents",
+			"Blaster/Public/BlasterTypes"
 		});
 	}
 }
