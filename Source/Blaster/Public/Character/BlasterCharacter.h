@@ -32,6 +32,8 @@ public:
 
     virtual void PostInitializeComponents() override;
 
+    void PlayFireMontage(bool bAiming);
+
 protected:
     virtual void BeginPlay() override;
 
@@ -46,6 +48,8 @@ protected:
     void CrouchButtonPressed();
     void AimButtonPressed();
     void AimButtonReleased();
+    void FireButtonPressed();
+    void FireButtonReleased();
 
     void AimOffset(float DeltaTime);
 
@@ -70,6 +74,9 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Input")
     UInputAction* AimAction;
 
+    UPROPERTY(EditAnywhere, Category = "Input")
+    UInputAction* FireAction;
+
 private:
     UPROPERTY(VisibleAnywhere, Category = Camera)
     USpringArmComponent* CameraBoom;
@@ -78,7 +85,7 @@ private:
     UCameraComponent* FollowCamera;
 
     UPROPERTY(VisibleAnywhere)
-    UCombatComponent* CombatComponent;
+    UCombatComponent* CombatComp;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
     UWidgetComponent* OverheadWidget;
@@ -102,6 +109,9 @@ private:
 
     ETurningInPlace TurningInPlace;
     void TurnInPlace(float DeltaTime);
+
+    UPROPERTY(EditAnywhere, Category = "Combat")
+    UAnimMontage* FireWeaponMontage;
 
 public:
     void SetOverlappingWeapon(AWeapon* Weapon);

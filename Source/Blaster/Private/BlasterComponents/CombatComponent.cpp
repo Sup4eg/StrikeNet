@@ -1,17 +1,20 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "BlasterComponents/CombatComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
-#include "Weapon.h"
 #include "BlasterCharacter.h"
+#include "Engine/GameViewportClient.h"
+#include "Engine/Engine.h"
+#include "Kismet/GameplayStatics.h"
+#include "DrawDebugHelpers.h"
+#include "Weapon.h"
 #include "CombatComponent.h"
 
 UCombatComponent::UCombatComponent()
 {
-    PrimaryComponentTick.bCanEverTick = false;
+    PrimaryComponentTick.bCanEverTick = true;
 
     BaseWalkSpeed = 600.f;
     AimWalkSpeed = 450.f;
@@ -52,6 +55,48 @@ void UCombatComponent::OnRep_EquippedWeapon()
     {
         Character->GetCharacterMovement()->bOrientRotationToMovement = false;
         Character->bUseControllerRotationYaw = true;
+    }
+}
+
+void UCombatComponent::FireButtonPressed(bool bPressed)
+{
+    bFireButtonPressed = bPressed;
+    if (bFireButtonPressed)
+    {
+        FHitResult HitResult;
+        TraceUnderCrosshairs(HitResult);
+        ServerFire(HitResult.ImpactPoint);
+    }
+}
+
+void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& TraceHitTarget)
+{
+    MulticastFire(TraceHitTarget);
+}
+
+void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& TraceHitTarget)
+{
+    if (!Character || !EquippedWeapon) return;
+    Character->PlayFireMontage(bAiming);
+    EquippedWeapon->Fire(TraceHitTarget);
+}
+
+void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
+{
+    if (!GEngine || !GEngine->GameViewport) return;
+    FVector2D ViewportSize;
+    GEngine->GameViewport->GetViewportSize(ViewportSize);
+    FVector2D CrosshairLocation(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);
+    FVector CrosshairWorldPosition;
+    FVector CrosshairWorldDirection;
+    bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(
+        UGameplayStatics::GetPlayerController(this, 0), CrosshairLocation, CrosshairWorldPosition, CrosshairWorldDirection);
+
+    if (bScreenToWorld)
+    {
+        FVector Start = CrosshairWorldPosition;
+        FVector End = Start + CrosshairWorldDirection * TRACE_LENGTH;
+        GetWorld()->LineTraceSingleByChannel(TraceHitResult, Start, End, ECollisionChannel::ECC_Visibility);
     }
 }
 

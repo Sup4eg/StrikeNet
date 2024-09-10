@@ -3,8 +3,12 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "BlasterCharacter.h"
+#include "Animation/AnimationAsset.h"
+#include "Casing.h"
+#include "Engine/SkeletalMeshSocket.h"
 #include "Weapon.h"
 
 AWeapon::AWeapon()
@@ -43,6 +47,18 @@ void AWeapon::ShowPickupWidget(bool bShowWidget)
 {
     if (!PickupWidget) return;
     PickupWidget->SetVisibility(bShowWidget);
+}
+
+void AWeapon::Fire(const FVector& HitTarget)
+{
+    if (!FireAnimation || !CasingClass) return;
+    WeaponMesh->PlayAnimation(FireAnimation, false);
+    const USkeletalMeshSocket* AmmoEjectSocket = WeaponMesh->GetSocketByName(FName("AmmoEject"));
+    if (AmmoEjectSocket && GetWorld())
+    {
+        FTransform SocketTransform = AmmoEjectSocket->GetSocketTransform(WeaponMesh);
+        GetWorld()->SpawnActor<ACasing>(CasingClass, SocketTransform.GetLocation(), SocketTransform.GetRotation().Rotator());
+    }
 }
 
 void AWeapon::BeginPlay()

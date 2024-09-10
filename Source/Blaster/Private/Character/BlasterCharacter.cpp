@@ -15,6 +15,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Weapon.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "BlasterAnimInstance.h"
 #include "BlasterCharacter.h"
 
 ABlasterCharacter::ABlasterCharacter()
@@ -38,8 +39,8 @@ ABlasterCharacter::ABlasterCharacter()
     OverheadWidget = CreateDefaultSubobject<UWidgetComponent>("OverheadWidget");
     OverheadWidget->SetupAttachment(RootComponent);
 
-    CombatComponent = CreateDefaultSubobject<UCombatComponent>("Combat");
-    CombatComponent->SetIsReplicated(true);
+    CombatComp = CreateDefaultSubobject<UCombatComponent>("CombatComp");
+    CombatComp->SetIsReplicated(true);
 
     GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
     GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
@@ -69,6 +70,8 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
         EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ThisClass::CrouchButtonPressed);
         EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &ThisClass::AimButtonPressed);
         EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &ThisClass::AimButtonReleased);
+        EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ThisClass::FireButtonPressed);
+        EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &ThisClass::FireButtonReleased);
     }
 }
 
@@ -82,14 +85,24 @@ void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 void ABlasterCharacter::PostInitializeComponents()
 {
     Super::PostInitializeComponents();
-    if (!CombatComponent) return;
-    CombatComponent->Character = this;
+    if (!CombatComp) return;
+    CombatComp->Character = this;
+}
+
+void ABlasterCharacter::PlayFireMontage(bool bAiming)
+{
+    if (!IsWeaponEquipped() || !GetMesh()->GetAnimInstance() || !FireWeaponMontage) return;
+    UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+    AnimInstance->Montage_Play(FireWeaponMontage);
+    FName SectionName = bAiming ? "RifleAim" : "RifleHip";
+    AnimInstance->Montage_JumpToSection(SectionName);
 }
 
 void ABlasterCharacter::BeginPlay()
 {
     Super::BeginPlay();
     SetUpInputMappingContext();
+    check(GetMesh());
 }
 
 void ABlasterCharacter::SetUpInputMappingContext()
@@ -140,10 +153,10 @@ void ABlasterCharacter::Jump()
 
 void ABlasterCharacter::EquipButtonPressed()
 {
-    if (!CombatComponent) return;
+    if (!CombatComp) return;
     if (HasAuthority())
     {
-        CombatComponent->EquipWeapon(OverlappingWeapon);
+        CombatComp->EquipWeapon(OverlappingWeapon);
     }
     else
     {
@@ -166,18 +179,30 @@ void ABlasterCharacter::CrouchButtonPressed()
 void ABlasterCharacter::AimButtonPressed()
 {
     if (!IsWeaponEquipped()) return;
-    CombatComponent->SetAiming(true);
+    CombatComp->SetAiming(true);
 }
 
 void ABlasterCharacter::AimButtonReleased()
 {
     if (!IsWeaponEquipped()) return;
-    CombatComponent->SetAiming(false);
+    CombatComp->SetAiming(false);
+}
+
+void ABlasterCharacter::FireButtonPressed()
+{
+    if (!IsWeaponEquipped()) return;
+    CombatComp->FireButtonPressed(true);
+}
+
+void ABlasterCharacter::FireButtonReleased()
+{
+    if (!IsWeaponEquipped()) return;
+    CombatComp->FireButtonPressed(false);
 }
 
 void ABlasterCharacter::AimOffset(float DeltaTime)
 {
-    if (!CombatComponent || !CombatComponent->EquippedWeapon) return;
+    if (!IsWeaponEquipped()) return;
     FVector Velocity = GetVelocity();
     Velocity.Z = 0.f;
     const float Speed = Velocity.Size();
@@ -226,8 +251,8 @@ void ABlasterCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
 
 void ABlasterCharacter::ServerEquipButtonPressed_Implementation()
 {
-    if (!CombatComponent) return;
-    CombatComponent->EquipWeapon(OverlappingWeapon);
+    if (!CombatComp) return;
+    CombatComp->EquipWeapon(OverlappingWeapon);
 }
 
 void ABlasterCharacter::TurnInPlace(float DeltaTime)
@@ -265,16 +290,16 @@ void ABlasterCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 
 bool ABlasterCharacter::IsWeaponEquipped()
 {
-    return CombatComponent && CombatComponent->EquippedWeapon;
+    return CombatComp && CombatComp->EquippedWeapon;
 }
 
 bool ABlasterCharacter::IsAiming()
 {
-    return CombatComponent && CombatComponent->bAiming;
+    return CombatComp && CombatComp->bAiming;
 }
 
 AWeapon* ABlasterCharacter::GetEquippedWeapon()
 {
-    if (!CombatComponent) return nullptr;
-    return CombatComponent->EquippedWeapon;
+    if (!CombatComp) return nullptr;
+    return CombatComp->EquippedWeapon;
 }
