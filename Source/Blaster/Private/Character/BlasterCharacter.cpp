@@ -16,6 +16,7 @@
 #include "Weapon.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "BlasterAnimInstance.h"
+#include "Blaster.h"
 #include "BlasterCharacter.h"
 
 ABlasterCharacter::ABlasterCharacter()
@@ -43,7 +44,9 @@ ABlasterCharacter::ABlasterCharacter()
     CombatComp->SetIsReplicated(true);
 
     GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+    GetMesh()->SetCollisionObjectType(ECC_SkeletalMesh);
     GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+    GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 
     TurningInPlace = ETurningInPlace::ETIP_NotTurning;
     NetUpdateFrequency = 66.f;
@@ -54,7 +57,20 @@ void ABlasterCharacter::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
-    AimOffset(DeltaTime);
+    if (GetLocalRole() > ENetRole::ROLE_SimulatedProxy && IsLocallyControlled())
+    {
+        AimOffset(DeltaTime);
+    }
+    else
+    {
+        TimeSinceLastMovementReplication += DeltaTime;
+        if (TimeSinceLastMovementReplication > 0.25f)
+        {
+            OnRep_ReplicatedMovement();
+        }
+        CalculateAO_Pitch();
+    }
+    HideCameraIfCharacterClose();
 }
 
 void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -98,11 +114,33 @@ void ABlasterCharacter::PlayFireMontage(bool bAiming)
     AnimInstance->Montage_JumpToSection(SectionName);
 }
 
+void ABlasterCharacter::PlayHitReactMontage()
+{
+    if (!IsWeaponEquipped() || !GetMesh()->GetAnimInstance() || !HitReactMontage) return;
+    UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+    AnimInstance->Montage_Play(HitReactMontage);
+    AnimInstance->Montage_JumpToSection("FromFront");
+}
+
+void ABlasterCharacter::OnRep_ReplicatedMovement()
+{
+    Super::OnRep_ReplicatedMovement();
+    SimProxiesTurn();
+    TimeSinceLastMovementReplication = 0.f;
+}
+
+bool ABlasterCharacter::IsInAir()
+{
+    return GetCharacterMovement()->IsFalling();
+}
+
 void ABlasterCharacter::BeginPlay()
 {
     Super::BeginPlay();
     SetUpInputMappingContext();
     check(GetMesh());
+    check(GetCharacterMovement());
+    Tags.Add("BlasterCharacter");
 }
 
 void ABlasterCharacter::SetUpInputMappingContext()
@@ -153,8 +191,7 @@ void ABlasterCharacter::Jump()
 
 void ABlasterCharacter::EquipButtonPressed()
 {
-    if (!CombatComp) return;
-    if (HasAuthority())
+    if (HasAuthority() && !IsWeaponEquipped())
     {
         CombatComp->EquipWeapon(OverlappingWeapon);
     }
@@ -203,12 +240,11 @@ void ABlasterCharacter::FireButtonReleased()
 void ABlasterCharacter::AimOffset(float DeltaTime)
 {
     if (!IsWeaponEquipped()) return;
-    FVector Velocity = GetVelocity();
-    Velocity.Z = 0.f;
-    const float Speed = Velocity.Size();
-    const bool bIsInAir = GetCharacterMovement()->IsFalling();
+    const float Speed = CalculateSpeed();
+    const bool bIsInAir = IsInAir();
     if (Speed == 0.f && !bIsInAir)  // standing still, not jumping
     {
+        bRotateRootBone = true;
         const FRotator CurrentAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
         const FRotator DeltaAimRotation = UKismetMathLibrary::NormalizedDeltaRotator(CurrentAimRotation, StartingAimRotation);
         AO_Yaw = DeltaAimRotation.Yaw;
@@ -221,20 +257,43 @@ void ABlasterCharacter::AimOffset(float DeltaTime)
     }
     if (Speed > 0.f || bIsInAir)  // running or jumping
     {
+        bRotateRootBone = false;
         StartingAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
         AO_Yaw = 0.f;
         bUseControllerRotationYaw = true;
         TurningInPlace = ETurningInPlace::ETIP_NotTurning;
     }
+    CalculateAO_Pitch();
+}
 
-    AO_Pitch = GetBaseAimRotation().Pitch;
-    if (AO_Pitch > 90.f && !IsLocallyControlled())
+void ABlasterCharacter::SimProxiesTurn()
+{
+    if (!IsWeaponEquipped()) return;
+    bRotateRootBone = false;
+    const float Speed = CalculateSpeed();
+    if (Speed > 0.f)
     {
-        // map pitch from [270, 360) to [-90, 0)
-        FVector2D InRange(270.f, 360.f);
-        FVector2D OutRange(-90.f, 0.f);
-        AO_Pitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AO_Pitch);
+        TurningInPlace = ETurningInPlace::ETIP_NotTurning;
+        return;
     }
+
+    ProxyRotationLastFrame = ProxyRotation;
+    ProxyRotation = GetActorRotation();
+    ProxyYaw = UKismetMathLibrary::NormalizedDeltaRotator(ProxyRotation, ProxyRotationLastFrame).Yaw;
+
+    if (FMath::Abs(ProxyYaw) > TurnThreshold)
+    {
+        if (ProxyYaw < -TurnThreshold)
+        {
+            TurningInPlace = ETurningInPlace::ETIP_Left;
+        }
+        else
+        {
+            TurningInPlace = ETurningInPlace::ETIP_Right;
+        }
+        return;
+    }
+    TurningInPlace = ETurningInPlace::ETIP_NotTurning;
 }
 
 void ABlasterCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
@@ -249,9 +308,50 @@ void ABlasterCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
     }
 }
 
+void ABlasterCharacter::HideCameraIfCharacterClose()
+{
+    if (!IsLocallyControlled()) return;
+    if ((FollowCamera->GetComponentLocation() - GetActorLocation()).Size() < CameraThreshold)
+    {
+        HideCamera(true);
+    }
+    else
+    {
+        HideCamera(false);
+    }
+}
+
+void ABlasterCharacter::HideCamera(bool bIsHidden)
+{
+    GetMesh()->SetVisibility(!bIsHidden);
+    if (IsWeaponEquipped() && CombatComp->EquippedWeapon->GetWeaponMesh())
+    {
+        CombatComp->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = bIsHidden;
+    }
+}
+
+void ABlasterCharacter::CalculateAO_Pitch()
+{
+    AO_Pitch = GetBaseAimRotation().Pitch;
+    if (AO_Pitch > 90.f && !IsLocallyControlled())
+    {
+        // map pitch from [270, 360) to [-90, 0)
+        FVector2D InRange(270.f, 360.f);
+        FVector2D OutRange(-90.f, 0.f);
+        AO_Pitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AO_Pitch);
+    }
+}
+
+float ABlasterCharacter::CalculateSpeed()
+{
+    FVector Velocity = GetVelocity();
+    Velocity.Z = 0.f;
+    return Velocity.Size();
+}
+
 void ABlasterCharacter::ServerEquipButtonPressed_Implementation()
 {
-    if (!CombatComp) return;
+    if (IsWeaponEquipped()) return;
     CombatComp->EquipWeapon(OverlappingWeapon);
 }
 
@@ -302,4 +402,10 @@ AWeapon* ABlasterCharacter::GetEquippedWeapon()
 {
     if (!CombatComp) return nullptr;
     return CombatComp->EquippedWeapon;
+}
+
+FVector ABlasterCharacter::GetHitTarget() const
+{
+    if (!CombatComp) return FVector();
+    return CombatComp->HitTarget;
 }

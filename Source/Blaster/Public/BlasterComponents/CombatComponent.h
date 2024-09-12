@@ -4,13 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "BlasterHUD.h"
 #include "CombatComponent.generated.h"
 
 #define TRACE_LENGTH 80000
 
 struct FHitResult;
+
 class AWeapon;
 class ABlasterCharacter;
+class ABlasterPlayerController;
+class ABlasterHUD;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class BLASTER_API UCombatComponent : public UActorComponent
@@ -47,8 +51,18 @@ protected:
 
     void TraceUnderCrosshairs(FHitResult& TraceHitResult);
 
+    void SetHUDCrosshairs(float DeltaTime);
+
 private:
+    float GetCrosshairsSpread(float DeltaTime);
+    void InterpFOV(float DeltaTime);
+    void Fire();
+    void StartFireTimer();
+    void FireTimerFinished();
+
     ABlasterCharacter* Character;
+    ABlasterPlayerController* Controller;
+    ABlasterHUD* HUD;
 
     UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon)
     AWeapon* EquippedWeapon;
@@ -63,4 +77,33 @@ private:
     float AimWalkSpeed;
 
     bool bFireButtonPressed;
+
+    /**
+     * HUD and crosshairs
+     */
+    float CrosshairVelocityFactor;
+    float CrosshairInAirFactor;
+    float CrosshairAimFactor;
+    float CrosshairCharacterFactor;
+    float CrosshairShootingFactor;
+
+    FVector HitTarget;
+    FHUDPackage HUDPackage;
+
+    /**
+     * Aiming and FOV
+     */
+    // Field of view when not aiming; set to the camera's FOV in BeginPlay
+    float DefaultFOV;
+
+    UPROPERTY(EditAnywhere, Category = "Combat")
+    float ZoomedFOV = 30.f;
+
+    float CurrentFOV;
+
+    UPROPERTY(EditAnywhere, Category = "Combat")
+    float ZoomInterpSpeed = 20.f;
+
+    FTimerHandle FireTimer;
+    bool bCanFire = true;
 };

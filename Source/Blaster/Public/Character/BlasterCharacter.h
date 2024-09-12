@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "TurningInPlace.h"
+#include "InteractWithCrosshairsInterface.h"
 #include "BlasterCharacter.generated.h"
 
 struct FInputActionValue;
@@ -17,7 +18,7 @@ class AWeapon;
 class UCombatComponent;
 
 UCLASS()
-class BLASTER_API ABlasterCharacter : public ACharacter
+class BLASTER_API ABlasterCharacter : public ACharacter, public IInteractWithCrosshairsInterface
 {
     GENERATED_BODY()
 
@@ -33,6 +34,12 @@ public:
     virtual void PostInitializeComponents() override;
 
     void PlayFireMontage(bool bAiming);
+
+    void PlayHitReactMontage();
+
+    virtual void OnRep_ReplicatedMovement() override;
+
+    bool IsInAir();
 
 protected:
     virtual void BeginPlay() override;
@@ -50,8 +57,8 @@ protected:
     void AimButtonReleased();
     void FireButtonPressed();
     void FireButtonReleased();
-
     void AimOffset(float DeltaTime);
+    void SimProxiesTurn();
 
     UPROPERTY(EditAnywhere, Category = "Input")
     UInputMappingContext* DefaultMappingContext;
@@ -78,6 +85,20 @@ protected:
     UInputAction* FireAction;
 
 private:
+    UFUNCTION()
+    void OnRep_OverlappingWeapon(AWeapon* LastWeapon);
+
+    UFUNCTION(Server, Reliable)
+    void ServerEquipButtonPressed();
+
+    void HideCameraIfCharacterClose();
+
+    void HideCamera(bool bIsHidden);
+
+    void CalculateAO_Pitch();
+
+    float CalculateSpeed();
+
     UPROPERTY(VisibleAnywhere, Category = Camera)
     USpringArmComponent* CameraBoom;
 
@@ -93,12 +114,6 @@ private:
     UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
     AWeapon* OverlappingWeapon;
 
-    UFUNCTION()
-    void OnRep_OverlappingWeapon(AWeapon* LastWeapon);
-
-    UFUNCTION(Server, Reliable)
-    void ServerEquipButtonPressed();
-
     float AO_Yaw;
 
     float InterpAO_Yaw;
@@ -113,13 +128,29 @@ private:
     UPROPERTY(EditAnywhere, Category = "Combat")
     UAnimMontage* FireWeaponMontage;
 
+    UPROPERTY(EditAnywhere, Category = "Combat")
+    UAnimMontage* HitReactMontage;
+
+    UPROPERTY(EditAnywhere)
+    float CameraThreshold = 200.f;
+
+    bool bRotateRootBone;
+    float TurnThreshold = 5.f;
+    FRotator ProxyRotationLastFrame;
+    FRotator ProxyRotation;
+    float ProxyYaw;
+    float TimeSinceLastMovementReplication;
+
 public:
     void SetOverlappingWeapon(AWeapon* Weapon);
     bool IsWeaponEquipped();
     bool IsAiming();
     AWeapon* GetEquippedWeapon();
+    FVector GetHitTarget() const;
 
     FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; };
     FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; };
     FORCEINLINE ETurningInPlace GetTurningInPlace() const { return TurningInPlace; };
+    FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; };
+    FORCEINLINE bool ShouldRotateRootBone() const { return bRotateRootBone; };
 };

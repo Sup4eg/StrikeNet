@@ -8,7 +8,7 @@
 void UOverheadWidget::SetDisplayText(const FString& TextToDisplay)
 {
     if (!DisplayText) return;
-    DisplayText->SetText(FText::FromString(TextToDisplay));
+    //DisplayText->SetText(FText::FromString(TextToDisplay));
 }
 
 void UOverheadWidget::ShowPlayerNetRole(APawn* InPawn)

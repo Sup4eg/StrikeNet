@@ -20,6 +20,10 @@ public:
     virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
 private:
+    void SetYawOffset(float DeltaTime);
+    void SetLean(float DeltaTime);
+    void SetHandsTransform(float DeltaTime);
+
     UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
     ABlasterCharacter* BlasterCharacter;
 
@@ -61,11 +65,16 @@ private:
     UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
     ETurningInPlace TurningInPlace;
 
+    UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+    FRotator RightHandRotation;
+
+    UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+    bool bLocallyControlled;
+
+    UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+    bool bRotateRootBone;
+
     FRotator CharacterRotationLastFrame;
     FRotator CharacterRotation;
     FRotator DeltaRotation;
-
-    void SetYawOffset(float DeltaTime);
-    void SetLean(float DeltaTime);
-    void SetLeftHandTransform();
 };

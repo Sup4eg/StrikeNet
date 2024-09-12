@@ -30,7 +30,7 @@ protected:
         UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
     UFUNCTION(NetMulticast, Reliable)
-    void MulticastHitParticleEffects();
+    void MulticastHit(AActor* OtherActor);
 
 private:
     UPROPERTY(EditAnywhere)
@@ -48,5 +48,11 @@ private:
     UParticleSystem* ImpactParticles;
 
     UPROPERTY(EditAnywhere)
+    UParticleSystem* ImpactCharacterParticles;
+
+    UPROPERTY(EditAnywhere)
     USoundBase* ImpactSound;
+
+    UPROPERTY(EditAnywhere)
+    USoundBase* ImpactCharacterSound;
 };

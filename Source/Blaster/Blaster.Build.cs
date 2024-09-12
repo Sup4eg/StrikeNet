@@ -19,7 +19,9 @@ public class Blaster : ModuleRules
 			"Blaster/Public/HUD",
 			"Blaster/Public/Weapon",
 			"Blaster/Public/BlasterComponents",
-			"Blaster/Public/BlasterTypes"
+			"Blaster/Public/BlasterTypes",
+			"Blaster/Public/PlayerController",
+			"Blaster/Public/Interfaces"
 		});
 	}
 }
