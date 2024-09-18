@@ -21,7 +21,8 @@ public class Blaster : ModuleRules
 			"Blaster/Public/BlasterComponents",
 			"Blaster/Public/BlasterTypes",
 			"Blaster/Public/PlayerController",
-			"Blaster/Public/Interfaces"
+			"Blaster/Public/Interfaces",
+			"Blaster/Public/PlayerState"
 		});
 	}
 }

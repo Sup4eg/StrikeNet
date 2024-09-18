@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "BlasterHUD.h"
+#include "WeaponTypes.h"
+#include "CombatState.h"
 #include "CombatComponent.generated.h"
 
 #define TRACE_LENGTH 80000
@@ -30,6 +32,10 @@ public:
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
     void EquipWeapon(AWeapon* WeaponToEquip);
+    void Reload();
+
+    UFUNCTION(BlueprintCallable)
+    void FinishReloading();
 
 protected:
     virtual void BeginPlay() override;
@@ -40,6 +46,13 @@ protected:
 
     UFUNCTION()
     void OnRep_EquippedWeapon();
+
+    UFUNCTION(Server, Reliable)
+    void ServerReload();
+
+    void HandleReload();
+
+    int32 GetAmountToReload();
 
     void FireButtonPressed(bool bPressed);
 
@@ -59,12 +72,32 @@ private:
     void Fire();
     void StartFireTimer();
     void FireTimerFinished();
+    bool CanFire();
+    void InitializeCarriedAmmo();
+    void SetCarriedAmmo();
+    bool CanReload();
+    bool HasEquippedWeaponKey();
+    void UpdateAmmoValues();
+    void HandleEquipWeapon();
 
+    bool IsControllerValid();
+
+    UFUNCTION()
+    void OnRep_CombatState();
+
+    UFUNCTION()
+    void OnRep_CarriedAmmo();
+
+    UPROPERTY()
     ABlasterCharacter* Character;
+
+    UPROPERTY()
     ABlasterPlayerController* Controller;
+
+    UPROPERTY()
     ABlasterHUD* HUD;
 
-    UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon)
+    UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_EquippedWeapon)
     AWeapon* EquippedWeapon;
 
     UPROPERTY(Replicated)
@@ -106,4 +139,19 @@ private:
 
     FTimerHandle FireTimer;
     bool bCanFire = true;
+
+    // Carried ammo for the currently-equipped weapon
+    UPROPERTY(ReplicatedUsing = OnRep_CarriedAmmo)
+    int32 CarriedAmmo;
+
+    UPROPERTY(EditAnywhere)
+    int32 StartingARAmmo = 30;
+
+    TMap<EWeaponType, int32> CarriedAmmoMap;
+
+    UPROPERTY(EditDefaultsOnly)
+    TMap<EWeaponType, FName> WeaponTypesToMontageSections;
+
+    UPROPERTY(ReplicatedUsing = OnRep_CombatState)
+    ECombatState CombatState = ECombatState::ECS_Unoccupied;
 };

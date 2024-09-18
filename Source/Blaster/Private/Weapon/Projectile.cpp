@@ -7,7 +7,6 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "Engine/World.h"
 #include "Sound/SoundBase.h"
-#include "BlasterCharacter.h"
 #include "Blaster.h"
 #include "Projectile.h"
 
@@ -58,11 +57,6 @@ void AProjectile::MulticastHit_Implementation(AActor* OtherActor)
 {
     if (OtherActor->ActorHasTag("BlasterCharacter") && OtherActor != GetOwner())
     {
-        ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(OtherActor);
-        if (BlasterCharacter)
-        {
-            BlasterCharacter->PlayHitReactMontage();
-        }
         if (ImpactCharacterParticles && ImpactCharacterSound)
         {
             UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactCharacterParticles, GetActorTransform());

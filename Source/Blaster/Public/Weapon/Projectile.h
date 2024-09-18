@@ -32,6 +32,9 @@ protected:
     UFUNCTION(NetMulticast, Reliable)
     void MulticastHit(AActor* OtherActor);
 
+    UPROPERTY(EditAnywhere)
+    float Damage = 20.f;
+
 private:
     UPROPERTY(EditAnywhere)
     UBoxComponent* CollisionBox;
@@ -42,6 +45,7 @@ private:
     UPROPERTY(EditAnywhere)
     UParticleSystem* Tracer;
 
+    UPROPERTY()
     UParticleSystemComponent* TracerComponent;
 
     UPROPERTY(EditAnywhere)

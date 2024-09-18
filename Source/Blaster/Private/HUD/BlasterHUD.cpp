@@ -3,12 +3,15 @@
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/Texture2D.h"
+#include "GameFramework/PlayerController.h"
+#include "CharacterOverlay.h"
+#include "GameFramework/Pawn.h"
 #include "BlasterHUD.h"
 
 void ABlasterHUD::DrawHUD()
 {
     Super::DrawHUD();
-    if (!GEngine || !GEngine->GameViewport || !IsHUDTexturesValid()) return;
+    if (!bIsDrawCrosshair || !GEngine || !GEngine->GameViewport || !IsHUDTexturesValid()) return;
     FVector2D ViewportSize;
     GEngine->GameViewport->GetViewportSize(ViewportSize);
     const FVector2D ViewportCenter(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);
@@ -18,6 +21,12 @@ void ABlasterHUD::DrawHUD()
     DrawCrosshair(HUDPackage.CrosshairsRight, ViewportCenter, FVector2D(SpreadScaled, 0.f), HUDPackage.CrosshairsColor);
     DrawCrosshair(HUDPackage.CrosshairsTop, ViewportCenter, FVector2D(0.f, -SpreadScaled), HUDPackage.CrosshairsColor);
     DrawCrosshair(HUDPackage.CrosshairsBottom, ViewportCenter, FVector2D(0.f, SpreadScaled), HUDPackage.CrosshairsColor);
+}
+
+void ABlasterHUD::BeginPlay()
+{
+    Super::BeginPlay();
+    AddCharacterOverlay();
 }
 
 void ABlasterHUD::DrawCrosshair(UTexture2D* Texture, const FVector2D& ViewportCenter, FVector2D Spread, FLinearColor CrosshairColor)
@@ -38,4 +47,12 @@ bool ABlasterHUD::IsHUDTexturesValid()
            HUDPackage.CrosshairsRight &&   //
            HUDPackage.CrosshairsTop &&     //
            HUDPackage.CrosshairsBottom;
+}
+
+void ABlasterHUD::AddCharacterOverlay()
+{
+    APlayerController* PlayerController = GetOwningPlayerController();
+    if (!PlayerController || !CharacterOverlayClass) return;
+    CharacterOverlay = CreateWidget<UCharacterOverlay>(PlayerController, CharacterOverlayClass);
+    CharacterOverlay->AddToViewport();
 }

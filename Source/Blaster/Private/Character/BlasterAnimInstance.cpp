@@ -5,7 +5,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Weapon/Weapon.h"
-#include "DrawDebugHelpers.h"
+#include "CombatState.h"
 #include "BlasterAnimInstance.h"
 
 void UBlasterAnimInstance::NativeInitializeAnimation()
@@ -35,6 +35,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
     bAiming = BlasterCharacter->IsAiming();
     TurningInPlace = BlasterCharacter->GetTurningInPlace();
     bRotateRootBone = BlasterCharacter->ShouldRotateRootBone();
+    bElimmed = BlasterCharacter->IsElimmed();
 
     SetYawOffset(DeltaSeconds);
     SetLean(DeltaSeconds);
@@ -43,6 +44,10 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
     AO_Pitch = BlasterCharacter->GetAO_Pitch();
 
     SetHandsTransform(DeltaSeconds);
+
+    bUseFABRIK = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading;
+    bUseAimOffsets = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading;
+    bTransformRightHand = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading;
 }
 
 void UBlasterAnimInstance::SetYawOffset(float DeltaTime)
