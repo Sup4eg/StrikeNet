@@ -8,6 +8,7 @@
 
 class UTexture2D;
 class UCharacterOverlay;
+class UAnnouncementWidget;
 class UUserWidget;
 
 USTRUCT(BlueprintType)
@@ -42,19 +43,28 @@ class BLASTER_API ABlasterHUD : public AHUD
 public:
     virtual void DrawHUD() override;
 
+    void AddAnnouncementWidget();
+
     UPROPERTY(EditAnywhere, Category = "Player Stats")
     TSubclassOf<UUserWidget> CharacterOverlayClass;
 
+    UPROPERTY(EditAnywhere, Category = "Announcements")
+    TSubclassOf<UUserWidget> AnnouncementWidgetClass;
+
     UPROPERTY()
     UCharacterOverlay* CharacterOverlay;
+
+    UPROPERTY()
+    UAnnouncementWidget* AnnouncementWidget;
 
 protected:
     virtual void BeginPlay() override;
 
 private:
+    void AddCharacterOverlay();
+
     void DrawCrosshair(UTexture2D* Texture, const FVector2D& ViewportCenter, FVector2D Spread, FLinearColor CrosshairColor);
     bool IsHUDTexturesValid();
-    void AddCharacterOverlay();
 
     FHUDPackage HUDPackage;
 

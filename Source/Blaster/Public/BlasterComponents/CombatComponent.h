@@ -37,9 +37,12 @@ public:
     UFUNCTION(BlueprintCallable)
     void FinishReloading();
 
+    void SetAiming(bool bIsAiming);
+
+    void FireButtonPressed(bool bPressed);
+
 protected:
     virtual void BeginPlay() override;
-    void SetAiming(bool bIsAiming);
 
     UFUNCTION(Server, Reliable)
     void ServerSetAiming(bool bIsAiming);
@@ -53,8 +56,6 @@ protected:
     void HandleReload();
 
     int32 GetAmountToReload();
-
-    void FireButtonPressed(bool bPressed);
 
     UFUNCTION(Server, Reliable)
     void ServerFire(const FVector_NetQuantize& TraceHitTarget);
@@ -89,10 +90,10 @@ private:
     void OnRep_CarriedAmmo();
 
     UPROPERTY()
-    ABlasterCharacter* Character;
+    ABlasterCharacter* BlasterCharacter;
 
     UPROPERTY()
-    ABlasterPlayerController* Controller;
+    ABlasterPlayerController* BlasterController;
 
     UPROPERTY()
     ABlasterHUD* HUD;
@@ -146,6 +147,9 @@ private:
 
     UPROPERTY(EditAnywhere)
     int32 StartingARAmmo = 30;
+
+    UPROPERTY(EditAnywhere)
+    int32 StartingRocketAmmo = 0;
 
     TMap<EWeaponType, int32> CarriedAmmoMap;
 

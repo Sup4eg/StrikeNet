@@ -35,6 +35,8 @@ public:
 
     virtual void Tick(float DeltaTime) override;
 
+    virtual void PossessedBy(AController* NewController) override;
+
     virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -61,11 +63,13 @@ public:
 
     bool IsInAir();
 
+    /**
+     * Input mapping context
+     */
+    void SetUpInputMappingContext(UInputMappingContext* MappingContext);
+
 protected:
     virtual void BeginPlay() override;
-
-    /** Input */
-    void SetUpInputMappingContext();
 
     /** Callbacks for input */
     void Move(const FInputActionValue& Value);
@@ -86,6 +90,9 @@ protected:
 
     UPROPERTY(EditAnywhere, Category = "Input")
     UInputMappingContext* DefaultMappingContext;
+
+    UPROPERTY(EditAnywhere, Category = "Input")
+    UInputMappingContext* ElimmedMappingContext;
 
     UPROPERTY(EditAnywhere, Category = "Input")
     UInputAction* JumpAction;
@@ -110,6 +117,11 @@ protected:
 
     UPROPERTY(EditAnywhere, Category = "Input")
     UInputAction* ReloadAction;
+
+    void RotateInPlace(float DeltaTime);
+
+    UPROPERTY(Replicated, VisibleInstanceOnly)
+    bool bGameplayDisabled = false;
 
 private:
     UFUNCTION()
@@ -264,4 +276,7 @@ public:
     FORCEINLINE float GetHealth() const { return Health; };
     FORCEINLINE float GetMaxHealth() const { return MaxHealth; };
     FORCEINLINE bool GetIsElimmed() const { return bElimmed; };
+    FORCEINLINE UCombatComponent* GetCombatComponent() const { return CombatComp; };
+    FORCEINLINE bool GetIsGameplayDisabled() const { return bGameplayDisabled; };
+    FORCEINLINE void SetIsGameplayDisabled(bool bDisable) { bGameplayDisabled = bDisable; };
 };

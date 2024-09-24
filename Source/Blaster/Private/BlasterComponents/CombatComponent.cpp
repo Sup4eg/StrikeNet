@@ -15,6 +15,7 @@
 #include "TimerManager.h"
 #include "BlasterUtils.h"
 #include "Sound/SoundBase.h"
+#include "DrawDebugHelpers.h"
 #include "CombatComponent.h"
 
 UCombatComponent::UCombatComponent()
@@ -29,11 +30,13 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-    if (Character && Character->IsLocallyControlled())
+    if (BlasterCharacter && BlasterCharacter->IsLocallyControlled())
     {
         FHitResult HitResult;
         TraceUnderCrosshairs(HitResult);
         HitTarget = HitResult.ImpactPoint;
+
+        // DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 15.f, 12, FColor::Red, false, 0.1f);
 
         SetHUDCrosshairs(DeltaTime);
         InterpFOV(DeltaTime);
@@ -43,14 +46,14 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 void UCombatComponent::BeginPlay()
 {
     Super::BeginPlay();
-    if (!Character || !Character->GetFollowCamera()) return;
-    check(Character->GetCharacterMovement());
-    Character->GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
+    if (!BlasterCharacter || !BlasterCharacter->GetFollowCamera()) return;
+    check(BlasterCharacter->GetCharacterMovement());
+    BlasterCharacter->GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
 
-    DefaultFOV = Character->GetFollowCamera()->FieldOfView;
+    DefaultFOV = BlasterCharacter->GetFollowCamera()->FieldOfView;
     CurrentFOV = DefaultFOV;
 
-    if (Character->HasAuthority())
+    if (BlasterCharacter->HasAuthority())
     {
         InitializeCarriedAmmo();
     }
@@ -68,7 +71,7 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 {
-    if (!Character || !WeaponToEquip) return;
+    if (!BlasterCharacter || !WeaponToEquip) return;
     if (EquippedWeapon)
     {
         EquippedWeapon->Dropped();
@@ -76,15 +79,15 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
     EquippedWeapon = WeaponToEquip;
 
     HandleEquipWeapon();
-    EquippedWeapon->SetOwner(Character);
+    EquippedWeapon->SetOwner(BlasterCharacter);
     EquippedWeapon->SetHUDAmmo();
     SetCarriedAmmo();
 
     if (IsControllerValid())
     {
-        Controller->SetHUDCarriedAmmo(CarriedAmmo);
-        Controller->SetHUDWeaponIcon(EquippedWeapon->WeaponIcon);
-        Controller->ShowHUDWeaponAmmoBox();
+        BlasterController->SetHUDCarriedAmmo(CarriedAmmo);
+        BlasterController->SetHUDWeaponIcon(EquippedWeapon->WeaponIcon);
+        BlasterController->ShowHUDWeaponAmmoBox();
     }
     if (EquippedWeapon->IsEmpty())
     {
@@ -94,35 +97,35 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 
 void UCombatComponent::OnRep_EquippedWeapon()
 {
-    if (!EquippedWeapon || !Character) return;
+    if (!EquippedWeapon || !BlasterCharacter) return;
     HandleEquipWeapon();
     if (IsControllerValid())
     {
-        Controller->SetHUDWeaponIcon(EquippedWeapon->WeaponIcon);
-        Controller->ShowHUDWeaponAmmoBox();
+        BlasterController->SetHUDWeaponIcon(EquippedWeapon->WeaponIcon);
+        BlasterController->ShowHUDWeaponAmmoBox();
     }
 }
 
 void UCombatComponent::HandleEquipWeapon()
 {
     EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equiped);
-    const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName("RightHandSocket");
+    const USkeletalMeshSocket* HandSocket = BlasterCharacter->GetMesh()->GetSocketByName("RightHandSocket");
     if (HandSocket)
     {
-        HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
+        HandSocket->AttachActor(EquippedWeapon, BlasterCharacter->GetMesh());
     }
 
     if (EquippedWeapon->EquipSound)
     {
-        UGameplayStatics::PlaySoundAtLocation(this, EquippedWeapon->EquipSound, Character->GetActorLocation());
+        UGameplayStatics::PlaySoundAtLocation(this, EquippedWeapon->EquipSound, BlasterCharacter->GetActorLocation());
     }
 
-    Character->GetCharacterMovement()->bOrientRotationToMovement = false;
-    Character->bUseControllerRotationYaw = true;
+    BlasterCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
+    BlasterCharacter->bUseControllerRotationYaw = true;
 
-    if (BlasterUtils::CastOrUseExistsActor<ABlasterPlayerController>(Controller, Character->GetController()))
+    if (BlasterUtils::CastOrUseExistsActor<ABlasterPlayerController>(BlasterController, BlasterCharacter->GetController()))
     {
-        Controller->SetHUDWeaponIcon(EquippedWeapon->WeaponIcon);
+        BlasterController->SetHUDWeaponIcon(EquippedWeapon->WeaponIcon);
     }
 }
 
@@ -136,15 +139,15 @@ void UCombatComponent::Reload()
 
 void UCombatComponent::ServerReload_Implementation()
 {
-    if (!Character || !EquippedWeapon) return;
+    if (!BlasterCharacter || !EquippedWeapon) return;
     CombatState = ECombatState::ECS_Reloading;
     HandleReload();
 }
 
 void UCombatComponent::FinishReloading()
 {
-    if (!Character) return;
-    if (Character->HasAuthority())
+    if (!BlasterCharacter) return;
+    if (BlasterCharacter->HasAuthority())
     {
         CombatState = ECombatState::ECS_Unoccupied;
         UpdateAmmoValues();
@@ -157,13 +160,13 @@ void UCombatComponent::FinishReloading()
 
 void UCombatComponent::UpdateAmmoValues()
 {
-    if (!Character || !EquippedWeapon || !HasEquippedWeaponKey()) return;
+    if (!BlasterCharacter || !EquippedWeapon || !HasEquippedWeaponKey()) return;
     int32 ReloadAmount = GetAmountToReload();
     CarriedAmmoMap[EquippedWeapon->GetWeaponType()] -= ReloadAmount;
     CarriedAmmo = CarriedAmmoMap[EquippedWeapon->GetWeaponType()];
     if (IsControllerValid())
     {
-        Controller->SetHUDCarriedAmmo(CarriedAmmo);
+        BlasterController->SetHUDCarriedAmmo(CarriedAmmo);
     }
     EquippedWeapon->AddAmmo(-ReloadAmount);
 }
@@ -193,7 +196,7 @@ void UCombatComponent::OnRep_CombatState()
 
 void UCombatComponent::HandleReload()
 {
-    Character->PlayReloadMontage();
+    BlasterCharacter->PlayReloadMontage();
 }
 
 int32 UCombatComponent::GetAmountToReload()
@@ -209,18 +212,18 @@ void UCombatComponent::SetAiming(bool bIsAiming)
 {
     bAiming = bIsAiming;
     ServerSetAiming(bIsAiming);
-    if (Character)
+    if (BlasterCharacter)
     {
-        Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+        BlasterCharacter->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
     }
 }
 
 void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)
 {
     bAiming = bIsAiming;
-    if (Character)
+    if (BlasterCharacter)
     {
-        Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+        BlasterCharacter->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
     }
 }
 
@@ -240,14 +243,14 @@ void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& Trac
 
 void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& TraceHitTarget)
 {
-    if (!Character || !EquippedWeapon || CombatState != ECombatState::ECS_Unoccupied) return;
-    Character->PlayFireMontage(bAiming);
+    if (!BlasterCharacter || !EquippedWeapon || CombatState != ECombatState::ECS_Unoccupied) return;
+    BlasterCharacter->PlayFireMontage(bAiming);
     EquippedWeapon->Fire(TraceHitTarget);
 }
 
 void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 {
-    if (!Character || !GEngine || !GEngine->GameViewport) return;
+    if (!BlasterCharacter || !GEngine || !GEngine->GameViewport) return;
     FVector2D ViewportSize;
     GEngine->GameViewport->GetViewportSize(ViewportSize);
     FVector2D CrosshairLocation(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);
@@ -259,7 +262,7 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
     if (bScreenToWorld)
     {
         FVector Start = CrosshairWorldPosition;
-        float DistanceToCharacter = (Character->GetActorLocation() - Start).Size();
+        float DistanceToCharacter = (BlasterCharacter->GetActorLocation() - Start).Size();
         Start += CrosshairWorldDirection * (DistanceToCharacter + 80.f);
         FVector End = Start + CrosshairWorldDirection * TRACE_LENGTH;
         GetWorld()->LineTraceSingleByChannel(TraceHitResult, Start, End, ECollisionChannel::ECC_Visibility);
@@ -282,17 +285,26 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 
 void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
 {
-    if (!Character || Character->GetIsElimmed() || !Character->Controller || !EquippedWeapon) return;
-    if (BlasterUtils::CastOrUseExistsActors<ABlasterPlayerController, ABlasterHUD>(Controller, HUD, Character->GetController()))
+
+    if (BlasterCharacter && IsControllerValid())
     {
-        HUDPackage.CrosshairsCenter = EquippedWeapon->CrosshairsCenter;
-        HUDPackage.CrosshairsLeft = EquippedWeapon->CrosshairsLeft;
-        HUDPackage.CrosshairsRight = EquippedWeapon->CrosshairsRight;
-        HUDPackage.CrosshairsTop = EquippedWeapon->CrosshairsTop;
-        HUDPackage.CrosshairsBottom = EquippedWeapon->CrosshairsBottom;
-        HUDPackage.CrosshairSpread = GetCrosshairsSpread(DeltaTime);
-        HUD->SetHUDPackage(HUDPackage);
-        HUD->SetIsDrawCrosshair(true);
+        HUD = HUD == nullptr ? Cast<ABlasterHUD>(BlasterController->GetHUD()) : HUD;
+        if (!HUD) return;
+        if (!BlasterCharacter || BlasterCharacter->GetIsGameplayDisabled() || !EquippedWeapon)
+        {
+            HUD->SetIsDrawCrosshair(false);
+        }
+        else
+        {
+            HUDPackage.CrosshairsCenter = EquippedWeapon->CrosshairsCenter;
+            HUDPackage.CrosshairsLeft = EquippedWeapon->CrosshairsLeft;
+            HUDPackage.CrosshairsRight = EquippedWeapon->CrosshairsRight;
+            HUDPackage.CrosshairsTop = EquippedWeapon->CrosshairsTop;
+            HUDPackage.CrosshairsBottom = EquippedWeapon->CrosshairsBottom;
+            HUDPackage.CrosshairSpread = GetCrosshairsSpread(DeltaTime);
+            HUD->SetHUDPackage(HUDPackage);
+            HUD->SetIsDrawCrosshair(true);
+        }
     }
 }
 
@@ -300,15 +312,15 @@ float UCombatComponent::GetCrosshairsSpread(float DeltaTime)
 {
     // Calculate crosshair spread
     //[0, 600] -> [0, 1]
-    FVector2D WalkSpeedRange(0.f,
-        Character->bIsCrouched ? Character->GetCharacterMovement()->MaxWalkSpeedCrouched : Character->GetCharacterMovement()->MaxWalkSpeed);
+    FVector2D WalkSpeedRange(0.f, BlasterCharacter->bIsCrouched ? BlasterCharacter->GetCharacterMovement()->MaxWalkSpeedCrouched
+                                                                : BlasterCharacter->GetCharacterMovement()->MaxWalkSpeed);
 
-    FVector2D VelocityMultiplayerRange(0.f, Character->bIsCrouched ? 0.5f : 1.f);
-    FVector Velocity = Character->GetVelocity();
+    FVector2D VelocityMultiplayerRange(0.f, BlasterCharacter->bIsCrouched ? 0.5f : 1.f);
+    FVector Velocity = BlasterCharacter->GetVelocity();
     Velocity.Z = 0.f;
 
     CrosshairVelocityFactor = FMath::GetMappedRangeValueClamped(WalkSpeedRange, VelocityMultiplayerRange, Velocity.Size());
-    if (Character->IsInAir())
+    if (BlasterCharacter->IsInAir())
     {
         CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 2.25f, DeltaTime, 2.2f);
     }
@@ -337,7 +349,7 @@ float UCombatComponent::GetCrosshairsSpread(float DeltaTime)
 
 void UCombatComponent::InterpFOV(float DeltaTime)
 {
-    if (!EquippedWeapon || !Character || !Character->GetFollowCamera()) return;
+    if (!EquippedWeapon || !BlasterCharacter || !BlasterCharacter->GetFollowCamera()) return;
     if (bAiming)
     {
         CurrentFOV = FMath::FInterpTo(CurrentFOV, EquippedWeapon->GetZoomedFOV(), DeltaTime, EquippedWeapon->GetZoomInterpSpeed());
@@ -346,7 +358,7 @@ void UCombatComponent::InterpFOV(float DeltaTime)
     {
         CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFOV, DeltaTime, ZoomInterpSpeed);
     }
-    Character->GetFollowCamera()->SetFieldOfView(CurrentFOV);
+    BlasterCharacter->GetFollowCamera()->SetFieldOfView(CurrentFOV);
 }
 
 void UCombatComponent::Fire()
@@ -363,8 +375,8 @@ void UCombatComponent::Fire()
 
 void UCombatComponent::StartFireTimer()
 {
-    if (!EquippedWeapon || !Character) return;
-    Character->GetWorldTimerManager().SetTimer(FireTimer, this, &UCombatComponent::FireTimerFinished, EquippedWeapon->FireDelay);
+    if (!EquippedWeapon || !BlasterCharacter) return;
+    BlasterCharacter->GetWorldTimerManager().SetTimer(FireTimer, this, &UCombatComponent::FireTimerFinished, EquippedWeapon->FireDelay);
 }
 
 void UCombatComponent::FireTimerFinished()
@@ -390,6 +402,7 @@ bool UCombatComponent::CanFire()
 void UCombatComponent::InitializeCarriedAmmo()
 {
     CarriedAmmoMap.Emplace(EWeaponType::EWT_AssaultRifle, StartingARAmmo);
+    CarriedAmmoMap.Emplace(EWeaponType::EWT_RocketLauncher, StartingRocketAmmo);
 }
 
 void UCombatComponent::SetCarriedAmmo()
@@ -400,7 +413,7 @@ void UCombatComponent::SetCarriedAmmo()
 
 void UCombatComponent::OnRep_CarriedAmmo()
 {
-    Controller->SetHUDCarriedAmmo(CarriedAmmo);
+    BlasterController->SetHUDCarriedAmmo(CarriedAmmo);
 }
 
 bool UCombatComponent::HasEquippedWeaponKey()
@@ -411,5 +424,5 @@ bool UCombatComponent::HasEquippedWeaponKey()
 
 bool UCombatComponent::IsControllerValid()
 {
-    return BlasterUtils::CastOrUseExistsActor<ABlasterPlayerController>(Controller, Character->GetController());
+    return BlasterUtils::CastOrUseExistsActor<ABlasterPlayerController>(BlasterController, BlasterCharacter->GetController());
 }

@@ -18,6 +18,8 @@ AWeapon::AWeapon()
     PrimaryActorTick.bCanEverTick = false;
     bReplicates = true;
 
+    SetReplicateMovement(true);
+
     WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Weapon Mesh"));
     SetRootComponent(WeaponMesh);
     WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
@@ -72,10 +74,10 @@ void AWeapon::ShowPickupWidget(bool bShowWidget)
 
 void AWeapon::Fire(const FVector& HitTarget)
 {
-    if (!FireAnimation || !CasingClass) return;
+    if (!FireAnimation) return;
     WeaponMesh->PlayAnimation(FireAnimation, false);
     const USkeletalMeshSocket* AmmoEjectSocket = WeaponMesh->GetSocketByName(FName("AmmoEject"));
-    if (AmmoEjectSocket && GetWorld())
+    if (AmmoEjectSocket && GetWorld() && CasingClass)
     {
         FTransform SocketTransform = AmmoEjectSocket->GetSocketTransform(WeaponMesh);
         GetWorld()->SpawnActor<ACasing>(CasingClass, SocketTransform.GetLocation(), SocketTransform.GetRotation().Rotator());

@@ -9,7 +9,7 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
     Super::PostLogin(NewPlayer);
     if (!GameState || !GetWorld()) return;
     int32 NumberOfPlayers = GameState.Get()->PlayerArray.Num();
-    if (NumberOfPlayers == 2)
+    if (NumberOfPlayers == AllowedNumberOfPlayers)
     {
         bUseSeamlessTravel = true;
         GetWorld()->ServerTravel("/Game/Maps/BlasterMap?listen");

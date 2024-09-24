@@ -1,7 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Components/BoxComponent.h"
-#include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
 #include "Particles/ParticleSystemComponent.h"
@@ -25,9 +24,6 @@ AProjectile::AProjectile()
     CollisionBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
     CollisionBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
     CollisionBox->SetCollisionResponseToChannel(ECC_SkeletalMesh, ECollisionResponse::ECR_Block);
-
-    ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>("ProjectileMovementComponent");
-    ProjectileMovementComponent->bRotationFollowsVelocity = true;
 }
 
 void AProjectile::BeginPlay()
@@ -43,6 +39,7 @@ void AProjectile::BeginPlay()
     if (HasAuthority())
     {
         CollisionBox->OnComponentHit.AddDynamic(this, &ThisClass::OnHit);
+        CollisionBox->IgnoreActorWhenMoving(Owner, true);
     }
 }
 
@@ -55,25 +52,24 @@ void AProjectile::OnHit(
 
 void AProjectile::MulticastHit_Implementation(AActor* OtherActor)
 {
-    if (OtherActor->ActorHasTag("BlasterCharacter") && OtherActor != GetOwner())
-    {
-        if (ImpactCharacterParticles && ImpactCharacterSound)
-        {
-            UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactCharacterParticles, GetActorTransform());
-            UGameplayStatics::PlaySoundAtLocation(this, ImpactCharacterSound, GetActorLocation());
-        }
-    }
-    else
-    {
-        if (ImpactParticles && ImpactSound)
-        {
-            UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticles, GetActorTransform());
-            UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation());
-        }
-    }
+    PlayFXAndSound(OtherActor);
 }
 
 void AProjectile::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
+}
+
+void AProjectile::PlayFXAndSound(AActor* OtherActor)
+{
+    if (OtherActor->ActorHasTag("BlasterCharacter") && OtherActor != GetOwner() && ImpactCharacterParticles && ImpactCharacterSound)
+    {
+        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactCharacterParticles, GetActorTransform());
+        UGameplayStatics::PlaySoundAtLocation(this, ImpactCharacterSound, GetActorLocation());
+    }
+    else if (ImpactParticles && ImpactSound)
+    {
+        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticles, GetActorTransform());
+        UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation());
+    }
 }

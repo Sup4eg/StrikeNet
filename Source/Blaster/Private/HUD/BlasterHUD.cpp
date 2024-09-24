@@ -5,6 +5,7 @@
 #include "Engine/Texture2D.h"
 #include "GameFramework/PlayerController.h"
 #include "CharacterOverlay.h"
+#include "AnnouncementWidget.h"
 #include "GameFramework/Pawn.h"
 #include "BlasterHUD.h"
 
@@ -52,7 +53,16 @@ bool ABlasterHUD::IsHUDTexturesValid()
 void ABlasterHUD::AddCharacterOverlay()
 {
     APlayerController* PlayerController = GetOwningPlayerController();
-    if (!PlayerController || !CharacterOverlayClass) return;
+    if (!PlayerController || !CharacterOverlayClass || CharacterOverlay) return;
     CharacterOverlay = CreateWidget<UCharacterOverlay>(PlayerController, CharacterOverlayClass);
     CharacterOverlay->AddToViewport();
+    CharacterOverlay->SetVisibility(ESlateVisibility::Collapsed);
+}
+
+void ABlasterHUD::AddAnnouncementWidget()
+{
+    APlayerController* PlayerController = GetOwningPlayerController();
+    if (!PlayerController || !AnnouncementWidgetClass || AnnouncementWidget) return;
+    AnnouncementWidget = CreateWidget<UAnnouncementWidget>(PlayerController, AnnouncementWidgetClass);
+    AnnouncementWidget->AddToViewport();
 }

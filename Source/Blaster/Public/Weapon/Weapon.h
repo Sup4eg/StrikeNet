@@ -79,7 +79,7 @@ public:
      * Automatic fire
      */
 
-    UPROPERTY(EditAnywhere, Category = "Combat")
+    UPROPERTY(EditAnywhere, Category = "Combat", meta = (ClampMin = 0.f))
     float FireDelay = .15f;
 
     UPROPERTY(EditAnywhere, Category = "Combat")
@@ -154,7 +154,7 @@ private:
     UPROPERTY()
     ABlasterPlayerController* BlasterOwnerController;
 
-    UPROPERTY(EditAnywhere)
+    UPROPERTY(EditAnywhere, Category = "Weapon Properties")
     EWeaponType WeaponType;
 
 public:

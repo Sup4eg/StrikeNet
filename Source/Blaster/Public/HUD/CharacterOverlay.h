@@ -12,6 +12,7 @@ class UTextBlock;
 class UElimmedWidget;
 class UImage;
 class UVerticalBox;
+class UWidgetAnimation;
 
 UCLASS()
 class BLASTER_API UCharacterOverlay : public UUserWidget
@@ -45,6 +46,12 @@ public:
 
     UPROPERTY(meta = (BindWidget))
     UVerticalBox* WeaponBox;
+
+    UPROPERTY(meta = (BindWidget))
+    UTextBlock* MatchCountdownText;
+
+    UPROPERTY(Transient, meta = (BindWidgetAnim))
+    UWidgetAnimation* CountdownAnimation;
 
 protected:
     virtual void NativeOnInitialized() override;
