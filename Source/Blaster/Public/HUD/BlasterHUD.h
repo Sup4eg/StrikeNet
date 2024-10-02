@@ -64,7 +64,6 @@ private:
     void AddCharacterOverlay();
 
     void DrawCrosshair(UTexture2D* Texture, const FVector2D& ViewportCenter, FVector2D Spread, FLinearColor CrosshairColor);
-    bool IsHUDTexturesValid();
 
     FHUDPackage HUDPackage;
 

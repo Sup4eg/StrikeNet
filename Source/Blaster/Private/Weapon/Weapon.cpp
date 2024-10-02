@@ -24,7 +24,11 @@ AWeapon::AWeapon()
     SetRootComponent(WeaponMesh);
     WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
     WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+    WeaponMesh->SetCollisionResponseToChannel(ECC_IK_Visibility, ECollisionResponse::ECR_Ignore);
     WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    WeaponMesh->SetCustomDepthStencilValue(CUSTOM_DEPTH_BLUE);
+    WeaponMesh->MarkRenderStateDirty();
+    EnableCustomDepth(true);
 
     AreaSphere = CreateDefaultSubobject<USphereComponent>(TEXT("Area Sphere"));
     AreaSphere->SetupAttachment(RootComponent);
@@ -38,6 +42,12 @@ AWeapon::AWeapon()
 void AWeapon::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
+}
+
+void AWeapon::EnableCustomDepth(bool bEnable)
+{
+    if (!WeaponMesh) return;
+    WeaponMesh->SetRenderCustomDepth(bEnable);
 }
 
 void AWeapon::BeginPlay()
@@ -74,8 +84,10 @@ void AWeapon::ShowPickupWidget(bool bShowWidget)
 
 void AWeapon::Fire(const FVector& HitTarget)
 {
-    if (!FireAnimation) return;
-    WeaponMesh->PlayAnimation(FireAnimation, false);
+    if (FireAnimation)
+    {
+        WeaponMesh->PlayAnimation(FireAnimation, false);
+    }
     const USkeletalMeshSocket* AmmoEjectSocket = WeaponMesh->GetSocketByName(FName("AmmoEject"));
     if (AmmoEjectSocket && GetWorld() && CasingClass)
     {
@@ -112,6 +124,10 @@ void AWeapon::SpendRound()
 
 void AWeapon::OnRep_Ammo()
 {
+    if (WeaponType == EWeaponType::EWT_Shotgun && IsBlasterOwnerCharacterValid() && IsFull())
+    {
+        BlasterOwnerCharacter->PlayMontage(BlasterOwnerCharacter->GetReloadMontage(), FName("ShotgunEnd"));
+    }
     SetHUDAmmo();
 }
 
@@ -131,8 +147,9 @@ void AWeapon::OnRep_Owner()
 
 void AWeapon::SetHUDAmmo()
 {
-    if (BlasterUtils::CastOrUseExistsActors<ABlasterCharacter, ABlasterPlayerController>(
-            BlasterOwnerCharacter, BlasterOwnerController, GetOwner()))
+
+    if (IsBlasterOwnerCharacterValid() &&
+        BlasterUtils::CastOrUseExistsActor(BlasterOwnerController, BlasterOwnerCharacter->GetController()))
     {
         BlasterOwnerController->SetHUDWeaponAmmo(Ammo);
     }
@@ -147,11 +164,26 @@ void AWeapon::OnRep_WeaponState()
             WeaponMesh->SetSimulatePhysics(false);
             WeaponMesh->SetEnableGravity(false);
             WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+            if (WeaponType == EWeaponType::EWT_SMG)
+            {
+                WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+                WeaponMesh->SetEnableGravity(true);
+                WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+            }
+            EnableCustomDepth(false);
             break;
         case EWeaponState::EWS_Dropped:
             WeaponMesh->SetSimulatePhysics(true);
             WeaponMesh->SetEnableGravity(true);
             WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+            WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+            WeaponMesh->SetCollisionResponseToChannel(ECC_IK_Visibility, ECollisionResponse::ECR_Ignore);
+            WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+            WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+
+            WeaponMesh->SetCustomDepthStencilValue(CUSTOM_DEPTH_BLUE);
+            WeaponMesh->MarkRenderStateDirty();
+            EnableCustomDepth(true);
             break;
         default: break;
     }
@@ -168,6 +200,13 @@ void AWeapon::SetWeaponState(EWeaponState State)
             WeaponMesh->SetSimulatePhysics(false);
             WeaponMesh->SetEnableGravity(false);
             WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+            if (WeaponType == EWeaponType::EWT_SMG)
+            {
+                WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+                WeaponMesh->SetEnableGravity(true);
+                WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+            }
+            EnableCustomDepth(false);
             break;
         case EWeaponState::EWS_Dropped:
             if (HasAuthority())
@@ -177,6 +216,14 @@ void AWeapon::SetWeaponState(EWeaponState State)
             WeaponMesh->SetSimulatePhysics(true);
             WeaponMesh->SetEnableGravity(true);
             WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+            WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+            WeaponMesh->SetCollisionResponseToChannel(ECC_IK_Visibility, ECollisionResponse::ECR_Ignore);
+            WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+            WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+
+            WeaponMesh->SetCustomDepthStencilValue(CUSTOM_DEPTH_BLUE);
+            WeaponMesh->MarkRenderStateDirty();
+            EnableCustomDepth(true);
             break;
         default: break;
     }
@@ -185,6 +232,11 @@ void AWeapon::SetWeaponState(EWeaponState State)
 bool AWeapon::IsEmpty()
 {
     return Ammo <= 0;
+}
+
+bool AWeapon::IsFull()
+{
+    return Ammo == MagCapacity;
 }
 
 void AWeapon::Dropped()
@@ -201,4 +253,9 @@ void AWeapon::AddAmmo(int32 AmmoToAdd)
 {
     Ammo = FMath::Clamp(Ammo - AmmoToAdd, 0, MagCapacity);
     SetHUDAmmo();
+}
+
+bool AWeapon::IsBlasterOwnerCharacterValid()
+{
+    return BlasterUtils::CastOrUseExistsActor(BlasterOwnerCharacter, GetOwner());
 }

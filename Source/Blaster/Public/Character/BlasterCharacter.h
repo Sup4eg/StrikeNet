@@ -24,6 +24,7 @@ class UMaterialInstance;
 class UParticleSystemComponent;
 class USoundBase;
 class ABlasterPlayerState;
+class UStaticMeshComponent;
 
 UCLASS()
 class BLASTER_API ABlasterCharacter : public ACharacter, public IInteractWithCrosshairsInterface
@@ -44,10 +45,12 @@ public:
     virtual void PostInitializeComponents() override;
 
     void PlayFireMontage(bool bAiming);
-    void PlayHitReactMontage();
+    void PlayHitReactMontage(AActor* DamageCauser);
     void PlayElimMontage();
+    void PlayThrowGrenadeMontage();
     void PlayReloadMontage();
     void PlayMontage(UAnimMontage* Montage, FName SectionName = NAME_None);
+    void StopAllMontages();
 
     UFUNCTION()
     void ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser);
@@ -63,13 +66,24 @@ public:
 
     bool IsInAir();
 
+    UFUNCTION(BlueprintImplementableEvent)
+    void ShowSniperScopeWidget(bool bShowScope);
+
     /**
      * Input mapping context
      */
     void SetUpInputMappingContext(UInputMappingContext* MappingContext);
 
+    bool bDrawCrosshair = true;
+
 protected:
     virtual void BeginPlay() override;
+
+    void AimOffset(float DeltaTime);
+    void RotateInPlace(float DeltaTime);
+    void SimProxiesTurn();
+    // Poll for any relevan classess and initialize out HUD
+    void PollInit();
 
     /** Callbacks for input */
     void Move(const FInputActionValue& Value);
@@ -82,11 +96,7 @@ protected:
     void AimButtonReleased();
     void FireButtonPressed();
     void FireButtonReleased();
-    void AimOffset(float DeltaTime);
-
-    void SimProxiesTurn();
-    // Poll for any relevan classess and initialize out HUD
-    void PollInit();
+    void ThrowGrenadeButtonPressed();
 
     UPROPERTY(EditAnywhere, Category = "Input")
     UInputMappingContext* DefaultMappingContext;
@@ -118,7 +128,8 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Input")
     UInputAction* ReloadAction;
 
-    void RotateInPlace(float DeltaTime);
+    UPROPERTY(EditAnywhere, Category = "Input")
+    UInputAction* ThrowGrenade;
 
     UPROPERTY(Replicated, VisibleInstanceOnly)
     bool bGameplayDisabled = false;
@@ -132,6 +143,9 @@ private:
 
     UFUNCTION(Server, Reliable)
     void ServerEquipButtonPressed();
+
+    UFUNCTION(NetMulticast, Reliable)
+    void MulticastHitReactMontage(AActor* DamageCauser);
 
     void HideCameraIfCharacterClose();
 
@@ -153,7 +167,14 @@ private:
 
     bool IsControllerValid();
 
-    UPROPERTY(VisibleAnywhere, Category = Camera) USpringArmComponent* CameraBoom;
+    bool IsHideSniperScope();
+
+    double GetDirectionalHitReactAngle(const FVector& ImpactPoint) const;
+
+    FName GetDirectionalHitReactSection(double Theta) const;
+
+    UPROPERTY(VisibleAnywhere, Category = Camera)
+    USpringArmComponent* CameraBoom;
 
     UPROPERTY(VisibleAnywhere, Category = Camera)
     UCameraComponent* FollowCamera;
@@ -164,7 +185,7 @@ private:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
     UWidgetComponent* OverheadWidget;
 
-    UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
+    UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon, VisibleInstanceOnly)
     AWeapon* OverlappingWeapon;
 
     float AO_Yaw;
@@ -186,13 +207,16 @@ private:
     UAnimMontage* FireWeaponMontage;
 
     UPROPERTY(EditAnywhere, Category = "Combat")
-    UAnimMontage* ReloadMontage;
-
-    UPROPERTY(EditAnywhere, Category = "Combat")
     UAnimMontage* HitReactMontage;
 
     UPROPERTY(EditAnywhere, Category = "Combat")
     UAnimMontage* ElimMontage;
+
+    UPROPERTY(EditAnywhere, Category = "Combat")
+    UAnimMontage* ReloadMontage;
+
+    UPROPERTY(EditAnywhere, Category = "Combat")
+    UAnimMontage* ThrowGrenadeMontage;
 
     UPROPERTY(EditAnywhere)
     float CameraThreshold = 200.f;
@@ -259,6 +283,12 @@ private:
     UPROPERTY()
     ABlasterPlayerState* BlasterPlayerState;
 
+    /**
+     * Grenade
+     */
+    UPROPERTY(VisibleAnywhere)
+    UStaticMeshComponent* AttachedGrenade;
+
 public:
     void SetOverlappingWeapon(AWeapon* Weapon);
     bool IsWeaponEquipped();
@@ -279,4 +309,6 @@ public:
     FORCEINLINE UCombatComponent* GetCombatComponent() const { return CombatComp; };
     FORCEINLINE bool GetIsGameplayDisabled() const { return bGameplayDisabled; };
     FORCEINLINE void SetIsGameplayDisabled(bool bDisable) { bGameplayDisabled = bDisable; };
+    FORCEINLINE UAnimMontage* GetReloadMontage() const { return ReloadMontage; };
+    FORCEINLINE UStaticMeshComponent* GetAttachedGrenade() const { return AttachedGrenade; };
 };

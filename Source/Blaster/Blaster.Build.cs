@@ -24,6 +24,7 @@ public class Blaster : ModuleRules
 			"Blaster/Public/Interfaces",
 			"Blaster/Public/PlayerState",
 			"Blaster/Public/GameState",
+			"Blaster/Public/Pickups"
 		});
 	}
 }

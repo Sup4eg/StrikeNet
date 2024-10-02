@@ -9,14 +9,13 @@
 #include "CombatState.h"
 #include "CombatComponent.generated.h"
 
-#define TRACE_LENGTH 80000
-
 struct FHitResult;
 
 class AWeapon;
 class ABlasterCharacter;
 class ABlasterPlayerController;
 class ABlasterHUD;
+class AProjectile;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class BLASTER_API UCombatComponent : public UActorComponent
@@ -41,6 +40,20 @@ public:
 
     void FireButtonPressed(bool bPressed);
 
+    UFUNCTION(BlueprintCallable)
+    void ShotgunShellReload();
+
+    UFUNCTION(BlueprintCallable)
+    void ThrowGrenadeFinished();
+
+    UFUNCTION(BlueprintCallable)
+    void LaunchGrenade();
+
+    UFUNCTION(Server, Reliable)
+    void ServerLaunchGranade(const FVector_NetQuantize Target);
+
+    void PickupAmmo(EWeaponType WeaponType, uint32 AmmoAmount);
+
 protected:
     virtual void BeginPlay() override;
 
@@ -48,7 +61,7 @@ protected:
     void ServerSetAiming(bool bIsAiming);
 
     UFUNCTION()
-    void OnRep_EquippedWeapon();
+    void OnRep_EquippedWeapon(AWeapon* LastEquippedWeapon);
 
     UFUNCTION(Server, Reliable)
     void ServerReload();
@@ -67,6 +80,22 @@ protected:
 
     void SetHUDCrosshairs(float DeltaTime);
 
+    void ThrowGrenade();
+
+    UFUNCTION(Server, Reliable)
+    void ServerThrowGrenade();
+
+    void DropEquippedWeapon();
+    void AttachWeaponToRightHand(AWeapon* WeaponToAttach);
+    void AttachWeaponToLeftHand(AWeapon* WeaponToAttach);
+    void SetCarriedAmmo();
+    void PlayEquipWeaponSound();
+    void ReloadEmptyWeapon();
+    void ShowAttachedGrenade(bool bShowAttachedGrenade);
+
+    UPROPERTY(EditAnywhere)
+    TSubclassOf<AProjectile> GrenadeClass;
+
 private:
     float GetCrosshairsSpread(float DeltaTime);
     void InterpFOV(float DeltaTime);
@@ -75,19 +104,28 @@ private:
     void FireTimerFinished();
     bool CanFire();
     void InitializeCarriedAmmo();
-    void SetCarriedAmmo();
     bool CanReload();
     bool HasEquippedWeaponKey();
     void UpdateAmmoValues();
-    void HandleEquipWeapon();
+    void UpdateShotgunAmmoValues();
+    void HandleWeaponSpecificLogic(AWeapon* LastWeapon, AWeapon* NewWeapon);
 
     bool IsControllerValid();
+
+    /**
+     * Rep notifies
+     */
 
     UFUNCTION()
     void OnRep_CombatState();
 
     UFUNCTION()
     void OnRep_CarriedAmmo();
+
+    UFUNCTION()
+    void OnRep_Grenades();
+
+    void UpdateHUDGrenades();
 
     UPROPERTY()
     ABlasterCharacter* BlasterCharacter;
@@ -146,12 +184,34 @@ private:
     int32 CarriedAmmo;
 
     UPROPERTY(EditAnywhere)
-    int32 StartingARAmmo = 30;
+    int32 MaxARAmmo = 85;
 
     UPROPERTY(EditAnywhere)
-    int32 StartingRocketAmmo = 0;
+    int32 MaxRocketAmmo = 12;
+
+    UPROPERTY(EditAnywhere)
+    int32 MaxPistolAmmo = 42;
+
+    UPROPERTY(EditAnywhere)
+    int32 MaxSMGAmmo = 85;
+
+    UPROPERTY(EditAnywhere)
+    int32 MaxShotgunAmmo = 12;
+
+    UPROPERTY(EditAnywhere)
+    int32 MaxSniperRifleAmmo = 12;
+
+    UPROPERTY(EditAnywhere)
+    int32 MaxGrenadeLauncherAmmo = 12;
+
+    UPROPERTY(ReplicatedUsing = OnRep_Grenades)
+    int32 Grenades = 4;
+
+    UPROPERTY(EditAnywhere, meta = (ClampMin = "4"))
+    int32 MaxGrenades = 4;
 
     TMap<EWeaponType, int32> CarriedAmmoMap;
+    TMap<EWeaponType, int32> MaxAmmoMap;
 
     UPROPERTY(EditDefaultsOnly)
     TMap<EWeaponType, FName> WeaponTypesToMontageSections;

@@ -12,6 +12,7 @@ class UTextBlock;
 class UElimmedWidget;
 class UImage;
 class UVerticalBox;
+class UHorizontalBox;
 class UWidgetAnimation;
 
 UCLASS()
@@ -45,13 +46,19 @@ public:
     UImage* WeaponImg;
 
     UPROPERTY(meta = (BindWidget))
-    UVerticalBox* WeaponBox;
+    UVerticalBox* WeaponInfo;
 
     UPROPERTY(meta = (BindWidget))
     UTextBlock* MatchCountdownText;
 
+    UPROPERTY(meta = (BindWidget))
+    UHorizontalBox* GrenadeInfo;
+
     UPROPERTY(Transient, meta = (BindWidgetAnim))
     UWidgetAnimation* CountdownAnimation;
+
+    UPROPERTY(meta = (BindWidget))
+    UTextBlock* GrenadesAmount;
 
 protected:
     virtual void NativeOnInitialized() override;

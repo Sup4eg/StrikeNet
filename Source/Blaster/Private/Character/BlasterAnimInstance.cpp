@@ -45,9 +45,9 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
     SetHandsTransform(DeltaSeconds);
 
-    bUseFABRIK = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading;
-    bUseAimOffsets = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading && !BlasterCharacter->GetIsGameplayDisabled();
-    bTransformRightHand = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading && !BlasterCharacter->GetIsGameplayDisabled();
+    bUseFABRIK = BlasterCharacter->GetCombatState() == ECombatState::ECS_Unoccupied;
+    bUseAimOffsets = BlasterCharacter->GetCombatState() == ECombatState::ECS_Unoccupied && !BlasterCharacter->GetIsGameplayDisabled();
+    bTransformRightHand = BlasterCharacter->GetCombatState() == ECombatState::ECS_Unoccupied && !BlasterCharacter->GetIsGameplayDisabled();
 }
 
 void UBlasterAnimInstance::SetYawOffset(float DeltaTime)

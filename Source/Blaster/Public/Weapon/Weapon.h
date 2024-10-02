@@ -85,8 +85,14 @@ public:
     UPROPERTY(EditAnywhere, Category = "Combat")
     bool bAutomatic = true;
 
-    UPROPERTY(EditAnywhere)
+    UPROPERTY(EditAnywhere, Category = "Weapon properties")
     USoundBase* EquipSound;
+
+    /**
+     * Enable / disable custom depth
+     */
+
+    void EnableCustomDepth(bool bEnable);
 
 protected:
     virtual void BeginPlay() override;
@@ -111,6 +117,8 @@ private:
 
     void SpendRound();
 
+    bool IsBlasterOwnerCharacterValid();
+
     UPROPERTY(VisibleAnywhere, Category = "Weapon properties")
     USkeletalMeshComponent* WeaponMesh;
 
@@ -129,7 +137,7 @@ private:
     UPROPERTY(EditAnywhere, Category = "Weapon properties")
     UAnimationAsset* FireAnimation;
 
-    UPROPERTY(EditAnywhere)
+    UPROPERTY(EditAnywhere, Category = "Weapon properties")
     TSubclassOf<ACasing> CasingClass;
 
     /**
@@ -160,6 +168,7 @@ private:
 public:
     void SetWeaponState(EWeaponState State);
     bool IsEmpty();
+    bool IsFull();
 
     FORCEINLINE USphereComponent* GetAreaSphere() const { return AreaSphere; }
     FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; };

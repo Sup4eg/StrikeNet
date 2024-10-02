@@ -6,9 +6,6 @@
 #include "Projectile.h"
 #include "ProjectileRocket.generated.h"
 
-class UStaticMeshComponent;
-class UNiagaraSystem;
-class UNiagaraComponent;
 class USoundBase;
 class UAudioComponent;
 class USoundAttenuation;
@@ -27,14 +24,6 @@ protected:
 
     virtual void BeginPlay() override;
 
-    void DestroyTimerFinished();
-
-    UPROPERTY(EditAnywhere)
-    UNiagaraSystem* TrailSystem;
-
-    UPROPERTY()
-    UNiagaraComponent* TrailSystemComponent;
-
     UPROPERTY()
     UAudioComponent* ProjectileLoopComponent;
 
@@ -46,19 +35,4 @@ protected:
 
     UPROPERTY(VisibleAnywhere)
     URocketMovementComponent* RocketMovementComponent;
-
-private:
-    UPROPERTY(VisibleAnywhere)
-    UStaticMeshComponent* RocketMesh;
-
-    UPROPERTY(EditAnywhere)
-    float DamageInnerRadius = 200.f;
-
-    UPROPERTY(EditAnywhere)
-    float DamageOuterRadius = 500.f;
-
-    FTimerHandle DestroyTimer;
-
-    UPROPERTY(EditAnywhere)
-    float DestroyTime = 3.f;
 };

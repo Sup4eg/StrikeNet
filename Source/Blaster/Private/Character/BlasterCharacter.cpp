@@ -3,6 +3,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Materials/MaterialInstance.h"
@@ -68,6 +69,10 @@ ABlasterCharacter::ABlasterCharacter()
     MinNetUpdateFrequency = 33.f;
 
     DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>("DissolveTimelineComponent");
+
+    AttachedGrenade = CreateDefaultSubobject<UStaticMeshComponent>("Attached Grenade");
+    AttachedGrenade->SetupAttachment(GetMesh(), FName("GrenadeSocket"));
+    AttachedGrenade->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void ABlasterCharacter::BeginPlay()
@@ -86,6 +91,11 @@ void ABlasterCharacter::BeginPlay()
     if (HasAuthority())
     {
         OnTakeAnyDamage.AddDynamic(this, &ThisClass::ReceiveDamage);
+    }
+
+    if (AttachedGrenade)
+    {
+        AttachedGrenade->SetVisibility(false);
     }
 }
 
@@ -133,6 +143,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
         EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ThisClass::FireButtonPressed);
         EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &ThisClass::FireButtonReleased);
         EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &ThisClass::ReloadButtonPressed);
+        EnhancedInputComponent->BindAction(ThrowGrenade, ETriggerEvent::Started, this, &ThisClass::ThrowGrenadeButtonPressed);
     }
 }
 
@@ -243,15 +254,22 @@ void ABlasterCharacter::PlayFireMontage(bool bAiming)
     PlayMontage(FireWeaponMontage, SectionName);
 }
 
-void ABlasterCharacter::PlayHitReactMontage()
+void ABlasterCharacter::PlayHitReactMontage(AActor* DamageCauser)
 {
-    if (!IsWeaponEquipped()) return;
-    PlayMontage(HitReactMontage, "FromFront");
+    if (!IsWeaponEquipped() || !DamageCauser) return;
+    double Theta = GetDirectionalHitReactAngle(DamageCauser->GetActorLocation());
+    FName SectionName = GetDirectionalHitReactSection(Theta);
+    PlayMontage(HitReactMontage, SectionName);
 }
 
 void ABlasterCharacter::PlayElimMontage()
 {
     PlayMontage(ElimMontage);
+}
+
+void ABlasterCharacter::PlayThrowGrenadeMontage()
+{
+    PlayMontage(ThrowGrenadeMontage);
 }
 
 void ABlasterCharacter::PlayReloadMontage()
@@ -272,16 +290,29 @@ void ABlasterCharacter::PlayMontage(UAnimMontage* Montage, FName SectionName)
     }
 }
 
+void ABlasterCharacter::StopAllMontages()
+{
+    if (!GetMesh()->GetAnimInstance()) return;
+    UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+    AnimInstance->StopAllMontages(0.2f);
+}
+
 void ABlasterCharacter::ReceiveDamage(
     AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
 {
+    if (bElimmed) return;
     Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
     if (IsControllerValid())
     {
         BlasterPlayerController->SetHUDHealth(Health, MaxHealth);
     }
-    PlayHitReactMontage();
+    MulticastHitReactMontage(DamageCauser);
     CheckIfEliminated(InstigatedBy);
+}
+
+void ABlasterCharacter::MulticastHitReactMontage_Implementation(AActor* DamageCauser)
+{
+    PlayHitReactMontage(DamageCauser);
 }
 
 void ABlasterCharacter::OnRep_ReplicatedMovement()
@@ -310,7 +341,8 @@ void ABlasterCharacter::MulticastElim_Implementation()
     if (IsControllerValid())
     {
         BlasterPlayerController->SetHUDWeaponAmmo(0);
-        BlasterPlayerController->HideHUDWeaponAmmoBox();
+        BlasterPlayerController->HideHUDWeaponInfo();
+        BlasterPlayerController->HideHUDGrenadeInfo();
         SetIsGameplayDisabled(true);
     }
 
@@ -348,6 +380,57 @@ void ABlasterCharacter::MulticastElim_Implementation()
 
         UGameplayStatics::SpawnSoundAtLocation(this, ElimBotSound, GetActorLocation());
     }
+
+    if (IsHideSniperScope())
+    {
+        ShowSniperScopeWidget(false);
+    }
+}
+
+bool ABlasterCharacter::IsHideSniperScope()
+{
+    return IsLocallyControlled() && IsWeaponEquipped() && CombatComp->bAiming &&
+           CombatComp->EquippedWeapon->GetWeaponType() == EWeaponType::EWT_SniperRifle;
+}
+
+double ABlasterCharacter::GetDirectionalHitReactAngle(const FVector& ImpactPoint) const
+{
+    const FVector Forward = GetActorForwardVector();
+    const FVector ImpactLowered(ImpactPoint.X, ImpactPoint.Y, GetActorLocation().Z);
+    const FVector ToHit = (ImpactLowered - GetActorLocation()).GetSafeNormal();
+
+    // Forward * ToHIt = |Forward| * |ToHit| * cos(theta)
+    const double Dot = FVector::DotProduct(Forward, ToHit);
+    double Theta = FMath::Acos(Dot);
+    // convert from radians to degrees
+    Theta = FMath::RadiansToDegrees(Theta);
+
+    // if CrossProduct points down, Theta should be negative
+    const FVector CrossProduct = FVector::CrossProduct(Forward, ToHit);
+
+    if (CrossProduct.Z < 0)
+    {
+        Theta *= -1.f;
+    }
+    return Theta;
+}
+
+FName ABlasterCharacter::GetDirectionalHitReactSection(double Theta) const
+{
+    FName Section("FromBack");
+    if (Theta >= -45.f && Theta < 45.f)
+    {
+        Section = FName("FromFront");
+    }
+    else if (Theta >= -135.f && Theta < -45.f)
+    {
+        Section = FName("FromLeft");
+    }
+    else if (Theta >= 45.f && Theta < 135.f)
+    {
+        Section = FName("FromRight");
+    }
+    return Section;
 }
 
 void ABlasterCharacter::ElimTimerFinished()
@@ -448,20 +531,20 @@ void ABlasterCharacter::CrouchButtonPressed()
 
 void ABlasterCharacter::AimButtonPressed()
 {
-    if (!IsWeaponEquipped()) return;
+    if (!CombatComp) return;
     CombatComp->SetAiming(true);
+}
+
+void ABlasterCharacter::AimButtonReleased()
+{
+    if (!CombatComp) return;
+    CombatComp->SetAiming(false);
 }
 
 void ABlasterCharacter::ReloadButtonPressed()
 {
     if (!CombatComp) return;
     CombatComp->Reload();
-}
-
-void ABlasterCharacter::AimButtonReleased()
-{
-    if (!IsWeaponEquipped()) return;
-    CombatComp->SetAiming(false);
 }
 
 void ABlasterCharacter::FireButtonPressed()
@@ -474,6 +557,12 @@ void ABlasterCharacter::FireButtonReleased()
 {
     if (!IsWeaponEquipped()) return;
     CombatComp->FireButtonPressed(false);
+}
+
+void ABlasterCharacter::ThrowGrenadeButtonPressed()
+{
+    if (!CombatComp) return;
+    CombatComp->ThrowGrenade();
 }
 
 void ABlasterCharacter::PollInit()
@@ -508,7 +597,6 @@ void ABlasterCharacter::OnRep_Health()
     {
         BlasterPlayerController->SetHUDHealth(Health, MaxHealth);
     }
-    PlayHitReactMontage();
 }
 
 void ABlasterCharacter::HideCameraIfCharacterClose()

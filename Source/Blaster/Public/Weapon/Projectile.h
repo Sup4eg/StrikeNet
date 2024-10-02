@@ -6,6 +6,9 @@
 #include "GameFramework/Actor.h"
 #include "Projectile.generated.h"
 
+class UStaticMeshComponent;
+class UNiagaraSystem;
+class UNiagaraComponent;
 class UBoxComponent;
 class UProjectileMovementComponent;
 class UParticleSystem;
@@ -24,6 +27,16 @@ public:
 
 protected:
     virtual void BeginPlay() override;
+
+    void StartDestoryTimer();
+
+    virtual void DestroyTimerFinished();
+
+    void SpawnTrailSystem();
+
+    void ExplodeDamage();
+
+    void PlayFXAndSound(AActor* OtherActor);
 
     UFUNCTION()
     virtual void OnHit(
@@ -50,11 +63,23 @@ protected:
     UPROPERTY(EditAnywhere)
     UBoxComponent* CollisionBox;
 
+    UPROPERTY(EditAnywhere)
+    UNiagaraSystem* TrailSystem;
+
+    UPROPERTY()
+    UNiagaraComponent* TrailSystemComponent;
+
+    UPROPERTY(VisibleAnywhere)
+    UStaticMeshComponent* ProjectileMesh;
+
     UPROPERTY(VisibleAnywhere)
     UProjectileMovementComponent* ProjectileMovementComponent;
-    
-    void PlayFXAndSound(AActor* OtherActor);
 
+    UPROPERTY(EditAnywhere)
+    float DamageInnerRadius = 200.f;
+
+    UPROPERTY(EditAnywhere)
+    float DamageOuterRadius = 500.f;
 
 private:
     UPROPERTY(EditAnywhere)
@@ -62,4 +87,15 @@ private:
 
     UPROPERTY()
     UParticleSystemComponent* TracerComponent;
+
+    FTimerHandle DestroyTimer;
+
+    UPROPERTY(EditAnywhere)
+    float DestroyTime = 3.f;
+
+    UPROPERTY(EditDefaultsOnly)
+    float LifeSpan = 15.f;
+
+public:
+    FORCEINLINE UBoxComponent* GetCollisionBox() const { return CollisionBox; };
 };

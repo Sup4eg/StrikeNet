@@ -14,6 +14,7 @@
 #include "Engine/World.h"
 #include "Components/Image.h"
 #include "Components/VerticalBox.h"
+#include "Components/HorizontalBox.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "BlasterGameMode.h"
@@ -162,6 +163,18 @@ void ABlasterPlayerController::SetHUDCarriedAmmo(int32 Ammo)
     }
 }
 
+void ABlasterPlayerController::SetHUDGrenadesAmount(int32 Grenades)
+{
+    bool bHUDValid = IsCharacterOverlayValid() &&                   //
+                     BlasterHUD->CharacterOverlay->GrenadesAmount;  //
+
+    if (bHUDValid)
+    {
+        FString GrenadesAmountText = FString::Printf(TEXT("%d"), Grenades);
+        BlasterHUD->CharacterOverlay->GrenadesAmount->SetText(FText::FromString(GrenadesAmountText));
+    }
+}
+
 void ABlasterPlayerController::SetHUDWeaponIcon(UTexture2D* WeaponIcon)
 {
 
@@ -173,23 +186,59 @@ void ABlasterPlayerController::SetHUDWeaponIcon(UTexture2D* WeaponIcon)
     }
 }
 
-void ABlasterPlayerController::HideHUDWeaponAmmoBox()
+void ABlasterPlayerController::HideHUDCharacterOverlay()
 {
-    bool bHUDValid = IsCharacterOverlayValid() &&              //
-                     BlasterHUD->CharacterOverlay->WeaponBox;  //
-    if (bHUDValid)
+    if (IsCharacterOverlayValid())
     {
-        BlasterHUD->CharacterOverlay->WeaponBox->SetVisibility(ESlateVisibility::Collapsed);
+        BlasterHUD->CharacterOverlay->SetVisibility(ESlateVisibility::Collapsed);
     }
 }
 
-void ABlasterPlayerController::ShowHUDWeaponAmmoBox()
+void ABlasterPlayerController::ShowHUDCharacterOverlay()
 {
-    bool bHUDValid = IsCharacterOverlayValid() &&              //
-                     BlasterHUD->CharacterOverlay->WeaponBox;  //
+    if (IsCharacterOverlayValid())
+    {
+        BlasterHUD->CharacterOverlay->SetVisibility(ESlateVisibility::Visible);
+    }
+}
+
+void ABlasterPlayerController::HideHUDWeaponInfo()
+{
+    bool bHUDValid = IsCharacterOverlayValid() &&               //
+                     BlasterHUD->CharacterOverlay->WeaponInfo;  //
     if (bHUDValid)
     {
-        BlasterHUD->CharacterOverlay->WeaponBox->SetVisibility(ESlateVisibility::Visible);
+        BlasterHUD->CharacterOverlay->WeaponInfo->SetVisibility(ESlateVisibility::Collapsed);
+    }
+}
+
+void ABlasterPlayerController::ShowHUDWeaponInfo()
+{
+    bool bHUDValid = IsCharacterOverlayValid() &&               //
+                     BlasterHUD->CharacterOverlay->WeaponInfo;  //
+    if (bHUDValid)
+    {
+        BlasterHUD->CharacterOverlay->WeaponInfo->SetVisibility(ESlateVisibility::Visible);
+    }
+}
+
+void ABlasterPlayerController::HideHUDGrenadeInfo()
+{
+    bool bHUDValid = IsCharacterOverlayValid() &&                //
+                     BlasterHUD->CharacterOverlay->GrenadeInfo;  //
+    if (bHUDValid)
+    {
+        BlasterHUD->CharacterOverlay->GrenadeInfo->SetVisibility(ESlateVisibility::Collapsed);
+    }
+}
+
+void ABlasterPlayerController::ShowHUDGrenadeInfo()
+{
+    bool bHUDValid = IsCharacterOverlayValid() &&                //
+                     BlasterHUD->CharacterOverlay->GrenadeInfo;  //
+    if (bHUDValid)
+    {
+        BlasterHUD->CharacterOverlay->GrenadeInfo->SetVisibility(ESlateVisibility::Visible);
     }
 }
 

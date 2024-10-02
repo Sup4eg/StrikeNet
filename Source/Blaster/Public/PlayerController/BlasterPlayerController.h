@@ -27,9 +27,14 @@ public:
     void SetHUDDefeats(int32 Defeats);
     void SetHUDWeaponAmmo(int32 Ammo);
     void SetHUDCarriedAmmo(int32 Ammo);
+    void SetHUDGrenadesAmount(int32 Grenades);
     void SetHUDWeaponIcon(UTexture2D* WeaponIcon);
-    void HideHUDWeaponAmmoBox();
-    void ShowHUDWeaponAmmoBox();
+    void HideHUDCharacterOverlay();
+    void ShowHUDCharacterOverlay();
+    void HideHUDWeaponInfo();
+    void ShowHUDWeaponInfo();
+    void HideHUDGrenadeInfo();
+    void ShowHUDGrenadeInfo();
     void ShowHUDElimmed(const FName& KilledBy);
     void HideHUDElimmed();
     void SetHUDMatchCountdown(float CountdownTime);
