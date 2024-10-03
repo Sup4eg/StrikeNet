@@ -18,6 +18,7 @@ class UInputAction;
 class UWidgetComponent;
 class AWeapon;
 class UCombatComponent;
+class UBuffComponent;
 class ABlasterPlayerController;
 class UMaterialInstanceDynamic;
 class UMaterialInstance;
@@ -44,6 +45,8 @@ public:
 
     virtual void PostInitializeComponents() override;
 
+    virtual void Landed(const FHitResult& Hit) override;
+
     void PlayFireMontage(bool bAiming);
     void PlayHitReactMontage(AActor* DamageCauser);
     void PlayElimMontage();
@@ -69,12 +72,27 @@ public:
     UFUNCTION(BlueprintImplementableEvent)
     void ShowSniperScopeWidget(bool bShowScope);
 
+    void UpdateHUDHealth();
+
     /**
      * Input mapping context
      */
     void SetUpInputMappingContext(UInputMappingContext* MappingContext);
 
     bool bDrawCrosshair = true;
+
+    /**
+     * Movement properties
+     */
+
+    UPROPERTY(EditAnywhere, Category = "Movement")
+    float BaseWalkSpeed = 600.f;
+
+    UPROPERTY(EditAnywhere, Category = "Movement")
+    float CrouchWalkSpeed = 300.f;
+
+    UPROPERTY(EditAnywhere, Category = "Movement")
+    float AimWalkSpeed = 450.f;
 
 protected:
     virtual void BeginPlay() override;
@@ -181,6 +199,9 @@ private:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
     UCombatComponent* CombatComp;
+
+    UPROPERTY(VisibleAnywhere)
+    UBuffComponent* BuffComp;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
     UWidgetComponent* OverheadWidget;
@@ -304,9 +325,11 @@ public:
     FORCEINLINE bool ShouldRotateRootBone() const { return bRotateRootBone; };
     FORCEINLINE bool IsElimmed() const { return bElimmed; };
     FORCEINLINE float GetHealth() const { return Health; };
+    FORCEINLINE void SetHealth(float Amount) { Health = Amount; };
     FORCEINLINE float GetMaxHealth() const { return MaxHealth; };
     FORCEINLINE bool GetIsElimmed() const { return bElimmed; };
     FORCEINLINE UCombatComponent* GetCombatComponent() const { return CombatComp; };
+    FORCEINLINE UBuffComponent* GetBuffComponent() const { return BuffComp; };
     FORCEINLINE bool GetIsGameplayDisabled() const { return bGameplayDisabled; };
     FORCEINLINE void SetIsGameplayDisabled(bool bDisable) { bGameplayDisabled = bDisable; };
     FORCEINLINE UAnimMontage* GetReloadMontage() const { return ReloadMontage; };

@@ -115,14 +115,32 @@ void ABlasterPlayerController::SetHUDDefeats(int32 Defeats)
 
 void ABlasterPlayerController::ShowHUDElimmed(const FName& KilledBy)
 {
-    bool bHUDValid = IsCharacterOverlayValid() &&                    //
-                     BlasterHUD->CharacterOverlay->ElimmedWidget &&  //
-                     BlasterHUD->CharacterOverlay->ElimmedWidget->KilledBy;
+    bool bHUDValid = IsCharacterOverlayValid() &&                              //
+                     BlasterHUD->CharacterOverlay->ElimmedWidget &&            //
+                     BlasterHUD->CharacterOverlay->ElimmedWidget->KillText &&  //
+                     !KilledBy.IsEqual("") &&                                  //
+                     !KilledBy.IsNone();
 
     if (bHUDValid)
     {
-        BlasterHUD->CharacterOverlay->ElimmedWidget->KilledBy->SetText(FText::FromName(KilledBy));
-        BlasterHUD->CharacterOverlay->ElimmedWidget->SetVisibility(ESlateVisibility::Visible);
+        FString KillTextString = FString("");
+        ABlasterPlayerState* BlasterPlayerState = GetPlayerState<ABlasterPlayerState>();
+
+        // Suicide
+        if (BlasterPlayerState->GetPlayerName().Equals(KilledBy.ToString()))
+        {
+            KillTextString = "Self destructed";
+        }
+        else
+        {
+            KillTextString = FString::Printf(TEXT("Killed by %s"), *KilledBy.ToString());
+        }
+
+        if (KillTextString != FString(""))
+        {
+            BlasterHUD->CharacterOverlay->ElimmedWidget->KillText->SetText(FText::FromString(KillTextString));
+            BlasterHUD->CharacterOverlay->ElimmedWidget->SetVisibility(ESlateVisibility::Visible);
+        }
     }
 }
 
@@ -130,11 +148,11 @@ void ABlasterPlayerController::HideHUDElimmed()
 {
     bool bHUDValid = IsCharacterOverlayValid() &&                    //
                      BlasterHUD->CharacterOverlay->ElimmedWidget &&  //
-                     BlasterHUD->CharacterOverlay->ElimmedWidget->KilledBy;
+                     BlasterHUD->CharacterOverlay->ElimmedWidget->KillText;
 
     if (bHUDValid)
     {
-        BlasterHUD->CharacterOverlay->ElimmedWidget->KilledBy->SetText(FText());
+        BlasterHUD->CharacterOverlay->ElimmedWidget->KillText->SetText(FText());
         BlasterHUD->CharacterOverlay->ElimmedWidget->SetVisibility(ESlateVisibility::Collapsed);
     }
 }
@@ -459,7 +477,7 @@ void ABlasterPlayerController::ShowHUDAnnouncement()
     if (BlasterGameState && BlasterPlayerState)
     {
         TArray<ABlasterPlayerState*> TopPlayers = BlasterGameState->TopScoringPlayers;
-        FString InfoTextString;
+        FString InfoTextString = FString("");
         if (TopPlayers.IsEmpty())
         {
             InfoTextString = FString("There is no winner.");
@@ -480,7 +498,11 @@ void ABlasterPlayerController::ShowHUDAnnouncement()
                 InfoTextString.Append(FString::Printf(TEXT("%s\n"), *TiedPlayer->GetPlayerName()));
             }
         }
-        BlasterHUD->AnnouncementWidget->InfoText->SetText(FText::FromString(InfoTextString));
+
+        if (InfoTextString != FString(""))
+        {
+            BlasterHUD->AnnouncementWidget->InfoText->SetText(FText::FromString(InfoTextString));
+        }
     }
 
     BlasterHUD->AnnouncementWidget->SetVisibility(ESlateVisibility::Visible);

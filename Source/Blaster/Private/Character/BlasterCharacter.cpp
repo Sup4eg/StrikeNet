@@ -11,6 +11,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "CombatComponent.h"
+#include "BuffComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "InputActionValue.h"
 #include "Engine/LocalPlayer.h"
@@ -51,12 +52,17 @@ ABlasterCharacter::ABlasterCharacter()
     GetCharacterMovement()->bOrientRotationToMovement = true;
     GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
     GetCharacterMovement()->RotationRate = FRotator(0.f, 0.f, 850.f);
+    GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
+    GetCharacterMovement()->MaxWalkSpeedCrouched = CrouchWalkSpeed;
 
     OverheadWidget = CreateDefaultSubobject<UWidgetComponent>("OverheadWidget");
     OverheadWidget->SetupAttachment(RootComponent);
 
     CombatComp = CreateDefaultSubobject<UCombatComponent>("CombatComp");
     CombatComp->SetIsReplicated(true);
+
+    BuffComp = CreateDefaultSubobject<UBuffComponent>("BuffComp");
+    BuffComp->SetIsReplicated(true);
 
     GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
     GetMesh()->SetCollisionObjectType(ECC_SkeletalMesh);
@@ -78,10 +84,8 @@ ABlasterCharacter::ABlasterCharacter()
 void ABlasterCharacter::BeginPlay()
 {
     Super::BeginPlay();
-    if (IsControllerValid())
-    {
-        BlasterPlayerController->SetHUDHealth(Health, MaxHealth);
-    }
+
+    UpdateHUDHealth();
     check(GetMesh());
     check(GetCharacterMovement());
     Tags.Add("BlasterCharacter");
@@ -159,8 +163,15 @@ void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 void ABlasterCharacter::PostInitializeComponents()
 {
     Super::PostInitializeComponents();
-    if (!CombatComp) return;
-    CombatComp->BlasterCharacter = this;
+    if (CombatComp)
+    {
+        CombatComp->BlasterCharacter = this;
+    }
+    if (BuffComp && GetCharacterMovement())
+    {
+        BuffComp->BlasterCharacter = this;
+        BuffComp->SetInitialSpeeds(BaseWalkSpeed, CrouchWalkSpeed, AimWalkSpeed);
+    }
 }
 
 void ABlasterCharacter::RotateInPlace(float DeltaTime)
@@ -302,10 +313,7 @@ void ABlasterCharacter::ReceiveDamage(
 {
     if (bElimmed) return;
     Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
-    if (IsControllerValid())
-    {
-        BlasterPlayerController->SetHUDHealth(Health, MaxHealth);
-    }
+    UpdateHUDHealth();
     MulticastHitReactMontage(DamageCauser);
     CheckIfEliminated(InstigatedBy);
 }
@@ -465,6 +473,14 @@ bool ABlasterCharacter::IsInAir()
     return GetCharacterMovement()->IsFalling();
 }
 
+void ABlasterCharacter::UpdateHUDHealth()
+{
+    if (IsControllerValid())
+    {
+        BlasterPlayerController->SetHUDHealth(Health, MaxHealth);
+    }
+}
+
 void ABlasterCharacter::Move(const FInputActionValue& Value)
 {
     if (!Controller) return;
@@ -497,6 +513,15 @@ void ABlasterCharacter::Jump()
     {
         Super::Jump();
     }
+}
+
+void ABlasterCharacter::Landed(const FHitResult& Hit)
+{
+    Super::Landed(Hit);
+    // if (bIsCrouched)
+    // {
+    //     UnCrouch();
+    // }
 }
 
 void ABlasterCharacter::EquipButtonPressed()
@@ -593,10 +618,7 @@ void ABlasterCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
 
 void ABlasterCharacter::OnRep_Health()
 {
-    if (IsControllerValid())
-    {
-        BlasterPlayerController->SetHUDHealth(Health, MaxHealth);
-    }
+    UpdateHUDHealth();
 }
 
 void ABlasterCharacter::HideCameraIfCharacterClose()

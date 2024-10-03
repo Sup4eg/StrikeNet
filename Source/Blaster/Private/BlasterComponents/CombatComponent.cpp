@@ -24,9 +24,6 @@
 UCombatComponent::UCombatComponent()
 {
     PrimaryComponentTick.bCanEverTick = true;
-
-    BaseWalkSpeed = 600.f;
-    AimWalkSpeed = 450.f;
 }
 
 void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -51,7 +48,7 @@ void UCombatComponent::BeginPlay()
     Super::BeginPlay();
     if (!BlasterCharacter || !BlasterCharacter->GetFollowCamera()) return;
     check(BlasterCharacter->GetCharacterMovement());
-    BlasterCharacter->GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
+    BlasterCharacter->GetCharacterMovement()->MaxWalkSpeed = BlasterCharacter->BaseWalkSpeed;
 
     DefaultFOV = BlasterCharacter->GetFollowCamera()->FieldOfView;
     CurrentFOV = DefaultFOV;
@@ -314,7 +311,7 @@ void UCombatComponent::SetAiming(bool bIsAiming)
     if (!EquippedWeapon || !BlasterCharacter) return;
     bAiming = bIsAiming;
     ServerSetAiming(bIsAiming);
-    BlasterCharacter->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+    BlasterCharacter->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? BlasterCharacter->AimWalkSpeed : BlasterCharacter->BaseWalkSpeed;
     if (BlasterCharacter->IsLocallyControlled() && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_SniperRifle)
     {
         BlasterCharacter->ShowSniperScopeWidget(bIsAiming);
@@ -337,7 +334,7 @@ void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)
 {
     if (!EquippedWeapon || !BlasterCharacter) return;
     bAiming = bIsAiming;
-    BlasterCharacter->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+    BlasterCharacter->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? BlasterCharacter->AimWalkSpeed : BlasterCharacter->BaseWalkSpeed;
 }
 
 void UCombatComponent::FireButtonPressed(bool bPressed)

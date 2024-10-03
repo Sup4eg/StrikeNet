@@ -15,5 +15,5 @@ class BLASTER_API UElimmedWidget : public UUserWidget
 
 public:
     UPROPERTY(meta = (BindWidget))
-    UTextBlock* KilledBy;
+    UTextBlock* KillText;
 };
