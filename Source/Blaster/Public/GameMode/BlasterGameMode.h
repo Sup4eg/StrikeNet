@@ -37,8 +37,8 @@ public:
     UPROPERTY(EditDefaultsOnly)
     float MatchTime = 120.f;
 
-    UPROPERTY(EditDefaultsOnly, meta = (ClampMin = "0", ClampMax = "1.0"))
-    float MatchTimeLeftAlertPercentage = 0.25f;
+    UPROPERTY(EditDefaultsOnly, meta = (ClampMin = "0"))
+    float MatchTimeLeftAlert = 30;
 
     UPROPERTY(EditDefaultsOnly)
     float CooldownTime = 10.f;

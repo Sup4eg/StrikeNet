@@ -312,9 +312,13 @@ void ABlasterCharacter::ReceiveDamage(
     AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
 {
     if (bElimmed) return;
+
     Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
     UpdateHUDHealth();
-    MulticastHitReactMontage(DamageCauser);
+    if (CombatComp && CombatComp->CombatState == ECombatState::ECS_Unoccupied)
+    {
+        MulticastHitReactMontage(DamageCauser);
+    }
     CheckIfEliminated(InstigatedBy);
 }
 
@@ -351,6 +355,7 @@ void ABlasterCharacter::MulticastElim_Implementation()
         BlasterPlayerController->SetHUDWeaponAmmo(0);
         BlasterPlayerController->HideHUDWeaponInfo();
         BlasterPlayerController->HideHUDGrenadeInfo();
+        BlasterPlayerController->ShowHUDCharacterOverlay();
         SetIsGameplayDisabled(true);
     }
 
@@ -389,16 +394,10 @@ void ABlasterCharacter::MulticastElim_Implementation()
         UGameplayStatics::SpawnSoundAtLocation(this, ElimBotSound, GetActorLocation());
     }
 
-    if (IsHideSniperScope())
+    if (IsAiming())
     {
-        ShowSniperScopeWidget(false);
+        CombatComp->SetAiming(false);
     }
-}
-
-bool ABlasterCharacter::IsHideSniperScope()
-{
-    return IsLocallyControlled() && IsWeaponEquipped() && CombatComp->bAiming &&
-           CombatComp->EquippedWeapon->GetWeaponType() == EWeaponType::EWT_SniperRifle;
 }
 
 double ABlasterCharacter::GetDirectionalHitReactAngle(const FVector& ImpactPoint) const
@@ -753,6 +752,12 @@ ECombatState ABlasterCharacter::GetCombatState() const
 {
     if (!CombatComp) return ECombatState::ECS_MAX;
     return CombatComp->CombatState;
+}
+
+void ABlasterCharacter::SetCombatState(ECombatState NewCombatState)
+{
+    if (!CombatComp) return;
+    CombatComp->CombatState = NewCombatState;
 }
 
 bool ABlasterCharacter::IsControllerValid()

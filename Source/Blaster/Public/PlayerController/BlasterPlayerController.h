@@ -102,7 +102,7 @@ private:
         float Match,                            //
         float StartingTime,                     //
         float TimeOfCooldown,                   //
-        float TimeOfMatchLeftAlertPercentage);  //
+        float TimeOfMatchLeftAlert);  //
 
     bool IsGameModeValid();
 
@@ -121,7 +121,7 @@ private:
     /** Time */
     float MatchTime = 0.f;
     float WarmupTime = 0.f;
-    float MatchTimeLeftAlertPercentage = 0.f;
+    float MatchTimeLeftAlert = 0.f;
     float CooldownTime = 0.f;
     uint32 CountdownInt = 0;
     float LevelStartingTime = 0.f;

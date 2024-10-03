@@ -185,8 +185,6 @@ private:
 
     bool IsControllerValid();
 
-    bool IsHideSniperScope();
-
     double GetDirectionalHitReactAngle(const FVector& ImpactPoint) const;
 
     FName GetDirectionalHitReactSection(double Theta) const;
@@ -317,6 +315,7 @@ public:
     AWeapon* GetEquippedWeapon();
     FVector GetHitTarget() const;
     ECombatState GetCombatState() const;
+    void SetCombatState(ECombatState NewCombatState);
 
     FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; };
     FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; };

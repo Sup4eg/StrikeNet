@@ -269,7 +269,6 @@ void ABlasterPlayerController::SetHUDMatchCountdown(float CountdownTime)
     {
         SetHUDCountdown(CountdownTime, BlasterHUD->CharacterOverlay->MatchCountdownText);
         BlasterHUD->CharacterOverlay->MatchCountdownText->SetColorAndOpacity(FColor::White);
-        float MatchTimeLeftAlert = MatchTime * MatchTimeLeftAlertPercentage;
         if (CountdownTime <= MatchTimeLeftAlert)
         {
             BlasterHUD->CharacterOverlay->MatchCountdownText->SetColorAndOpacity(FColor::Red);
@@ -461,7 +460,10 @@ void ABlasterPlayerController::HandleMatchCooldown()
         BlasterCharacter->SetUpInputMappingContext(CooldownMappingContext);
         if (BlasterCharacter->GetCombatComponent())
         {
-            BlasterCharacter->GetCombatComponent()->SetAiming(false);
+            if (BlasterCharacter->IsAiming())
+            {
+                BlasterCharacter->GetCombatComponent()->SetAiming(false);
+            }
             BlasterCharacter->GetCombatComponent()->FireButtonPressed(false);
         }
     }
@@ -469,6 +471,7 @@ void ABlasterPlayerController::HandleMatchCooldown()
 
 void ABlasterPlayerController::ShowHUDAnnouncement()
 {
+
     FString AnnouncementText("New Match Starts In:");
     BlasterHUD->AnnouncementWidget->AnnouncementText->SetText(FText::FromString(AnnouncementText));
 
@@ -514,12 +517,12 @@ void ABlasterPlayerController::ServerCheckMatchState_Implementation()
     if (!GameMode) return;
 
     WarmupTime = GameMode->WarmupTime;
-    MatchTimeLeftAlertPercentage = GameMode->MatchTimeLeftAlertPercentage;
+    MatchTimeLeftAlert = GameMode->MatchTimeLeftAlert;
     MatchTime = GameMode->MatchTime;
     LevelStartingTime = GameMode->LevelStartingTime;
     MatchState = GameMode->GetMatchState();
     CooldownTime = GameMode->CooldownTime;
-    ClientJoinMidgame(MatchState, WarmupTime, MatchTime, LevelStartingTime, CooldownTime, MatchTimeLeftAlertPercentage);
+    ClientJoinMidgame(MatchState, WarmupTime, MatchTime, LevelStartingTime, CooldownTime, MatchTimeLeftAlert);
 
     if (BlasterHUD && MatchState == MatchState::WaitingToStart)
     {
@@ -532,14 +535,14 @@ void ABlasterPlayerController::ClientJoinMidgame_Implementation(FName StateOfMat
     float Match,                                                                     //
     float StartingTime,                                                              //
     float TimeOfCooldown,                                                            //
-    float TimeOfMatchLeftAlertPercentage)
+    float TimeOfMatchLeftAlert)
 {
     WarmupTime = Warmup;
     MatchTime = Match;
     LevelStartingTime = StartingTime;
     MatchState = StateOfMatch;
     CooldownTime = TimeOfCooldown;
-    MatchTimeLeftAlertPercentage = TimeOfMatchLeftAlertPercentage;
+    MatchTimeLeftAlert = TimeOfMatchLeftAlert;
     OnMatchStateSet(MatchState);
 
     if (BlasterHUD && MatchState == MatchState::WaitingToStart)

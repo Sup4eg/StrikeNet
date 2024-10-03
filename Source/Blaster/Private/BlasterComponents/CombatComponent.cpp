@@ -13,6 +13,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
 #include "Weapon.h"
+#include "HitScanWeapon.h"
 #include "BlasterPlayerController.h"
 #include "TimerManager.h"
 #include "BlasterUtils.h"
@@ -316,6 +317,9 @@ void UCombatComponent::SetAiming(bool bIsAiming)
     {
         BlasterCharacter->ShowSniperScopeWidget(bIsAiming);
         BlasterCharacter->bDrawCrosshair = !bIsAiming;
+        if (AHitScanWeapon* HitScanWeapon = Cast<AHitScanWeapon>(EquippedWeapon)) {
+            HitScanWeapon->SetScatter(!bIsAiming);
+        }
         if (IsControllerValid())
         {
             if (bAiming)

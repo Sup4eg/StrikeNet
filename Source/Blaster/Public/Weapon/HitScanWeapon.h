@@ -51,4 +51,7 @@ private:
 
     UPROPERTY(EditAnywhere, Category = "Weapon Scatter")
     bool bUseScatter = false;
+
+public:
+    FORCEINLINE void SetScatter(bool IsScatter) { bUseScatter = IsScatter; };
 };
