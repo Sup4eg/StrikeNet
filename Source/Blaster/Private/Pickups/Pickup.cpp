@@ -8,6 +8,9 @@
 #include "WeaponTypes.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "BlasterCharacter.h"
+#include "BlasterUtils.h"
+#include "TimerManager.h"
 #include "Pickup.h"
 
 APickup::APickup()
@@ -43,10 +46,7 @@ void APickup::BeginPlay()
 {
     Super::BeginPlay();
 
-    if (HasAuthority())
-    {
-        OverlapSphere->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnSphereOverlap);
-    }
+    GetWorldTimerManager().SetTimer(BindOverlapTimer, this, &ThisClass::BindOverlapTimerFinished, BindOverlapTime);
 }
 
 void APickup::Tick(float DeltaTime)
@@ -59,21 +59,6 @@ void APickup::Tick(float DeltaTime)
     }
 }
 
-void APickup::Destroyed()
-{
-    Super::Destroyed();
-
-    if (PickupSound)
-    {
-        UGameplayStatics::PlaySoundAtLocation(this, PickupSound, GetActorLocation());
-    }
-
-    if (PickupEffect)
-    {
-        UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, PickupEffect, GetActorLocation(), GetActorRotation());
-    }
-}
-
 void APickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent,  //
     AActor* OtherActor,                                                  //
     UPrimitiveComponent* OtherComp,                                      //
@@ -81,4 +66,46 @@ void APickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent,  //
     bool bFromSweep,                                                     //
     const FHitResult& SweepResult)
 {
+    if (OtherActor && OtherActor->ActorHasTag("BlasterCharacter"))
+    {
+        if (PickupSound)
+        {
+            UGameplayStatics::PlaySoundAtLocation(this, PickupSound, GetActorLocation());
+        }
+
+        HandleOverlappingCharacter(OtherActor);
+    }
+}
+
+void APickup::HandleOverlappingCharacter(AActor* OtherActor)
+{
+
+    if (PickupEffect && IsBlasterCharacterValid(OtherActor))
+    {
+        if (BlasterCharacter->GetPickupEffect())
+        {
+            BlasterCharacter->GetPickupEffect()->DeactivateImmediate();
+        }
+
+        UNiagaraComponent* LastPickupEffect = UNiagaraFunctionLibrary::SpawnSystemAttached(  //
+            PickupEffect,                                                                    //
+            BlasterCharacter->GetRootComponent(),                                            //
+            NAME_None,                                                                       //
+            BlasterCharacter->GetActorLocation(),                                            //
+            BlasterCharacter->GetActorRotation(),                                            //
+            EAttachLocation::KeepWorldPosition,                                              //
+            false);
+
+        BlasterCharacter->SetPickupEffect(LastPickupEffect);
+    }
+}
+
+void APickup::BindOverlapTimerFinished()
+{
+    OverlapSphere->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnSphereOverlap);
+}
+
+bool APickup::IsBlasterCharacterValid(AActor* OtherActor)
+{
+    return BlasterUtils::CastOrUseExistsActor(BlasterCharacter, OtherActor);
 }

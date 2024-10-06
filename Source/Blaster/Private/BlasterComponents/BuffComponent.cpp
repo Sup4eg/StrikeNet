@@ -22,10 +22,16 @@ void UBuffComponent::SetInitialSpeeds(float BaseSpeed, float CrouchSpeed, float 
     InitialAimWalkSpeed = AimWalkSpeed;
 }
 
+void UBuffComponent::SetInitialJumpVelocity(float Velocity)
+{
+    InitialJumpSpeed = Velocity;
+}
+
 void UBuffComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
     HealRampUp(DeltaTime);
+    ShieldRampUp(DeltaTime);
 }
 
 void UBuffComponent::Heal(float HealAmount, float HealingTime)
@@ -33,34 +39,6 @@ void UBuffComponent::Heal(float HealAmount, float HealingTime)
     bHealing = true;
     HealingRate = HealAmount / HealingTime;
     AmountToHeal += HealAmount;
-}
-
-void UBuffComponent::BuffSpeed(float BuffSpeedScaleFactor, float BuffTime)
-{
-    if (!BlasterCharacter || !BlasterCharacter->GetCharacterMovement()) return;
-    BlasterCharacter->GetWorldTimerManager().SetTimer(SpeedBuffTimer, this, &ThisClass::ResetSpeeds, BuffTime);
-
-    MulticastSpeedBuff(InitialBaseSpeed * BuffSpeedScaleFactor,  //
-        InitialCrouchSpeed * BuffSpeedScaleFactor,               //
-        InitialAimWalkSpeed * BuffSpeedScaleFactor);
-}
-
-void UBuffComponent::ResetSpeeds()
-{
-    if (!BlasterCharacter || !BlasterCharacter->GetCharacterMovement()) return;
-    MulticastSpeedBuff(InitialBaseSpeed, InitialCrouchSpeed, InitialAimWalkSpeed);
-}
-
-void UBuffComponent::MulticastSpeedBuff_Implementation(float BaseSpeed, float CrouchSpeed, float AimSpeed)
-{
-    if (!BlasterCharacter || !BlasterCharacter->GetCharacterMovement()) return;
-
-    BlasterCharacter->BaseWalkSpeed = BaseSpeed;
-    BlasterCharacter->CrouchWalkSpeed = CrouchSpeed;
-    BlasterCharacter->AimWalkSpeed = AimSpeed;
-
-    BlasterCharacter->GetCharacterMovement()->MaxWalkSpeed = BlasterCharacter->IsAiming() ? AimSpeed : BaseSpeed;
-    BlasterCharacter->GetCharacterMovement()->MaxWalkSpeedCrouched = CrouchSpeed;
 }
 
 void UBuffComponent::HealRampUp(float DeltaTime)
@@ -77,4 +55,74 @@ void UBuffComponent::HealRampUp(float DeltaTime)
         bHealing = false;
         AmountToHeal = 0.f;
     }
+}
+
+void UBuffComponent::ReplenishShield(float ShieldAmount, float ReplenishTime)
+{
+    bReplenishingShield = true;
+    ShieldReplenishRate = ShieldAmount / ReplenishTime;
+    ShieldReplenishAmount += ShieldAmount;
+}
+
+void UBuffComponent::ShieldRampUp(float DeltaTime)
+{
+    if (!bReplenishingShield || !BlasterCharacter || BlasterCharacter->GetIsElimmed()) return;
+
+    const float ReplenishShieldThisFrame = ShieldReplenishRate * DeltaTime;
+    BlasterCharacter->SetShield(FMath::Clamp(BlasterCharacter->GetShield() + ReplenishShieldThisFrame, 0.f, BlasterCharacter->GetMaxShield()));
+    ShieldReplenishAmount -= ReplenishShieldThisFrame;
+    BlasterCharacter->UpdateHUDShield();
+
+    if (ShieldReplenishAmount <= 0.f || BlasterCharacter->GetShield() >= BlasterCharacter->GetMaxShield())
+    {
+        bReplenishingShield = false;
+        ShieldReplenishAmount = 0.f;
+    }
+}
+
+void UBuffComponent::BuffSpeed(float BuffSpeedScaleFactor, float BuffTime)
+{
+    if (!BlasterCharacter || !BlasterCharacter->GetCharacterMovement()) return;
+    BlasterCharacter->GetWorldTimerManager().SetTimer(SpeedBuffTimer, this, &ThisClass::ResetSpeeds, BuffTime);
+
+    MulticastSpeedBuff(InitialBaseSpeed * BuffSpeedScaleFactor,  //
+        InitialCrouchSpeed * BuffSpeedScaleFactor,               //
+        InitialAimWalkSpeed * BuffSpeedScaleFactor);
+}
+
+void UBuffComponent::BuffJump(float BuffJumpScaleFactor, float BuffTime)
+{
+    if (!BlasterCharacter || !BlasterCharacter->GetCharacterMovement()) return;
+    BlasterCharacter->GetWorldTimerManager().SetTimer(JumpBuffTimer, this, &ThisClass::ResetJump, BuffTime);
+    MulticastJumpBuff(InitialJumpSpeed * BuffJumpScaleFactor);
+}
+
+void UBuffComponent::ResetSpeeds()
+{
+    if (!BlasterCharacter || !BlasterCharacter->GetCharacterMovement()) return;
+    MulticastSpeedBuff(InitialBaseSpeed, InitialCrouchSpeed, InitialAimWalkSpeed);
+}
+
+void UBuffComponent::ResetJump()
+{
+    if (!BlasterCharacter || !BlasterCharacter->GetCharacterMovement()) return;
+    MulticastJumpBuff(InitialJumpSpeed);
+}
+
+void UBuffComponent::MulticastJumpBuff_Implementation(double JumpSpeed)
+{
+    if (!BlasterCharacter || !BlasterCharacter->GetCharacterMovement()) return;
+    BlasterCharacter->GetCharacterMovement()->JumpZVelocity = JumpSpeed;
+}
+
+void UBuffComponent::MulticastSpeedBuff_Implementation(double BaseSpeed, double CrouchSpeed, double AimSpeed)
+{
+    if (!BlasterCharacter || !BlasterCharacter->GetCharacterMovement()) return;
+
+    BlasterCharacter->BaseWalkSpeed = BaseSpeed;
+    BlasterCharacter->CrouchWalkSpeed = CrouchSpeed;
+    BlasterCharacter->AimWalkSpeed = AimSpeed;
+
+    BlasterCharacter->GetCharacterMovement()->MaxWalkSpeed = BlasterCharacter->IsAiming() ? AimSpeed : BaseSpeed;
+    BlasterCharacter->GetCharacterMovement()->MaxWalkSpeedCrouched = CrouchSpeed;
 }

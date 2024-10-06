@@ -11,6 +11,7 @@ class USoundBase;
 class UStaticMeshComponent;
 class UNiagaraComponent;
 class UNiagaraSystem;
+class ABlasterCharacter;
 
 UCLASS()
 class BLASTER_API APickup : public AActor
@@ -21,7 +22,6 @@ public:
     APickup();
 
     virtual void Tick(float DeltaTime) override;
-    virtual void Destroyed() override;
 
     UFUNCTION()
     virtual void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent,  //
@@ -34,7 +34,14 @@ public:
 protected:
     virtual void BeginPlay() override;
 
+    bool IsBlasterCharacterValid(AActor* OtherActor);
+
+    UPROPERTY()
+    ABlasterCharacter* BlasterCharacter;
+
 private:
+    void HandleOverlappingCharacter(AActor* OtherActor);
+
     UPROPERTY(VisibleAnywhere)
     USphereComponent* OverlapSphere;
 
@@ -53,5 +60,10 @@ private:
     UPROPERTY(EditAnywhere)
     float BaseTurnRate = 45.f;
 
-public:
+    FTimerHandle BindOverlapTimer;
+
+    UFUNCTION()
+    void BindOverlapTimerFinished();
+
+    float BindOverlapTime = 0.25f;
 };

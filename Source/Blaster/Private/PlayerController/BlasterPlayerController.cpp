@@ -51,7 +51,6 @@ void ABlasterPlayerController::OnRep_Pawn()
     HideHUDElimmed();
     ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(GetCharacter());
     if (BlasterCharacter)
-
     {
         SetLogicDependsOnMatchState(BlasterCharacter);
     }
@@ -65,6 +64,8 @@ void ABlasterPlayerController::OnPossess(APawn* InPawn)
     if (BlasterCharacter)
     {
         SetHUDHealth(BlasterCharacter->GetHealth(), BlasterCharacter->GetMaxHealth());
+        SetHUDShield(BlasterCharacter->GetShield(), BlasterCharacter->GetMaxShield());
+        BlasterCharacter->UpdateHUDAmmo();
         HideHUDElimmed();
         SetLogicDependsOnMatchState(BlasterCharacter);
     }
@@ -90,6 +91,20 @@ void ABlasterPlayerController::SetHUDHealth(float Health, float MaxHealth)
         const FString HealthText = FString::Printf(TEXT("%d/%d"), FMath::CeilToInt(Health), FMath::CeilToInt(MaxHealth));
         BlasterHUD->CharacterOverlay->HealthBar->SetPercent(HealthPercent);
         BlasterHUD->CharacterOverlay->HealthText->SetText(FText::FromString(HealthText));
+    }
+}
+
+void ABlasterPlayerController::SetHUDShield(float Shield, float MaxShield)
+{
+    bool bHUDValid = IsCharacterOverlayValid() &&                //
+                     BlasterHUD->CharacterOverlay->ShieldBar &&  //
+                     BlasterHUD->CharacterOverlay->ShieldText;
+    if (bHUDValid)
+    {
+        const float ShieldPercent = Shield / MaxShield;
+        const FString ShieldText = FString::Printf(TEXT("%d/%d"), FMath::CeilToInt(Shield), FMath::CeilToInt(MaxShield));
+        BlasterHUD->CharacterOverlay->ShieldBar->SetPercent(ShieldPercent);
+        BlasterHUD->CharacterOverlay->ShieldText->SetText(FText::FromString(ShieldText));
     }
 }
 
@@ -435,6 +450,13 @@ void ABlasterPlayerController::HandleMatchHasStarted()
 {
     if (IsCharacterOverlayValid())
     {
+        if (GetCharacter()->ActorHasTag("BlasterCharacter"))
+        {
+            if (ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(GetCharacter()))
+            {
+                BlasterCharacter->UpdateHUDAmmo();
+            }
+        }
         BlasterHUD->CharacterOverlay->SetVisibility(ESlateVisibility::Visible);
     }
     if (IsAnnouncementWidgetValid())
@@ -449,9 +471,13 @@ void ABlasterPlayerController::HandleMatchCooldown()
     {
         BlasterHUD->CharacterOverlay->RemoveFromParent();
     }
-    if (IsAnnouncementWidgetValid() && BlasterHUD->AnnouncementWidget->AnnouncementText && BlasterHUD->AnnouncementWidget->InfoText)
+    if (IsHUDValid())
     {
-        ShowHUDAnnouncement();
+        BlasterHUD->AddAnnouncementWidget();
+        if (BlasterHUD->AnnouncementWidget && BlasterHUD->AnnouncementWidget->AnnouncementText && BlasterHUD->AnnouncementWidget->InfoText)
+        {
+            ShowHUDAnnouncement();
+        }
     }
     ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(GetCharacter());
     if (BlasterCharacter)

@@ -65,6 +65,7 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
     DOREPLIFETIME(UCombatComponent, EquippedWeapon);
+    DOREPLIFETIME(UCombatComponent, SecondaryWeapon);
     DOREPLIFETIME(UCombatComponent, bAiming);
     DOREPLIFETIME_CONDITION(UCombatComponent, CarriedAmmo, COND_OwnerOnly);
     DOREPLIFETIME(UCombatComponent, CombatState);
@@ -77,15 +78,50 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
     BlasterCharacter->StopAllMontages();
     CombatState = ECombatState::ECS_Unoccupied;
 
-    HandleWeaponSpecificLogic(EquippedWeapon, WeaponToEquip);
-    DropEquippedWeapon();
-    EquippedWeapon = WeaponToEquip;
-    EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equiped);
+    if (EquippedWeapon && !SecondaryWeapon)
+    {
+        EquipSecondaryWeapon(WeaponToEquip);
+        PlayEquipWeaponSound(SecondaryWeapon);
+    }
+    else
+    {
+        DropEquippedWeapon();
+        EquipPrimaryWeapon(WeaponToEquip);
+    }
 
-    AttachWeaponToRightHand(EquippedWeapon);
-    PlayEquipWeaponSound();
     BlasterCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
     BlasterCharacter->bUseControllerRotationYaw = true;
+}
+
+void UCombatComponent::SwapWeapons()
+{
+    if (!BlasterCharacter || BlasterCharacter->GetWorldTimerManager().IsTimerActive(SwapWeaponsTimer)) return;
+    BlasterCharacter->GetWorldTimerManager().SetTimer(SwapWeaponsTimer, this, &ThisClass::SwapWeaponsTimerFinished, SwapWeaponsDelay);
+}
+
+bool UCombatComponent::ShouldSwapWeapons() const
+{
+    return EquippedWeapon && SecondaryWeapon;
+}
+
+void UCombatComponent::SwapWeaponsTimerFinished()
+{
+    AWeapon* TempWeapon = EquippedWeapon;
+
+    EquipPrimaryWeapon(SecondaryWeapon);
+    EquipSecondaryWeapon(TempWeapon);
+}
+
+void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
+{
+    if (!WeaponToEquip) return;
+
+    HandleWeaponSpecificLogic(EquippedWeapon, WeaponToEquip);
+    EquippedWeapon = WeaponToEquip;
+    EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+
+    AttachWeaponToRightHand(EquippedWeapon);
+    PlayEquipWeaponSound(EquippedWeapon);
 
     EquippedWeapon->SetOwner(BlasterCharacter);
     EquippedWeapon->SetHUDAmmo();
@@ -96,9 +132,6 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
     if (!IsControllerValid()) return;
     BlasterController->SetHUDCarriedAmmo(CarriedAmmo);
     BlasterController->SetHUDWeaponIcon(EquippedWeapon->WeaponIcon);
-    BlasterController->ShowHUDWeaponInfo();
-    BlasterController->ShowHUDGrenadeInfo();
-    BlasterController->SetHUDGrenadesAmount(Grenades);
 
     ReloadEmptyWeapon();
 }
@@ -109,17 +142,39 @@ void UCombatComponent::OnRep_EquippedWeapon(AWeapon* LastEquippedWeapon)
     BlasterCharacter->StopAllMontages();
     HandleWeaponSpecificLogic(LastEquippedWeapon, EquippedWeapon);
 
+    EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
     AttachWeaponToRightHand(EquippedWeapon);
-    PlayEquipWeaponSound();
+    PlayEquipWeaponSound(EquippedWeapon);
+    EquippedWeapon->SetHUDAmmo();
     BlasterCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
     BlasterCharacter->bUseControllerRotationYaw = true;
 
     // Set HUD Weapon info
     if (!IsControllerValid()) return;
     BlasterController->SetHUDWeaponIcon(EquippedWeapon->WeaponIcon);
-    BlasterController->ShowHUDWeaponInfo();
-    BlasterController->ShowHUDGrenadeInfo();
-    BlasterController->SetHUDGrenadesAmount(Grenades);
+}
+
+void UCombatComponent::EquipSecondaryWeapon(AWeapon* WeaponToEquip)
+{
+    if (!WeaponToEquip) return;
+
+    SecondaryWeapon = WeaponToEquip;
+    SecondaryWeapon->SetWeaponState(EWeaponState::EWS_EquippedSecondary);
+    AttachWeaponToBackpack(WeaponToEquip);
+    SecondaryWeapon->SetOwner(BlasterCharacter);
+}
+
+void UCombatComponent::OnRep_SecondaryWeapon(AWeapon* LastSecondaryWeapon)
+{
+    if (!SecondaryWeapon || !BlasterCharacter) return;
+
+    SecondaryWeapon->SetWeaponState(EWeaponState::EWS_EquippedSecondary);
+    AttachWeaponToBackpack(SecondaryWeapon);
+
+    if (!LastSecondaryWeapon)
+    {
+        PlayEquipWeaponSound(SecondaryWeapon);
+    }
 }
 
 void UCombatComponent::DropEquippedWeapon()
@@ -155,6 +210,17 @@ void UCombatComponent::AttachWeaponToLeftHand(AWeapon* WeaponToAttach)
     }
 }
 
+void UCombatComponent::AttachWeaponToBackpack(AWeapon* WeaponToAttach)
+{
+    if (!BlasterCharacter || !BlasterCharacter->GetMesh() || !WeaponToAttach) return;
+    const USkeletalMeshSocket* BackpackSocket = BlasterCharacter->GetMesh()->GetSocketByName(WeaponToAttach->SecondaryWeaponSocketName);
+    if (BackpackSocket && WeaponToAttach->GetWeaponMesh())
+    {
+        WeaponToAttach->GetWeaponMesh()->SetSimulatePhysics(false);
+        BackpackSocket->AttachActor(WeaponToAttach, BlasterCharacter->GetMesh());
+    }
+}
+
 void UCombatComponent::ReloadEmptyWeapon()
 {
     if (EquippedWeapon && EquippedWeapon->IsEmpty())
@@ -163,11 +229,11 @@ void UCombatComponent::ReloadEmptyWeapon()
     }
 }
 
-void UCombatComponent::PlayEquipWeaponSound()
+void UCombatComponent::PlayEquipWeaponSound(AWeapon* WeaponToEquip)
 {
-    if (BlasterCharacter && EquippedWeapon && EquippedWeapon->EquipSound)
+    if (BlasterCharacter && WeaponToEquip && WeaponToEquip->EquipSound)
     {
-        UGameplayStatics::PlaySoundAtLocation(this, EquippedWeapon->EquipSound, BlasterCharacter->GetActorLocation());
+        UGameplayStatics::PlaySoundAtLocation(this, WeaponToEquip->EquipSound, BlasterCharacter->GetActorLocation());
     }
 }
 
@@ -317,7 +383,8 @@ void UCombatComponent::SetAiming(bool bIsAiming)
     {
         BlasterCharacter->ShowSniperScopeWidget(bIsAiming);
         BlasterCharacter->bDrawCrosshair = !bIsAiming;
-        if (AHitScanWeapon* HitScanWeapon = Cast<AHitScanWeapon>(EquippedWeapon)) {
+        if (AHitScanWeapon* HitScanWeapon = Cast<AHitScanWeapon>(EquippedWeapon))
+        {
             HitScanWeapon->SetScatter(!bIsAiming);
         }
         if (IsControllerValid())
@@ -620,7 +687,7 @@ void UCombatComponent::Fire()
 void UCombatComponent::StartFireTimer()
 {
     if (!EquippedWeapon || !BlasterCharacter) return;
-    BlasterCharacter->GetWorldTimerManager().SetTimer(FireTimer, this, &UCombatComponent::FireTimerFinished, EquippedWeapon->FireDelay);
+    BlasterCharacter->GetWorldTimerManager().SetTimer(FireTimer, this, &ThisClass::FireTimerFinished, EquippedWeapon->FireDelay);
 }
 
 void UCombatComponent::FireTimerFinished()
@@ -637,6 +704,8 @@ void UCombatComponent::FireTimerFinished()
 bool UCombatComponent::CanFire()
 {
     if (!EquippedWeapon) return false;
+
+    // Shotgun shells
     if (!EquippedWeapon->IsEmpty() && bCanFire && CombatState == ECombatState::ECS_Reloading &&
         EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Shotgun)
     {

@@ -79,7 +79,11 @@ void ABlasterGameMode::OnMatchStateSet()
 
 bool ABlasterGameMode::ShouldSpawnAtStartSpot(AController* Player)
 {
-
+    // Test purposes (Start from player start)
+    if (GIsEditor)
+    {
+        return Super::ShouldSpawnAtStartSpot(Player);
+    }
     TArray<AActor*> PlayerStarts;
     TArray<AActor*> BlasterCharacters;
     UGameplayStatics::GetAllActorsOfClass(this, APlayerStart::StaticClass(), PlayerStarts);

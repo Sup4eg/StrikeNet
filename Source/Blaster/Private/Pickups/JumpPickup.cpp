@@ -1,20 +1,19 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "BlasterCharacter.h"
 #include "BuffComponent.h"
-#include "SpeedPickup.h"
+#include "BlasterCharacter.h"
+#include "JumpPickup.h"
 
-ASpeedPickup::ASpeedPickup()
+AJumpPickup::AJumpPickup()
 {
     bReplicates = true;
 }
 
-void ASpeedPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent,  //
-    AActor* OtherActor,                                                       //
-    UPrimitiveComponent* OtherComp,                                           //
-
-    int32 OtherBodyIndex,  //
-    bool bFromSweep,       //
+void AJumpPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent,  //
+    AActor* OtherActor,                                                      //
+    UPrimitiveComponent* OtherComp,                                          //
+    int32 OtherBodyIndex,                                                    //
+    bool bFromSweep,                                                         //
     const FHitResult& SweepResult)
 {
     Super::OnSphereOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
@@ -25,7 +24,7 @@ void ASpeedPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent,  //
         {
             if (UBuffComponent* BuffComp = BlasterCharacter->GetBuffComponent())
             {
-                BuffComp->BuffSpeed(BuffSpeedScaleFactor, SpeedBuffTime);
+                BuffComp->BuffJump(BuffJumpScaleFactor, JumpBuffTime);
                 Destroy();
             }
         }

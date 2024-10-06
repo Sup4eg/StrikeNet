@@ -26,6 +26,7 @@ class UParticleSystemComponent;
 class USoundBase;
 class ABlasterPlayerState;
 class UStaticMeshComponent;
+class UNiagaraComponent;
 
 UCLASS()
 class BLASTER_API ABlasterCharacter : public ACharacter, public IInteractWithCrosshairsInterface
@@ -44,8 +45,6 @@ public:
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
     virtual void PostInitializeComponents() override;
-
-    virtual void Landed(const FHitResult& Hit) override;
 
     void PlayFireMontage(bool bAiming);
     void PlayHitReactMontage(AActor* DamageCauser);
@@ -73,6 +72,8 @@ public:
     void ShowSniperScopeWidget(bool bShowScope);
 
     void UpdateHUDHealth();
+    void UpdateHUDShield();
+    void UpdateHUDAmmo();
 
     /**
      * Input mapping context
@@ -94,6 +95,8 @@ public:
     UPROPERTY(EditAnywhere, Category = "Movement")
     float AimWalkSpeed = 450.f;
 
+    void SpawnDefaultWeapon();
+
 protected:
     virtual void BeginPlay() override;
 
@@ -103,6 +106,8 @@ protected:
     // Poll for any relevan classess and initialize out HUD
     void PollInit();
 
+    void DropOrDestroyWeapon(AWeapon* Weapon);
+
     /** Callbacks for input */
     void Move(const FInputActionValue& Value);
     void Look(const FInputActionValue& Value);
@@ -110,6 +115,7 @@ protected:
     void EquipButtonPressed();
     void CrouchButtonPressed();
     void ReloadButtonPressed();
+    void SwapWeaponButtonPressed();
     void AimButtonPressed();
     void AimButtonReleased();
     void FireButtonPressed();
@@ -149,6 +155,9 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Input")
     UInputAction* ThrowGrenade;
 
+    UPROPERTY(EditAnywhere, Category = "Input")
+    UInputAction* SwapWeapon;
+
     UPROPERTY(Replicated, VisibleInstanceOnly)
     bool bGameplayDisabled = false;
 
@@ -159,8 +168,14 @@ private:
     UFUNCTION()
     void OnRep_Health();
 
+    UFUNCTION()
+    void OnRep_Shield();
+
     UFUNCTION(Server, Reliable)
     void ServerEquipButtonPressed();
+
+    UFUNCTION(Server, Reliable)
+    void ServerSwapButtonPressed();
 
     UFUNCTION(NetMulticast, Reliable)
     void MulticastHitReactMontage(AActor* DamageCauser);
@@ -250,11 +265,21 @@ private:
     /**
      * Player health
      */
-    UPROPERTY(EditAnywhere, Category = "Player Stats")
+    UPROPERTY(EditAnywhere, Category = "Player Stats", meta = (ClampMin = 1.f))
     float MaxHealth = 100.f;
 
     UPROPERTY(ReplicatedUsing = OnRep_Health, VisibleAnywhere, Category = "Player Stats")
     float Health = 100.f;
+
+    /**
+     * Player shield
+     */
+
+    UPROPERTY(EditAnywhere, Category = "Player Stats", meta = (ClampMin = 1.f))
+    float MaxShield = 100.f;
+
+    UPROPERTY(ReplicatedUsing = OnRep_Shield, EditAnywhere, Category = "Player Stats")
+    float Shield = 0.f;
 
     UPROPERTY()
     ABlasterPlayerController* BlasterPlayerController;
@@ -308,9 +333,21 @@ private:
     UPROPERTY(VisibleAnywhere)
     UStaticMeshComponent* AttachedGrenade;
 
+    /**
+     * Default Weapon
+     */
+
+    UPROPERTY(EditAnywhere)
+    TSubclassOf<AWeapon> DefaultWeaponClass;
+
+    // Last pickup effect
+    UPROPERTY()
+    UNiagaraComponent* PickupEffect;
+
 public:
     void SetOverlappingWeapon(AWeapon* Weapon);
     bool IsWeaponEquipped();
+    bool IsSecondaryWeapon();
     bool IsAiming();
     AWeapon* GetEquippedWeapon();
     FVector GetHitTarget() const;
@@ -326,6 +363,9 @@ public:
     FORCEINLINE float GetHealth() const { return Health; };
     FORCEINLINE void SetHealth(float Amount) { Health = Amount; };
     FORCEINLINE float GetMaxHealth() const { return MaxHealth; };
+    FORCEINLINE float GetShield() const { return Shield; };
+    FORCEINLINE void SetShield(float Amount) { Shield = Amount; };
+    FORCEINLINE float GetMaxShield() const { return MaxShield; };
     FORCEINLINE bool GetIsElimmed() const { return bElimmed; };
     FORCEINLINE UCombatComponent* GetCombatComponent() const { return CombatComp; };
     FORCEINLINE UBuffComponent* GetBuffComponent() const { return BuffComp; };
@@ -333,4 +373,6 @@ public:
     FORCEINLINE void SetIsGameplayDisabled(bool bDisable) { bGameplayDisabled = bDisable; };
     FORCEINLINE UAnimMontage* GetReloadMontage() const { return ReloadMontage; };
     FORCEINLINE UStaticMeshComponent* GetAttachedGrenade() const { return AttachedGrenade; };
+    FORCEINLINE UNiagaraComponent* GetPickupEffect() const { return PickupEffect; };
+    FORCEINLINE void SetPickupEffect(UNiagaraComponent* LastPickupEffect) { PickupEffect = LastPickupEffect; };
 };
