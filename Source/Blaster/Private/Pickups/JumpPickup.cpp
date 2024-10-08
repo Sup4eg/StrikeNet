@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "BuffComponent.h"
+#include "BuffComp.h"
 #include "BlasterCharacter.h"
 #include "JumpPickup.h"
 
@@ -22,7 +22,7 @@ void AJumpPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent,  //
     {
         if (IsBlasterCharacterValid(OtherActor))
         {
-            if (UBuffComponent* BuffComp = BlasterCharacter->GetBuffComponent())
+            if (UBuffComp* BuffComp = BlasterCharacter->GetBuffComponent())
             {
                 BuffComp->BuffJump(BuffJumpScaleFactor, JumpBuffTime);
                 Destroy();

@@ -118,7 +118,12 @@ private:
     void UpdateShotgunAmmoValues();
     void HandleWeaponSpecificLogic(AWeapon* LastWeapon, AWeapon* NewWeapon);
 
+    void SetSecondaryWeaponInvisible();
+    void SetEquippedWeaponInvisible();
+
     bool IsControllerValid();
+
+    bool IsInvisibilityActive() const;
 
     /**
      * Rep notifies

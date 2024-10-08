@@ -68,12 +68,16 @@ void APickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent,  //
 {
     if (OtherActor && OtherActor->ActorHasTag("BlasterCharacter"))
     {
-        if (PickupSound)
-        {
-            UGameplayStatics::PlaySoundAtLocation(this, PickupSound, GetActorLocation());
-        }
-
+        PlayPickupSound();
         HandleOverlappingCharacter(OtherActor);
+    }
+}
+
+void APickup::PlayPickupSound()
+{
+    if (PickupSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(this, PickupSound, GetActorLocation());
     }
 }
 

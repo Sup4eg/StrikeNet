@@ -66,6 +66,11 @@ void AWeapon::BeginPlay()
         AreaSphere->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnsphereOverlap);
         AreaSphere->OnComponentEndOverlap.AddDynamic(this, &ThisClass::OnSphereEndOverlap);
     }
+
+    if (GetWeaponMesh())
+    {
+        InitializeMaterials = GetWeaponMesh()->GetMaterials();
+    }
 }
 
 void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -237,6 +242,12 @@ void AWeapon::OnDropped()
     WeaponMesh->SetCustomDepthStencilValue(CUSTOM_DEPTH_BLUE);
     WeaponMesh->MarkRenderStateDirty();
     EnableCustomDepth(true);
+
+    if (bIsInvisible)
+    {
+        SetDefaultMaterial();
+        bIsInvisible = false;
+    }
 }
 
 bool AWeapon::IsEmpty()
@@ -247,6 +258,24 @@ bool AWeapon::IsEmpty()
 bool AWeapon::IsFull()
 {
     return Ammo == MagCapacity;
+}
+
+void AWeapon::SetMaterial(UMaterialInterface* NewMaterial)
+{
+    if (!GetWeaponMesh()) return;
+    for (int i = 0; i < InitializeMaterials.Num(); ++i)
+    {
+        GetWeaponMesh()->SetMaterial(i, NewMaterial);
+    }
+}
+
+void AWeapon::SetDefaultMaterial()
+{
+    if (!GetWeaponMesh()) return;
+    for (int i = 0; i < InitializeMaterials.Num(); ++i)
+    {
+        GetWeaponMesh()->SetMaterial(i, InitializeMaterials[i]);
+    }
 }
 
 void AWeapon::Dropped()

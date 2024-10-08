@@ -20,6 +20,7 @@
 #include "Sound/SoundBase.h"
 #include "DrawDebugHelpers.h"
 #include "Projectile.h"
+#include "BuffComp.h"
 #include "CombatComponent.h"
 
 UCombatComponent::UCombatComponent()
@@ -114,7 +115,7 @@ void UCombatComponent::SwapWeaponsTimerFinished()
 
 void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
 {
-    if (!WeaponToEquip) return;
+    if (!WeaponToEquip || !BlasterCharacter) return;
 
     HandleWeaponSpecificLogic(EquippedWeapon, WeaponToEquip);
     EquippedWeapon = WeaponToEquip;
@@ -129,10 +130,13 @@ void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
     SetCarriedAmmo();
 
     // Set HUD Weapon info
-    if (!IsControllerValid()) return;
-    BlasterController->SetHUDCarriedAmmo(CarriedAmmo);
-    BlasterController->SetHUDWeaponIcon(EquippedWeapon->WeaponIcon);
+    if (IsControllerValid())
+    {
+        BlasterController->SetHUDCarriedAmmo(CarriedAmmo);
+        BlasterController->SetHUDWeaponIcon(EquippedWeapon->WeaponIcon);
+    }
 
+    SetEquippedWeaponInvisible();
     ReloadEmptyWeapon();
 }
 
@@ -150,8 +154,12 @@ void UCombatComponent::OnRep_EquippedWeapon(AWeapon* LastEquippedWeapon)
     BlasterCharacter->bUseControllerRotationYaw = true;
 
     // Set HUD Weapon info
-    if (!IsControllerValid()) return;
-    BlasterController->SetHUDWeaponIcon(EquippedWeapon->WeaponIcon);
+    if (IsControllerValid())
+    {
+        BlasterController->SetHUDWeaponIcon(EquippedWeapon->WeaponIcon);
+    }
+
+    SetEquippedWeaponInvisible();
 }
 
 void UCombatComponent::EquipSecondaryWeapon(AWeapon* WeaponToEquip)
@@ -162,6 +170,8 @@ void UCombatComponent::EquipSecondaryWeapon(AWeapon* WeaponToEquip)
     SecondaryWeapon->SetWeaponState(EWeaponState::EWS_EquippedSecondary);
     AttachWeaponToBackpack(WeaponToEquip);
     SecondaryWeapon->SetOwner(BlasterCharacter);
+
+    SetSecondaryWeaponInvisible();
 }
 
 void UCombatComponent::OnRep_SecondaryWeapon(AWeapon* LastSecondaryWeapon)
@@ -171,9 +181,27 @@ void UCombatComponent::OnRep_SecondaryWeapon(AWeapon* LastSecondaryWeapon)
     SecondaryWeapon->SetWeaponState(EWeaponState::EWS_EquippedSecondary);
     AttachWeaponToBackpack(SecondaryWeapon);
 
+    SetSecondaryWeaponInvisible();
+
     if (!LastSecondaryWeapon)
     {
         PlayEquipWeaponSound(SecondaryWeapon);
+    }
+}
+
+void UCombatComponent::SetSecondaryWeaponInvisible()
+{
+    if (IsInvisibilityActive())
+    {
+        BlasterCharacter->GetBuffComponent()->SetDynamicMaterialToSecondaryWeapon();
+    }
+}
+
+void UCombatComponent::SetEquippedWeaponInvisible()
+{
+    if (IsInvisibilityActive())
+    {
+        BlasterCharacter->GetBuffComponent()->SetDynamicMaterialToEquippedWeapon();
     }
 }
 
@@ -771,4 +799,9 @@ bool UCombatComponent::HasEquippedWeaponKey()
 bool UCombatComponent::IsControllerValid()
 {
     return BlasterUtils::CastOrUseExistsActor<ABlasterPlayerController>(BlasterController, BlasterCharacter->GetController());
+}
+
+bool UCombatComponent::IsInvisibilityActive() const
+{
+    return BlasterCharacter && BlasterCharacter->GetBuffComponent() && BlasterCharacter->GetBuffComponent()->IsInvisibilityActive();
 }

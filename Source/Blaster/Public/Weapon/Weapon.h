@@ -16,6 +16,7 @@ class UTexture;
 class ABlasterCharacter;
 class ABlasterPlayerController;
 class USoundBase;
+class UMaterialInterface;
 
 UENUM(BlueprintType)
 enum class EWeaponState : uint8
@@ -99,6 +100,10 @@ public:
     UPROPERTY(EditAnywhere)
     FName SecondaryWeaponSocketName = "SecondaryWeaponSocket";
 
+    // For Invisibility effect
+    UPROPERTY(VisibleAnywhere)
+    bool bIsInvisible = false;
+
 protected:
     virtual void BeginPlay() override;
     virtual void OnWeaponStateSet();
@@ -175,10 +180,16 @@ private:
     UPROPERTY(EditAnywhere, Category = "Weapon Properties")
     EWeaponType WeaponType;
 
+    UPROPERTY(VisibleAnywhere);
+    TArray<UMaterialInterface*> InitializeMaterials;
+
 public:
     void SetWeaponState(EWeaponState State);
     bool IsEmpty();
     bool IsFull();
+
+    void SetMaterial(UMaterialInterface* NewMaterial);
+    void SetDefaultMaterial();
 
     FORCEINLINE USphereComponent* GetAreaSphere() const { return AreaSphere; }
     FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; };

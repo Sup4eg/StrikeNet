@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "BlasterCharacter.h"
-#include "BuffComponent.h"
+#include "BuffComp.h"
 #include "SpeedPickup.h"
 
 ASpeedPickup::ASpeedPickup()
@@ -12,9 +12,8 @@ ASpeedPickup::ASpeedPickup()
 void ASpeedPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent,  //
     AActor* OtherActor,                                                       //
     UPrimitiveComponent* OtherComp,                                           //
-
-    int32 OtherBodyIndex,  //
-    bool bFromSweep,       //
+    int32 OtherBodyIndex,                                                     //
+    bool bFromSweep,                                                          //
     const FHitResult& SweepResult)
 {
     Super::OnSphereOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
@@ -23,7 +22,7 @@ void ASpeedPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent,  //
     {
         if (IsBlasterCharacterValid(OtherActor))
         {
-            if (UBuffComponent* BuffComp = BlasterCharacter->GetBuffComponent())
+            if (UBuffComp* BuffComp = BlasterCharacter->GetBuffComponent())
             {
                 BuffComp->BuffSpeed(BuffSpeedScaleFactor, SpeedBuffTime);
                 Destroy();

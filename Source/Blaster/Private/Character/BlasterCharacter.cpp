@@ -11,7 +11,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "CombatComponent.h"
-#include "BuffComponent.h"
+#include "BuffComp.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "InputActionValue.h"
 #include "Engine/LocalPlayer.h"
@@ -61,7 +61,7 @@ ABlasterCharacter::ABlasterCharacter()
     CombatComp = CreateDefaultSubobject<UCombatComponent>("CombatComp");
     CombatComp->SetIsReplicated(true);
 
-    BuffComp = CreateDefaultSubobject<UBuffComponent>("BuffComp");
+    BuffComp = CreateDefaultSubobject<UBuffComp>("BuffComponent");
     BuffComp->SetIsReplicated(true);
 
     GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
@@ -75,6 +75,7 @@ ABlasterCharacter::ABlasterCharacter()
     MinNetUpdateFrequency = 33.f;
 
     DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>("DissolveTimelineComponent");
+    InvisibilityTimeline = CreateDefaultSubobject<UTimelineComponent>("InvisibilityTimelineComponent");
 
     AttachedGrenade = CreateDefaultSubobject<UStaticMeshComponent>("Attached Grenade");
     AttachedGrenade->SetupAttachment(GetMesh(), FName("GrenadeSocket"));
@@ -104,6 +105,8 @@ void ABlasterCharacter::BeginPlay()
     {
         AttachedGrenade->SetVisibility(false);
     }
+
+    InitializedMaterial = GetMesh()->GetMaterial(0);
 }
 
 void ABlasterCharacter::SpawnDefaultWeapon()
@@ -421,13 +424,7 @@ void ABlasterCharacter::MulticastElim_Implementation()
     PlayElimMontage();
 
     // Start Disolve effect
-    if (DissolveMaterialInstance)
-    {
-        DynamicDissolveMaterialInstance = UMaterialInstanceDynamic::Create(DissolveMaterialInstance, this);
-        GetMesh()->SetMaterial(0, DynamicDissolveMaterialInstance);
-        DynamicDissolveMaterialInstance->SetScalarParameterValue(TEXT("Dissolve"), -0.55f);
-        DynamicDissolveMaterialInstance->SetScalarParameterValue(TEXT("Glow"), 200.f);
-    }
+    SetDynamicDissolveMaterialInstance(-0.55f, 200.f);
     StartDissolve();
 
     if (CombatComp)
@@ -456,6 +453,18 @@ void ABlasterCharacter::MulticastElim_Implementation()
     if (IsAiming())
     {
         CombatComp->SetAiming(false);
+    }
+}
+
+void ABlasterCharacter::SetDynamicDissolveMaterialInstance(float Dissolve, float Glow)
+{
+    // Start Disolve effect
+    if (DissolveMaterialInstance && GetMesh())
+    {
+        DynamicDissolveMaterialInstance = UMaterialInstanceDynamic::Create(DissolveMaterialInstance, this);
+        GetMesh()->SetMaterial(0, DynamicDissolveMaterialInstance);
+        DynamicDissolveMaterialInstance->SetScalarParameterValue(TEXT("Dissolve"), Dissolve);
+        DynamicDissolveMaterialInstance->SetScalarParameterValue(TEXT("Glow"), Glow);
     }
 }
 
@@ -851,6 +860,30 @@ void ABlasterCharacter::SetCombatState(ECombatState NewCombatState)
 {
     if (!CombatComp) return;
     CombatComp->CombatState = NewCombatState;
+}
+
+AWeapon* ABlasterCharacter::GetEquippedWeapon() const
+{
+    if (!CombatComp) return nullptr;
+    return CombatComp->EquippedWeapon;
+}
+
+AWeapon* ABlasterCharacter::GetSecondaryWeapon() const
+{
+    if (!CombatComp) return nullptr;
+    return CombatComp->SecondaryWeapon;
+}
+
+void ABlasterCharacter::SetDefaultMaterial()
+{
+    if (!GetMesh()) return;
+    GetMesh()->SetMaterial(0, InitializedMaterial);
+}
+
+void ABlasterCharacter::SetMaterial(UMaterialInterface* NewMaterial)
+{
+    if (!GetMesh()) return;
+    GetMesh()->SetMaterial(0, NewMaterial);
 }
 
 bool ABlasterCharacter::IsControllerValid()

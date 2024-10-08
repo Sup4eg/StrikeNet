@@ -18,7 +18,7 @@ class UInputAction;
 class UWidgetComponent;
 class AWeapon;
 class UCombatComponent;
-class UBuffComponent;
+class UBuffComp;
 class ABlasterPlayerController;
 class UMaterialInstanceDynamic;
 class UMaterialInstance;
@@ -27,6 +27,7 @@ class USoundBase;
 class ABlasterPlayerState;
 class UStaticMeshComponent;
 class UNiagaraComponent;
+class UMaterialInterface;
 
 UCLASS()
 class BLASTER_API ABlasterCharacter : public ACharacter, public IInteractWithCrosshairsInterface
@@ -204,6 +205,8 @@ private:
 
     FName GetDirectionalHitReactSection(double Theta) const;
 
+    void SetDynamicDissolveMaterialInstance(float Dissolve, float Glow);
+
     UPROPERTY(VisibleAnywhere, Category = Camera)
     USpringArmComponent* CameraBoom;
 
@@ -213,11 +216,11 @@ private:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
     UCombatComponent* CombatComp;
 
-    UPROPERTY(VisibleAnywhere)
-    UBuffComponent* BuffComp;
-
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
     UWidgetComponent* OverheadWidget;
+
+    UPROPERTY(VisibleAnywhere)
+    UBuffComp* BuffComp;
 
     UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon, VisibleInstanceOnly)
     AWeapon* OverlappingWeapon;
@@ -298,6 +301,9 @@ private:
     UPROPERTY(VisibleAnywhere)
     UTimelineComponent* DissolveTimeline;
 
+    UPROPERTY(VisibleAnywhere)
+    UTimelineComponent* InvisibilityTimeline;
+
     FOnTimelineFloat DissolveTrack;
 
     UPROPERTY(EditAnywhere)
@@ -344,6 +350,9 @@ private:
     UPROPERTY()
     UNiagaraComponent* PickupEffect;
 
+    UPROPERTY(VisibleAnywhere)
+    UMaterialInterface* InitializedMaterial;
+
 public:
     void SetOverlappingWeapon(AWeapon* Weapon);
     bool IsWeaponEquipped();
@@ -353,6 +362,11 @@ public:
     FVector GetHitTarget() const;
     ECombatState GetCombatState() const;
     void SetCombatState(ECombatState NewCombatState);
+
+    AWeapon* GetEquippedWeapon() const;
+    AWeapon* GetSecondaryWeapon() const;
+    void SetDefaultMaterial();
+    void SetMaterial(UMaterialInterface* NewMaterial);
 
     FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; };
     FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; };
@@ -368,11 +382,12 @@ public:
     FORCEINLINE float GetMaxShield() const { return MaxShield; };
     FORCEINLINE bool GetIsElimmed() const { return bElimmed; };
     FORCEINLINE UCombatComponent* GetCombatComponent() const { return CombatComp; };
-    FORCEINLINE UBuffComponent* GetBuffComponent() const { return BuffComp; };
+    FORCEINLINE UBuffComp* GetBuffComponent() const { return BuffComp; };
     FORCEINLINE bool GetIsGameplayDisabled() const { return bGameplayDisabled; };
     FORCEINLINE void SetIsGameplayDisabled(bool bDisable) { bGameplayDisabled = bDisable; };
     FORCEINLINE UAnimMontage* GetReloadMontage() const { return ReloadMontage; };
     FORCEINLINE UStaticMeshComponent* GetAttachedGrenade() const { return AttachedGrenade; };
     FORCEINLINE UNiagaraComponent* GetPickupEffect() const { return PickupEffect; };
     FORCEINLINE void SetPickupEffect(UNiagaraComponent* LastPickupEffect) { PickupEffect = LastPickupEffect; };
+    FORCEINLINE UTimelineComponent* GetInvisibilityTimeLine() const { return InvisibilityTimeline; };
 };

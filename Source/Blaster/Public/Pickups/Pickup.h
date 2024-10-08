@@ -34,6 +34,8 @@ public:
 protected:
     virtual void BeginPlay() override;
 
+    virtual void PlayPickupSound();
+
     bool IsBlasterCharacterValid(AActor* OtherActor);
 
     UPROPERTY()
