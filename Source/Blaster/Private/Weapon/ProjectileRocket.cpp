@@ -58,7 +58,7 @@ void AProjectileRocket::OnHit(
 
     ExplodeDamage();
     StartDestoryTimer();
-    PlayFXAndSound(OtherActor);
+    SpawnImpactFXAndSound(Hit);
 
     if (ProjectileMesh)
     {

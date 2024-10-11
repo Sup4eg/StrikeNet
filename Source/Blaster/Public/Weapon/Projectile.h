@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "WeaponTypes.h"
 #include "Projectile.generated.h"
 
 class UStaticMeshComponent;
@@ -15,6 +16,7 @@ class UParticleSystem;
 class UParticleSystemComponent;
 class UPrimitiveComponent;
 class USoundBase;
+class UPhysicalMaterial;
 
 UCLASS()
 class BLASTER_API AProjectile : public AActor
@@ -36,29 +38,26 @@ protected:
 
     void ExplodeDamage();
 
-    void PlayFXAndSound(AActor* OtherActor);
+    virtual void SpawnImpactFXAndSound(const FHitResult& Hit);
+    virtual void SpawnImpactParticles(const FHitResult& FireHit, FImpactData& ImpactData);
+    virtual void SpawnImpactSound(const FHitResult& FireHit, FImpactData& ImpactData);
+    virtual void SpawnImpactDecal(const FHitResult& FireHit, FImpactData& ImpactData);
 
     UFUNCTION()
     virtual void OnHit(
         UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
     UFUNCTION(NetMulticast, Reliable)
-    void MulticastHit(AActor* OtherActor);
+    void MulticastHit(const FHitResult& Hit);
 
     UPROPERTY(EditAnywhere)
     float Damage = 20.f;
 
     UPROPERTY(EditAnywhere)
-    UParticleSystem* ImpactParticles;
+    FImpactData DefaultImpactData;
 
     UPROPERTY(EditAnywhere)
-    UParticleSystem* ImpactCharacterParticles;
-
-    UPROPERTY(EditAnywhere)
-    USoundBase* ImpactSound;
-
-    UPROPERTY(EditAnywhere)
-    USoundBase* ImpactCharacterSound;
+    TMap<UPhysicalMaterial*, FImpactData> ImpactDataMap;
 
     UPROPERTY(EditAnywhere)
     UBoxComponent* CollisionBox;
@@ -82,6 +81,8 @@ protected:
     float DamageOuterRadius = 500.f;
 
 private:
+    FImpactData GetImpactData(const FHitResult& FireHit);
+
     UPROPERTY(EditAnywhere)
     UParticleSystem* Tracer;
 

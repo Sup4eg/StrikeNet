@@ -9,6 +9,7 @@
 #include "Sound/SoundBase.h"
 #include "Particles/ParticleSystem.h"
 #include "GameFramework/DamageType.h"
+#include "Components/DecalComponent.h"
 #include "Shotgun.h"
 
 void AShotgun::Fire(const FVector& HitTarget)
@@ -34,7 +35,7 @@ void AShotgun::Fire(const FVector& HitTarget)
             if (FireHit.bBlockingHit)
             {
                 AddToHitMap(FireHit, HitMap);
-                SpawnImpactFXAndSound(FireHit);
+                Super::SpawnImpactFXAndSound(FireHit);
             }
         }
         ApplyMultipleDamage(HitMap, InstigatorController);
@@ -77,14 +78,10 @@ void AShotgun::AddToHitMap(FHitResult& FireHit, TMap<ABlasterCharacter*, uint32>
     }
 }
 
-void AShotgun::SpawnImpactFXAndSound(FHitResult& FireHit)
+void AShotgun::SpawnImpactSound(FHitResult& FireHit, FImpactData& ImpactData)
 {
-    if (ImpactParticles)
+    if (ImpactData.ImpactSound)
     {
-        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticles, FireHit.ImpactPoint, FireHit.ImpactNormal.Rotation());
-    }
-    if (HitSound)
-    {
-        UGameplayStatics::PlaySoundAtLocation(this, HitSound, FireHit.ImpactPoint, .5f, FMath::FRandRange(-.5f, .5f));
+        UGameplayStatics::PlaySoundAtLocation(this, ImpactData.ImpactSound, FireHit.ImpactPoint, .5f, FMath::FRandRange(-.5f, .5f));
     }
 }

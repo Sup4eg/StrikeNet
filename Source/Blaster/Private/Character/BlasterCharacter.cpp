@@ -32,6 +32,7 @@
 #include "BlasterUtils.h"
 #include "Weapontypes.h"
 #include "GameFramework/Pawn.h"
+#include "NiagaraComponent.h"
 #include "BlasterCharacter.h"
 
 ABlasterCharacter::ABlasterCharacter()
@@ -69,6 +70,7 @@ ABlasterCharacter::ABlasterCharacter()
     GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
     GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
     GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+    GetMesh()->SetReceivesDecals(false);
 
     TurningInPlace = ETurningInPlace::ETIP_NotTurning;
     NetUpdateFrequency = 66.f;
@@ -381,18 +383,6 @@ void ABlasterCharacter::OnRep_ReplicatedMovement()
     TimeSinceLastMovementReplication = 0.f;
 }
 
-void ABlasterCharacter::Elim()
-{
-    if (CombatComp)
-    {
-        DropOrDestroyWeapon(CombatComp->EquippedWeapon);
-        DropOrDestroyWeapon(CombatComp->SecondaryWeapon);
-    }
-
-    MulticastElim();
-    GetWorldTimerManager().SetTimer(ElimTimer, this, &ABlasterCharacter::ElimTimerFinished, ElimDelay);
-}
-
 void ABlasterCharacter::DropOrDestroyWeapon(AWeapon* Weapon)
 {
     if (!Weapon) return;
@@ -407,9 +397,24 @@ void ABlasterCharacter::DropOrDestroyWeapon(AWeapon* Weapon)
     }
 }
 
+void ABlasterCharacter::Elim()
+{
+    SetCombatState(ECombatState::ECS_Unoccupied);
+
+    if (CombatComp)
+    {
+        DropOrDestroyWeapon(CombatComp->EquippedWeapon);
+        DropOrDestroyWeapon(CombatComp->SecondaryWeapon);
+    }
+
+    MulticastElim();
+    GetWorldTimerManager().SetTimer(ElimTimer, this, &ABlasterCharacter::ElimTimerFinished, ElimDelay);
+}
+
 void ABlasterCharacter::MulticastElim_Implementation()
 {
 
+    StopAllMontages();
     bElimmed = true;
 
     if (IsControllerValid())
@@ -418,6 +423,8 @@ void ABlasterCharacter::MulticastElim_Implementation()
         BlasterPlayerController->HideHUDWeaponInfo();
         BlasterPlayerController->HideHUDGrenadeInfo();
         BlasterPlayerController->ShowHUDCharacterOverlay();
+        BlasterPlayerController->SetHUDHealth(0, GetMaxHealth());
+        BlasterPlayerController->SetHUDShield(0, GetMaxShield());
         SetIsGameplayDisabled(true);
     }
 
@@ -453,6 +460,17 @@ void ABlasterCharacter::MulticastElim_Implementation()
     if (IsAiming())
     {
         CombatComp->SetAiming(false);
+    }
+
+    // StopInvis
+    if (BuffComp->IsInvisibilityActive())
+    {
+        GetWorldTimerManager().ClearTimer(BuffComp->InvisibilityBuffTimer);
+    }
+
+    if (PickupEffect)
+    {
+        PickupEffect->DeactivateImmediate();
     }
 }
 
@@ -591,8 +609,8 @@ void ABlasterCharacter::Look(const FInputActionValue& Value)
 {
     if (!Controller) return;
     const FVector2D LookAxisVector = Value.Get<FVector2D>();
-    AddControllerYawInput(LookAxisVector.X);
-    AddControllerPitchInput(LookAxisVector.Y);
+    AddControllerYawInput(LookAxisVector.X * CurrentSensitivity);
+    AddControllerPitchInput(LookAxisVector.Y * CurrentSensitivity);
 }
 
 void ABlasterCharacter::Jump()

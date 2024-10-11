@@ -171,6 +171,9 @@ private:
     UPROPERTY(EditAnywhere, Category = "Weapon Properties")
     int32 MagCapacity;
 
+    UPROPERTY(EditAnywhere, Category = "Weapon Properties")
+    float AllowedGapToWall = 60.f;
+
     UPROPERTY()
     ABlasterCharacter* BlasterOwnerCharacter;
 
@@ -182,6 +185,22 @@ private:
 
     UPROPERTY(VisibleAnywhere);
     TArray<UMaterialInterface*> InitializeMaterials;
+
+    UPROPERTY(EditAnywhere)
+    float AimSensitivity = 0.5f;
+
+    UPROPERTY(EditAnywhere, Category = "Sine Parameters")
+    float Amplitude = 0.5f;
+
+    UPROPERTY(EditAnywhere, Category = "Sine Parameters")
+    float TimeConstant = 5.f;
+
+    float RunningTime;
+
+    float TransformedSin();
+
+    UPROPERTY(EditAnywhere)
+    bool bIsHovering = true;
 
 public:
     void SetWeaponState(EWeaponState State);
@@ -198,4 +217,7 @@ public:
     FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; };
     FORCEINLINE int32 GetAmmo() const { return Ammo; };
     FORCEINLINE int32 GetMagCapacity() const { return MagCapacity; };
+    FORCEINLINE float GetAllowedGapToWall() const { return AllowedGapToWall; };
+    FORCEINLINE float GetAimSensitivity() const { return AimSensitivity; };
+    FORCEINLINE void SetIsHovering(bool IsHovering) { bIsHovering = IsHovering; };
 };

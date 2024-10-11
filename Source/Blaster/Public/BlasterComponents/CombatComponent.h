@@ -125,12 +125,13 @@ private:
 
     bool IsInvisibilityActive() const;
 
+    bool IsCloseToWall();
+
     /**
      * Rep notifies
      */
 
-    UFUNCTION()
-    void OnRep_CombatState();
+    UFUNCTION() void OnRep_CombatState();
 
     UFUNCTION()
     void OnRep_CarriedAmmo();
@@ -199,34 +200,36 @@ private:
     int32 CarriedAmmo;
 
     UPROPERTY(EditAnywhere)
-    int32 MaxARAmmo = 60;
+    int32 StartingARAmmo = 60;
 
     UPROPERTY(EditAnywhere)
-    int32 MaxRocketAmmo = 8;
+    int32 StartingRocketAmmo = 8;
 
     UPROPERTY(EditAnywhere)
-    int32 MaxPistolAmmo = 30;
+    int32 StartingPistolAmmo = 30;
 
     UPROPERTY(EditAnywhere)
-    int32 MaxSMGAmmo = 60;
+    int32 StartingSMGAmmo = 60;
 
     UPROPERTY(EditAnywhere)
-    int32 MaxShotgunAmmo = 10;
+    int32 StartingShotgunAmmo = 10;
 
     UPROPERTY(EditAnywhere)
-    int32 MaxSniperRifleAmmo = 6;
+    int32 StartingSniperRifleAmmo = 6;
 
     UPROPERTY(EditAnywhere)
-    int32 MaxGrenadeLauncherAmmo = 8;
+    int32 StartingGrenadeLauncherAmmo = 8;
 
     UPROPERTY(ReplicatedUsing = OnRep_Grenades)
     int32 Grenades = 4;
 
     UPROPERTY(EditAnywhere, meta = (ClampMin = "4"))
-    int32 MaxGrenades = 4;
+    int32 StartingGrenades = 4;
+
+    UPROPERTY(EditDefaultsOnly)
+    uint32 MaxAmmo = 500;
 
     TMap<EWeaponType, int32> CarriedAmmoMap;
-    TMap<EWeaponType, int32> MaxAmmoMap;
 
     UPROPERTY(EditDefaultsOnly)
     TMap<EWeaponType, FName> WeaponTypesToMontageSections;

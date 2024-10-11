@@ -4,6 +4,9 @@
 #include "Components/StaticMeshComponent.h"
 #include "Sound/SoundBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
+#include "DrawDebugHelpers.h"
+#include "Components/DecalComponent.h"
 #include "ProjectileGrenade.h"
 
 AProjectileGrenade::AProjectileGrenade()
@@ -39,6 +42,42 @@ void AProjectileGrenade::OnBounce(const FHitResult& ImpactResult, const FVector&
 void AProjectileGrenade::DestroyTimerFinished()
 {
     ExplodeDamage();
-    MulticastHit(nullptr);
+    MulticastHit(GetClosestResultToExplosion());
     Super::DestroyTimerFinished();
+}
+
+FHitResult AProjectileGrenade::GetClosestResultToExplosion()
+{
+    TArray<FHitResult> HitResults;
+    FCollisionQueryParams QueryParams;
+    QueryParams.AddIgnoredActor(this);
+
+    bool bHit = GetWorld()->SweepMultiByChannel(HitResults,  //
+        GetActorLocation(),                                  //
+        GetActorLocation(),                                  //
+        FQuat::Identity,                                     //
+        ECC_Visibility,                                      //
+        FCollisionShape::MakeSphere(TraceDecalRadius),       //
+        QueryParams);
+
+    FHitResult ClosestResultToExplosion;
+    ClosestResultToExplosion.bBlockingHit = false;
+    float ClosestDistanceToActor = 10000.f;
+
+    if (bHit)
+    {
+        for (const FHitResult& Hit : HitResults)
+        {
+            if (Hit.GetActor() && Hit.bBlockingHit)
+            {
+                if (FVector::Dist(GetActorLocation(), Hit.ImpactPoint) < ClosestDistanceToActor)
+                {
+                    ClosestDistanceToActor = FVector::Dist(GetActorLocation(), Hit.ImpactPoint);
+                    ClosestResultToExplosion = Hit;
+                }
+            }
+        }
+    }
+
+    return ClosestResultToExplosion;
 }

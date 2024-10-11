@@ -8,7 +8,7 @@ public class Blaster : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.NoSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "Niagara" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "Niagara", "PhysicsCore" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {
 		 });
@@ -24,7 +24,8 @@ public class Blaster : ModuleRules
 			"Blaster/Public/Interfaces",
 			"Blaster/Public/PlayerState",
 			"Blaster/Public/GameState",
-			"Blaster/Public/Pickups"
+			"Blaster/Public/Pickups",
+			"Blaster/Public/LevelActors"
 		});
 	}
 }

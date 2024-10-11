@@ -76,8 +76,6 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 {
     if (!BlasterCharacter || !WeaponToEquip) return;
-    BlasterCharacter->StopAllMontages();
-    CombatState = ECombatState::ECS_Unoccupied;
 
     if (EquippedWeapon && !SecondaryWeapon)
     {
@@ -117,6 +115,10 @@ void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
 {
     if (!WeaponToEquip || !BlasterCharacter) return;
 
+    BlasterCharacter->StopAllMontages();
+    CombatState = ECombatState::ECS_Unoccupied;
+
+    WeaponToEquip->SetIsHovering(false);
     HandleWeaponSpecificLogic(EquippedWeapon, WeaponToEquip);
     EquippedWeapon = WeaponToEquip;
     EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
@@ -143,6 +145,7 @@ void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
 void UCombatComponent::OnRep_EquippedWeapon(AWeapon* LastEquippedWeapon)
 {
     if (!EquippedWeapon || !BlasterCharacter) return;
+    EquippedWeapon->SetIsHovering(false);
     BlasterCharacter->StopAllMontages();
     HandleWeaponSpecificLogic(LastEquippedWeapon, EquippedWeapon);
 
@@ -165,6 +168,9 @@ void UCombatComponent::OnRep_EquippedWeapon(AWeapon* LastEquippedWeapon)
 void UCombatComponent::EquipSecondaryWeapon(AWeapon* WeaponToEquip)
 {
     if (!WeaponToEquip) return;
+    WeaponToEquip->SetIsHovering(false);
+    BlasterCharacter->StopAllMontages();
+    CombatState = ECombatState::ECS_Unoccupied;
 
     SecondaryWeapon = WeaponToEquip;
     SecondaryWeapon->SetWeaponState(EWeaponState::EWS_EquippedSecondary);
@@ -177,7 +183,8 @@ void UCombatComponent::EquipSecondaryWeapon(AWeapon* WeaponToEquip)
 void UCombatComponent::OnRep_SecondaryWeapon(AWeapon* LastSecondaryWeapon)
 {
     if (!SecondaryWeapon || !BlasterCharacter) return;
-
+    SecondaryWeapon->SetIsHovering(false);
+    BlasterCharacter->StopAllMontages();
     SecondaryWeapon->SetWeaponState(EWeaponState::EWS_EquippedSecondary);
     AttachWeaponToBackpack(SecondaryWeapon);
 
@@ -242,7 +249,7 @@ void UCombatComponent::AttachWeaponToBackpack(AWeapon* WeaponToAttach)
 {
     if (!BlasterCharacter || !BlasterCharacter->GetMesh() || !WeaponToAttach) return;
     const USkeletalMeshSocket* BackpackSocket = BlasterCharacter->GetMesh()->GetSocketByName(WeaponToAttach->SecondaryWeaponSocketName);
-    if (BackpackSocket && WeaponToAttach->GetWeaponMesh())
+    if (BackpackSocket && WeaponToAttach->GetWeaponMesh() && WeaponToAttach->GetAreaSphere())
     {
         WeaponToAttach->GetWeaponMesh()->SetSimulatePhysics(false);
         BackpackSocket->AttachActor(WeaponToAttach, BlasterCharacter->GetMesh());
@@ -407,6 +414,7 @@ void UCombatComponent::SetAiming(bool bIsAiming)
     bAiming = bIsAiming;
     ServerSetAiming(bIsAiming);
     BlasterCharacter->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? BlasterCharacter->AimWalkSpeed : BlasterCharacter->BaseWalkSpeed;
+    BlasterCharacter->SetCurrentSensitivity(bIsAiming ? EquippedWeapon->GetAimSensitivity() : 1.f);
     if (BlasterCharacter->IsLocallyControlled() && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_SniperRifle)
     {
         BlasterCharacter->ShowSniperScopeWidget(bIsAiming);
@@ -500,9 +508,9 @@ void UCombatComponent::ServerLaunchGranade_Implementation(const FVector_NetQuant
 
 void UCombatComponent::PickupAmmo(EWeaponType WeaponType, uint32 AmmoAmount)
 {
-    if (CarriedAmmoMap.Contains(WeaponType) && MaxAmmoMap.Contains(WeaponType))
+    if (CarriedAmmoMap.Contains(WeaponType))
     {
-        CarriedAmmoMap[WeaponType] = FMath::Clamp(CarriedAmmoMap[WeaponType] + AmmoAmount, 0, MaxAmmoMap[WeaponType]);
+        CarriedAmmoMap[WeaponType] = FMath::Clamp(CarriedAmmoMap[WeaponType] + AmmoAmount, 0, MaxAmmo);
         SetCarriedAmmo();
         if (IsControllerValid())
         {
@@ -614,7 +622,7 @@ void UCombatComponent::ThrowGrenade()
     }
     if (BlasterCharacter && BlasterCharacter->HasAuthority())
     {
-        Grenades = FMath::Clamp(Grenades - 1, 0, MaxGrenades);
+        Grenades = FMath::Clamp(Grenades - 1, 0, StartingGrenades);
         UpdateHUDGrenades();
     }
 }
@@ -629,7 +637,7 @@ void UCombatComponent::ServerThrowGrenade_Implementation()
         AttachWeaponToLeftHand(EquippedWeapon);
         ShowAttachedGrenade(true);
     }
-    Grenades = FMath::Clamp(Grenades - 1, 0, MaxGrenades);
+    Grenades = FMath::Clamp(Grenades - 1, 0, StartingGrenades);
     UpdateHUDGrenades();
 }
 
@@ -712,6 +720,24 @@ void UCombatComponent::Fire()
     }
 }
 
+bool UCombatComponent::IsCloseToWall()
+{
+    if (!BlasterCharacter || !EquippedWeapon) return true;
+    FVector Start = BlasterCharacter->GetActorLocation();
+
+    FHitResult HitResult;
+    FCollisionQueryParams CollisionParams;
+    CollisionParams.AddIgnoredActor(BlasterCharacter);
+    CollisionParams.AddIgnoredActor(EquippedWeapon);
+    GetWorld()->LineTraceSingleByChannel(HitResult, Start, HitTarget, ECC_Visibility, CollisionParams);
+
+    if (HitResult.bBlockingHit && (HitResult.ImpactPoint - Start).Size() <= EquippedWeapon->GetAllowedGapToWall())
+    {
+        return true;
+    }
+    return false;
+}
+
 void UCombatComponent::StartFireTimer()
 {
     if (!EquippedWeapon || !BlasterCharacter) return;
@@ -731,7 +757,7 @@ void UCombatComponent::FireTimerFinished()
 
 bool UCombatComponent::CanFire()
 {
-    if (!EquippedWeapon) return false;
+    if (!EquippedWeapon || IsCloseToWall()) return false;
 
     // Shotgun shells
     if (!EquippedWeapon->IsEmpty() && bCanFire && CombatState == ECombatState::ECS_Reloading &&
@@ -744,21 +770,13 @@ bool UCombatComponent::CanFire()
 
 void UCombatComponent::InitializeCarriedAmmo()
 {
-    CarriedAmmoMap.Emplace(EWeaponType::EWT_AssaultRifle, MaxARAmmo);
-    CarriedAmmoMap.Emplace(EWeaponType::EWT_RocketLauncher, MaxRocketAmmo);
-    CarriedAmmoMap.Emplace(EWeaponType::EWT_Pistol, MaxPistolAmmo);
-    CarriedAmmoMap.Emplace(EWeaponType::EWT_SMG, MaxSMGAmmo);
-    CarriedAmmoMap.Emplace(EWeaponType::EWT_Shotgun, MaxShotgunAmmo);
-    CarriedAmmoMap.Emplace(EWeaponType::EWT_SniperRifle, MaxSniperRifleAmmo);
-    CarriedAmmoMap.Emplace(EWeaponType::EWT_GrenadeLauncher, MaxGrenadeLauncherAmmo);
-
-    MaxAmmoMap.Emplace(EWeaponType::EWT_AssaultRifle, MaxARAmmo);
-    MaxAmmoMap.Emplace(EWeaponType::EWT_RocketLauncher, MaxRocketAmmo);
-    MaxAmmoMap.Emplace(EWeaponType::EWT_Pistol, MaxPistolAmmo);
-    MaxAmmoMap.Emplace(EWeaponType::EWT_SMG, MaxSMGAmmo);
-    MaxAmmoMap.Emplace(EWeaponType::EWT_Shotgun, MaxShotgunAmmo);
-    MaxAmmoMap.Emplace(EWeaponType::EWT_SniperRifle, MaxSniperRifleAmmo);
-    MaxAmmoMap.Emplace(EWeaponType::EWT_GrenadeLauncher, MaxGrenadeLauncherAmmo);
+    CarriedAmmoMap.Emplace(EWeaponType::EWT_AssaultRifle, StartingARAmmo);
+    CarriedAmmoMap.Emplace(EWeaponType::EWT_RocketLauncher, StartingRocketAmmo);
+    CarriedAmmoMap.Emplace(EWeaponType::EWT_Pistol, StartingPistolAmmo);
+    CarriedAmmoMap.Emplace(EWeaponType::EWT_SMG, StartingSMGAmmo);
+    CarriedAmmoMap.Emplace(EWeaponType::EWT_Shotgun, StartingShotgunAmmo);
+    CarriedAmmoMap.Emplace(EWeaponType::EWT_SniperRifle, StartingSniperRifleAmmo);
+    CarriedAmmoMap.Emplace(EWeaponType::EWT_GrenadeLauncher, StartingGrenadeLauncherAmmo);
 }
 
 void UCombatComponent::SetCarriedAmmo()

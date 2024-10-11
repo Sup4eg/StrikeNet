@@ -4,10 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "Weapon.h"
+#include "Weapontypes.h"
 #include "HitScanWeapon.generated.h"
 
 class UParticleSystem;
 class USoundBase;
+class UPhysicalMaterial;
 
 UCLASS()
 class BLASTER_API AHitScanWeapon : public AWeapon
@@ -20,12 +22,18 @@ public:
 protected:
     FVector TraceEndWithScatter(const FVector& TraceStart, const FVector& HitTarget);
     void WeaponTraceHit(const FVector& TraceStart, const FVector& HitTarget, FHitResult& OutHit);
+    virtual void SpawnImpactFXAndSound(FHitResult& FireHit);
+    virtual void SpawnImpactParticles(FHitResult& FireHit, FImpactData& ImpactData);
+    virtual void SpawnImpactSound(FHitResult& FireHit, FImpactData& ImpactData);
+    virtual void SpawnImpactDecal(FHitResult& FireHit, FImpactData& ImpactData);
+
+    FImpactData GetImpactData(FHitResult& FireHit);
 
     UPROPERTY(EditAnywhere)
-    UParticleSystem* ImpactParticles;
+    FImpactData DefaultImpactData;
 
     UPROPERTY(EditAnywhere)
-    USoundBase* HitSound;
+    TMap<UPhysicalMaterial*, FImpactData> ImpactDataMap;
 
     UPROPERTY(EditAnywhere)
     float Damage = 20.f;

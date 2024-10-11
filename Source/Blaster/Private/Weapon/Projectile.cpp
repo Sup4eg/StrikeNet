@@ -3,6 +3,7 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/DamageType.h"
 #include "Components/BoxComponent.h"
+#include "Components/DecalComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
@@ -11,6 +12,7 @@
 #include "Engine/World.h"
 #include "Sound/SoundBase.h"
 #include "TimerManager.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
 #include "Blaster.h"
 #include "Projectile.h"
 
@@ -45,7 +47,7 @@ void AProjectile::BeginPlay()
     {
         CollisionBox->OnComponentHit.AddDynamic(this, &ThisClass::OnHit);
         CollisionBox->IgnoreActorWhenMoving(Owner, true);
-
+        CollisionBox->bReturnMaterialOnMove = true;
         SetLifeSpan(LifeSpan);
     }
 }
@@ -58,13 +60,13 @@ void AProjectile::Tick(float DeltaTime)
 void AProjectile::OnHit(
     UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-    MulticastHit(OtherActor);
+    MulticastHit(Hit);
     Destroy();
 }
 
-void AProjectile::MulticastHit_Implementation(AActor* OtherActor)
+void AProjectile::MulticastHit_Implementation(const FHitResult& Hit)
 {
-    PlayFXAndSound(OtherActor);
+    SpawnImpactFXAndSound(Hit);
 }
 
 void AProjectile::SpawnTrailSystem()
@@ -115,20 +117,60 @@ void AProjectile::DestroyTimerFinished()
     Destroy();
 }
 
-void AProjectile::PlayFXAndSound(AActor* OtherActor)
+void AProjectile::SpawnImpactFXAndSound(const FHitResult& FireHit)
 {
-    if (OtherActor &&                                   //
-        OtherActor->ActorHasTag("BlasterCharacter") &&  //
-        OtherActor != GetOwner() &&                     //
-        ImpactCharacterParticles &&                     //
-        ImpactCharacterSound)
+    FImpactData ImpactData = GetImpactData(FireHit);
+    SpawnImpactParticles(FireHit, ImpactData);
+    SpawnImpactSound(FireHit, ImpactData);
+    SpawnImpactDecal(FireHit, ImpactData);
+}
+
+void AProjectile::SpawnImpactParticles(const FHitResult& FireHit, FImpactData& ImpactData)
+{
+    if (ImpactData.ImpactParticles && GetWorld())
     {
-        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactCharacterParticles, GetActorTransform());
-        UGameplayStatics::PlaySoundAtLocation(this, ImpactCharacterSound, GetActorLocation());
+        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactData.ImpactParticles, GetActorLocation());
     }
-    else if (ImpactParticles && ImpactSound)
+}
+
+void AProjectile::SpawnImpactSound(const FHitResult& FireHit, FImpactData& ImpactData)
+{
+    if (ImpactData.ImpactSound)
     {
-        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticles, GetActorTransform());
-        UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation());
+        UGameplayStatics::PlaySoundAtLocation(this, ImpactData.ImpactSound, GetActorLocation());
     }
+}
+
+void AProjectile::SpawnImpactDecal(const FHitResult& FireHit, FImpactData& ImpactData)
+{
+    if (FireHit.bBlockingHit && ImpactData.DecalData.Material && GetWorld())
+    {
+        UDecalComponent* DecalComponent = UGameplayStatics::SpawnDecalAtLocation(GetWorld(),  //
+            ImpactData.DecalData.Material,                                                    //
+            ImpactData.DecalData.Size,                                                        //
+            FireHit.ImpactPoint,                                                              //
+            FireHit.ImpactNormal.Rotation());
+
+        if (DecalComponent)
+        {
+            DecalComponent->SetFadeScreenSize(0.f);
+            DecalComponent->SetFadeOut(ImpactData.DecalData.LifeTime, ImpactData.DecalData.FadeOutTime);
+        }
+    }
+}
+
+FImpactData AProjectile::GetImpactData(const FHitResult& FireHit)
+{
+    FImpactData ImpactData = DefaultImpactData;
+
+    if (FireHit.PhysMaterial.IsValid())
+    {
+        UPhysicalMaterial* PhysMat = FireHit.PhysMaterial.Get();
+        if (ImpactDataMap.Contains(PhysMat))
+        {
+            ImpactData = ImpactDataMap[PhysMat];
+        }
+    }
+
+    return ImpactData;
 }

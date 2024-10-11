@@ -25,6 +25,11 @@ protected:
     virtual void DestroyTimerFinished() override;
 
 private:
+    FHitResult GetClosestResultToExplosion();
+
     UPROPERTY(EditAnywhere)
     USoundBase* BounceSound;
+
+    UPROPERTY(EditAnywhere)
+    float TraceDecalRadius = 100.f;
 };

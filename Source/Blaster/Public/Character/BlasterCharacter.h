@@ -98,6 +98,8 @@ public:
 
     void SpawnDefaultWeapon();
 
+    bool IsControllerValid();
+
 protected:
     virtual void BeginPlay() override;
 
@@ -198,8 +200,6 @@ private:
 
     UFUNCTION()
     void ElimTimerFinished();
-
-    bool IsControllerValid();
 
     double GetDirectionalHitReactAngle(const FVector& ImpactPoint) const;
 
@@ -353,6 +353,8 @@ private:
     UPROPERTY(VisibleAnywhere)
     UMaterialInterface* InitializedMaterial;
 
+    float CurrentSensitivity = 1.f;
+
 public:
     void SetOverlappingWeapon(AWeapon* Weapon);
     bool IsWeaponEquipped();
@@ -390,4 +392,6 @@ public:
     FORCEINLINE UNiagaraComponent* GetPickupEffect() const { return PickupEffect; };
     FORCEINLINE void SetPickupEffect(UNiagaraComponent* LastPickupEffect) { PickupEffect = LastPickupEffect; };
     FORCEINLINE UTimelineComponent* GetInvisibilityTimeLine() const { return InvisibilityTimeline; };
+    FORCEINLINE void SetCurrentSensitivity(float NewSensitivity) { CurrentSensitivity = NewSensitivity; };
+    FORCEINLINE ABlasterPlayerController* GetBlasterPlayerController() const { return BlasterPlayerController; };
 };

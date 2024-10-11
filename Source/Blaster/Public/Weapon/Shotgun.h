@@ -14,10 +14,12 @@ class BLASTER_API AShotgun : public AHitScanWeapon
 public:
     virtual void Fire(const FVector& HitTarget) override;
 
+protected:
+    virtual void SpawnImpactSound(FHitResult& FireHit, FImpactData& ImpactData) override;
+
 private:
     void ApplyMultipleDamage(TMap<ABlasterCharacter*, uint32>& HitMap, AController* InstigatorController);
     void AddToHitMap(FHitResult& FireHit, TMap<ABlasterCharacter*, uint32>& OutHitMap);
-    void SpawnImpactFXAndSound(FHitResult& FireHit);
 
     UPROPERTY(EditAnywhere, Category = "Weapon Scatter")
     uint32 NumberOfPellets = 10;

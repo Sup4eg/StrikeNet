@@ -12,6 +12,8 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "Sound/SoundBase.h"
 #include "DrawDebugHelpers.h"
+#include "Components/DecalComponent.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
 #include "WeaponTypes.h"
 #include "HitScanWeapon.h"
 
@@ -40,14 +42,7 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
                     UGameplayStatics::ApplyDamage(BlasterCharacter, Damage, InstigatorController, this, UDamageType::StaticClass());
                 }
             }
-            if (ImpactParticles)
-            {
-                UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticles, FireHit.ImpactPoint, FireHit.ImpactNormal.Rotation());
-            }
-            if (HitSound)
-            {
-                UGameplayStatics::PlaySoundAtLocation(this, HitSound, FireHit.ImpactPoint);
-            }
+            SpawnImpactFXAndSound(FireHit);
         }
 
         if (MuzzleFlash)
@@ -64,8 +59,12 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 void AHitScanWeapon::WeaponTraceHit(const FVector& TraceStart, const FVector& HitTarget, FHitResult& OutHit)
 {
     if (!GetWorld()) return;
+
+    FCollisionQueryParams Params;
+    Params.bReturnPhysicalMaterial = true;
+
     FVector TraceEnd = bUseScatter ? TraceEndWithScatter(TraceStart, HitTarget) : TraceStart + (HitTarget - TraceStart) * 1.25f;
-    GetWorld()->LineTraceSingleByChannel(OutHit, TraceStart, TraceEnd, ECollisionChannel::ECC_Visibility);
+    GetWorld()->LineTraceSingleByChannel(OutHit, TraceStart, TraceEnd, ECollisionChannel::ECC_Visibility, Params);
     FVector BeamEnd = TraceEnd;
     if (OutHit.bBlockingHit)
     {
@@ -80,6 +79,67 @@ void AHitScanWeapon::WeaponTraceHit(const FVector& TraceStart, const FVector& Hi
             Beam->SetVectorParameter("Target", BeamEnd);
         }
     }
+}
+
+void AHitScanWeapon::SpawnImpactFXAndSound(FHitResult& FireHit)
+{
+
+    FImpactData ImpactData = GetImpactData(FireHit);
+
+    SpawnImpactParticles(FireHit, ImpactData);
+    SpawnImpactSound(FireHit, ImpactData);
+    SpawnImpactDecal(FireHit, ImpactData);
+}
+
+void AHitScanWeapon::SpawnImpactParticles(FHitResult& FireHit, FImpactData& ImpactData)
+{
+    if (ImpactData.ImpactParticles && GetWorld())
+    {
+        UGameplayStatics::SpawnEmitterAtLocation(
+            GetWorld(), ImpactData.ImpactParticles, FireHit.ImpactPoint, FireHit.ImpactNormal.Rotation());
+    }
+}
+
+void AHitScanWeapon::SpawnImpactSound(FHitResult& FireHit, FImpactData& ImpactData)
+{
+    if (ImpactData.ImpactSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(this, ImpactData.ImpactSound, FireHit.ImpactPoint);
+    }
+}
+
+void AHitScanWeapon::SpawnImpactDecal(FHitResult& FireHit, FImpactData& ImpactData)
+{
+    if (ImpactData.DecalData.Material && GetWorld())
+    {
+        UDecalComponent* DecalComponent = UGameplayStatics::SpawnDecalAtLocation(GetWorld(),  //
+            ImpactData.DecalData.Material,                                                    //
+            ImpactData.DecalData.Size,                                                        //
+            FireHit.ImpactPoint,                                                              //
+            FireHit.ImpactNormal.Rotation());
+
+        if (DecalComponent)
+        {
+            DecalComponent->SetFadeScreenSize(0.f);
+            DecalComponent->SetFadeOut(ImpactData.DecalData.LifeTime, ImpactData.DecalData.FadeOutTime);
+        }
+    }
+}
+
+FImpactData AHitScanWeapon::GetImpactData(FHitResult& FireHit)
+{
+    FImpactData ImpactData = DefaultImpactData;
+
+    if (FireHit.PhysMaterial.IsValid())
+    {
+        UPhysicalMaterial* PhysMat = FireHit.PhysMaterial.Get();
+        if (ImpactDataMap.Contains(PhysMat))
+        {
+            ImpactData = ImpactDataMap[PhysMat];
+        }
+    }
+
+    return ImpactData;
 }
 
 FVector AHitScanWeapon::TraceEndWithScatter(const FVector& TraceStart, const FVector& HitTarget)

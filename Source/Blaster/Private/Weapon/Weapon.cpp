@@ -15,13 +15,14 @@
 
 AWeapon::AWeapon()
 {
-    PrimaryActorTick.bCanEverTick = false;
+    PrimaryActorTick.bCanEverTick = true;
     bReplicates = true;
 
     SetReplicateMovement(true);
 
     WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Weapon Mesh"));
     SetRootComponent(WeaponMesh);
+    WeaponMesh->SetupAttachment(AreaSphere);
     WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
     WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
     WeaponMesh->SetCollisionResponseToChannel(ECC_IK_Visibility, ECollisionResponse::ECR_Ignore);
@@ -34,14 +35,27 @@ AWeapon::AWeapon()
     AreaSphere->SetupAttachment(RootComponent);
     AreaSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
     AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    AreaSphere->SetSphereRadius(85.f);
 
     PickupWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("Pickup Widget"));
     PickupWidget->SetupAttachment(RootComponent);
+    PickupWidget->AddLocalOffset(FVector(0.f, 0.f, 60.f));
 }
 
 void AWeapon::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
+
+    RunningTime += DeltaTime;
+    if (bIsHovering)
+    {
+        AddActorWorldOffset(FVector(0.f, 0.f, TransformedSin()));
+    }
+}
+
+float AWeapon::TransformedSin()
+{
+    return Amplitude * FMath::Sin(RunningTime * TimeConstant);
 }
 
 void AWeapon::EnableCustomDepth(bool bEnable)
