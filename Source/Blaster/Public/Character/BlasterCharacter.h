@@ -394,4 +394,5 @@ public:
     FORCEINLINE UTimelineComponent* GetInvisibilityTimeLine() const { return InvisibilityTimeline; };
     FORCEINLINE void SetCurrentSensitivity(float NewSensitivity) { CurrentSensitivity = NewSensitivity; };
     FORCEINLINE ABlasterPlayerController* GetBlasterPlayerController() const { return BlasterPlayerController; };
+    FORCEINLINE bool IsLocallyReloading() const;
 };

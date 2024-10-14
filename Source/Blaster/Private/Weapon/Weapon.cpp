@@ -10,6 +10,7 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Casing.h"
 #include "BlasterPlayerController.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "BlasterUtils.h"
 #include "Weapon.h"
 
@@ -46,10 +47,13 @@ void AWeapon::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
-    RunningTime += DeltaTime;
-    if (bIsHovering)
+    if (HasAuthority())
     {
-        AddActorWorldOffset(FVector(0.f, 0.f, TransformedSin()));
+        RunningTime += DeltaTime;
+        if (bIsHovering)
+        {
+            AddActorWorldOffset(FVector(0.f, 0.f, TransformedSin()));
+        }
     }
 }
 
@@ -73,13 +77,10 @@ void AWeapon::BeginPlay()
         PickupWidget->SetVisibility(false);
     }
 
-    if (HasAuthority())
-    {
-        AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-        AreaSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
-        AreaSphere->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnsphereOverlap);
-        AreaSphere->OnComponentEndOverlap.AddDynamic(this, &ThisClass::OnSphereEndOverlap);
-    }
+    AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    AreaSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+    AreaSphere->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnsphereOverlap);
+    AreaSphere->OnComponentEndOverlap.AddDynamic(this, &ThisClass::OnSphereEndOverlap);
 
     if (GetWeaponMesh())
     {
@@ -92,7 +93,6 @@ void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
     DOREPLIFETIME(AWeapon, WeaponState);
-    DOREPLIFETIME(AWeapon, Ammo);
 }
 
 void AWeapon::ShowPickupWidget(bool bShowWidget)
@@ -136,15 +136,40 @@ void AWeapon::OnSphereEndOverlap(
 
 void AWeapon::SpendRound()
 {
+    Ammo = FMath::Clamp(Ammo - 1, 0, MagCapacity);
+    SetHUDAmmo();
     if (HasAuthority())
     {
-        Ammo = FMath::Clamp(Ammo - 1, 0, MagCapacity);
-        SetHUDAmmo();
+        ClientUpdateAmmo(Ammo);
+    }
+    else
+    {
+        ++Sequence;
     }
 }
 
-void AWeapon::OnRep_Ammo()
+void AWeapon::ClientUpdateAmmo_Implementation(int32 ServerAmmo)
 {
+    if (HasAuthority()) return;
+    Ammo = ServerAmmo;
+    --Sequence;
+    Ammo -= Sequence;
+    SetHUDAmmo();
+}
+
+void AWeapon::AddAmmo(int32 AmmoToAdd)
+{
+    Ammo = FMath::Clamp(Ammo + AmmoToAdd, 0, MagCapacity);
+    SetHUDAmmo();
+    ClientAddAmmo(AmmoToAdd);
+}
+
+void AWeapon::ClientAddAmmo_Implementation(int32 AmmoToAdd)
+{
+    if (HasAuthority()) return;
+
+    Ammo = FMath::Clamp(Ammo + AmmoToAdd, 0, MagCapacity);
+
     if (WeaponType == EWeaponType::EWT_Shotgun && IsBlasterOwnerCharacterValid() && IsFull())
     {
         BlasterOwnerCharacter->PlayMontage(BlasterOwnerCharacter->GetReloadMontage(), FName("ShotgunEnd"));
@@ -304,13 +329,35 @@ void AWeapon::Dropped()
     BlasterOwnerController = nullptr;
 }
 
-void AWeapon::AddAmmo(int32 AmmoToAdd)
-{
-    Ammo = FMath::Clamp(Ammo - AmmoToAdd, 0, MagCapacity);
-    SetHUDAmmo();
-}
-
 bool AWeapon::IsBlasterOwnerCharacterValid()
 {
     return BlasterUtils::CastOrUseExistsActor(BlasterOwnerCharacter, GetOwner());
+}
+
+FVector AWeapon::TraceEndWithScatter(const FVector& HitTarget, const FVector& TraceStart)
+{
+    const FVector ToTargetNormalized = (HitTarget - TraceStart).GetSafeNormal();
+    const FVector SphereCenter = TraceStart + ToTargetNormalized * DistanceToSphere;
+
+    const FVector RandVec = UKismetMathLibrary::RandomUnitVector() * FMath::FRandRange(0.f, SphereRadius);
+    const FVector EndLoc = SphereCenter + RandVec;
+    const FVector ToEndLoc = EndLoc - TraceStart;
+    /*
+    DrawDebugSphere(GetWorld(), SphereCenter, SphereRadius, 12, FColor::Red, true);
+    DrawDebugSphere(GetWorld(), EndLoc, 4.f, 12, FColor::Orange, true);
+    DrawDebugLine(GetWorld(),                                    //
+        TraceStart,                                              //
+        TraceStart + ToEndLoc * TRACE_LENGTH / ToEndLoc.Size(),  //
+        FColor::Cyan,                                            //
+        true);
+    */
+    return FVector(TraceStart + ToEndLoc * TRACE_LENGTH / ToEndLoc.Size());
+}
+
+FVector AWeapon::GetTraceStart()
+{
+    const USkeletalMeshSocket* MuzzleFlashSocket = GetWeaponMesh()->GetSocketByName("MuzzleFlash");
+    if (!MuzzleFlashSocket || !GetWorld()) return FVector();
+    const FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetWeaponMesh());
+    return SocketTransform.GetLocation();
 }

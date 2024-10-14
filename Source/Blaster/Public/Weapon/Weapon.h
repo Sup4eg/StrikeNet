@@ -52,6 +52,9 @@ public:
 
     void AddAmmo(int32 AmmoToAdd);
 
+    FVector TraceEndWithScatter(const FVector& HitTarget, const FVector& TraceStart);
+    FVector GetTraceStart();
+
     /**
      * Textures for the weapon crosshairs
      */
@@ -104,6 +107,9 @@ public:
     UPROPERTY(VisibleAnywhere)
     bool bIsInvisible = false;
 
+    UPROPERTY(EditAnywhere, Category = "Weapon Scatter")
+    bool bUseScatter = false;
+
 protected:
     virtual void BeginPlay() override;
     virtual void OnWeaponStateSet();
@@ -126,9 +132,21 @@ protected:
         UPrimitiveComponent* OtherComp,                                        //
         int32 OtherBodyIndex);
 
+    /**
+     * Trace end with scatter
+     */
+    UPROPERTY(EditAnywhere, Category = "Weapon Scatter")
+    float DistanceToSphere = 800.f;
+
+    UPROPERTY(EditAnywhere, Category = "Weapon Scatter")
+    float SphereRadius = 75.f;
+
 private:
-    UFUNCTION()
-    void OnRep_Ammo();
+    UFUNCTION(Client, Reliable)
+    void ClientUpdateAmmo(int32 ServerAmmo);
+
+    UFUNCTION(Client, Reliable)
+    void ClientAddAmmo(int32 AmmoToAdd);
 
     void SpendRound();
 
@@ -165,11 +183,15 @@ private:
     UPROPERTY(EditAnywhere, Category = "Weapon Properties")
     float ZoomInterpSpeed = 20.f;
 
-    UPROPERTY(EditAnywhere, ReplicatedUsing = OnRep_Ammo, Category = "Weapon Properties")
+    UPROPERTY(EditAnywhere, Category = "Weapon Properties")
     int32 Ammo;
 
     UPROPERTY(EditAnywhere, Category = "Weapon Properties")
     int32 MagCapacity;
+
+    // The number of unprocessed server requests for Ammo
+    // Incremented in SpendRound, decremented in ClientUpdateAmmo
+    int32 Sequence = 0;
 
     UPROPERTY(EditAnywhere, Category = "Weapon Properties")
     float AllowedGapToWall = 60.f;
@@ -182,6 +204,9 @@ private:
 
     UPROPERTY(EditAnywhere, Category = "Weapon Properties")
     EWeaponType WeaponType;
+
+    UPROPERTY(EditAnywhere, Category = "Weapon Properties")
+    EFireType FireType;
 
     UPROPERTY(VisibleAnywhere);
     TArray<UMaterialInterface*> InitializeMaterials;
@@ -215,9 +240,11 @@ public:
     FORCEINLINE float GetZoomedFOV() const { return ZoomedFOV; };
     FORCEINLINE float GetZoomInterpSpeed() const { return ZoomInterpSpeed; };
     FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; };
+    FORCEINLINE EFireType GetWeaponFireType() const { return FireType; };
     FORCEINLINE int32 GetAmmo() const { return Ammo; };
     FORCEINLINE int32 GetMagCapacity() const { return MagCapacity; };
     FORCEINLINE float GetAllowedGapToWall() const { return AllowedGapToWall; };
     FORCEINLINE float GetAimSensitivity() const { return AimSensitivity; };
     FORCEINLINE void SetIsHovering(bool IsHovering) { bIsHovering = IsHovering; };
+    FORCEINLINE void SetScatter(bool IsScatter) { bUseScatter = IsScatter; };
 };

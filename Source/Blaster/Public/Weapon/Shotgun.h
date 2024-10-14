@@ -12,7 +12,8 @@ class BLASTER_API AShotgun : public AHitScanWeapon
     GENERATED_BODY()
 
 public:
-    virtual void Fire(const FVector& HitTarget) override;
+    virtual void FireShotgun(const TArray<FVector_NetQuantize>& HitTargets);
+    void ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVector_NetQuantize>& HitTargets);
 
 protected:
     virtual void SpawnImpactSound(FHitResult& FireHit, FImpactData& ImpactData) override;

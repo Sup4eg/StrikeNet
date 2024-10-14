@@ -76,6 +76,10 @@ protected:
 
     void CheckTimeSync(float DeltaTime);
 
+    void HighPingWarning();
+    void StopHighPingWarning();
+    void CheckPing(float DeltaTime);
+
 private:
     bool IsHUDValid();
     bool IsCharacterOverlayValid();
@@ -129,4 +133,17 @@ private:
 
     UPROPERTY(ReplicatedUsing = OnRep_MatchState)
     FName MatchState;
+
+    float HighPingRunningTime = 0.f;
+
+    UPROPERTY(EditAnywhere)
+    float HightPingDuration = 5.f;
+
+    float PingAnimationRunningTime = 0.f;
+
+    UPROPERTY(EditAnywhere)
+    float CheckPingFrequency = 20.f;
+
+    UPROPERTY(EditDefaultsOnly)
+    float HighPingThreshold = 50.f;
 };

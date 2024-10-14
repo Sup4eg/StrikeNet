@@ -12,9 +12,10 @@
 #include "Components/DecalComponent.h"
 #include "Shotgun.h"
 
-void AShotgun::Fire(const FVector& HitTarget)
+void AShotgun::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
 {
-    AWeapon::Fire(HitTarget);
+    if (HitTargets.IsEmpty()) return;
+    AWeapon::Fire(FVector());
     APawn* OwnerPawn = Cast<APawn>(GetOwner());
     if (!OwnerPawn) return;
     AController* InstigatorController = OwnerPawn->GetController();
@@ -22,12 +23,13 @@ void AShotgun::Fire(const FVector& HitTarget)
     const USkeletalMeshSocket* MuzzleFlashSocket = GetWeaponMesh()->GetSocketByName("MuzzleFlash");
     if (MuzzleFlashSocket && GetWorld())
     {
-        FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetWeaponMesh());
-        FVector Start = SocketTransform.GetLocation();
+        const FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetWeaponMesh());
+        const FVector Start = SocketTransform.GetLocation();
         uint32 Hits = 0;
 
+        // Maps hit character to number of times hit
         TMap<ABlasterCharacter*, uint32> HitMap;
-        for (uint32 i = 0; i < NumberOfPellets; ++i)
+        for (const FVector_NetQuantize& HitTarget : HitTargets)
         {
             FHitResult FireHit;
             WeaponTraceHit(Start, HitTarget, FireHit);
@@ -39,6 +41,16 @@ void AShotgun::Fire(const FVector& HitTarget)
             }
         }
         ApplyMultipleDamage(HitMap, InstigatorController);
+    }
+}
+
+void AShotgun::ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVector_NetQuantize>& HitTargets)
+{
+
+    const FVector& TraceStart = GetTraceStart();
+    for (uint32 i = 0; i < NumberOfPellets; ++i)
+    {
+        HitTargets.Add(TraceEndWithScatter(HitTarget, TraceStart));
     }
 }
 
@@ -62,7 +74,7 @@ void AShotgun::ApplyMultipleDamage(TMap<ABlasterCharacter*, uint32>& HitMap, ACo
 
 void AShotgun::AddToHitMap(FHitResult& FireHit, TMap<ABlasterCharacter*, uint32>& OutHitMap)
 {
-    if (FireHit.GetActor()->ActorHasTag("BlasterCharacter"))
+    if (FireHit.GetActor() && FireHit.GetActor()->ActorHasTag("BlasterCharacter"))
     {
         if (ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(FireHit.GetActor()))
         {

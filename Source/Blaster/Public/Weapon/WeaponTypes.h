@@ -20,6 +20,15 @@ enum class EWeaponType : uint8
     EWS_MAX UMETA(DisplayName = "DefaultMAX")
 };
 
+UENUM(BlueprintType)
+enum class EFireType : uint8
+{
+    EFT_HitScan UMETA(DisplayName = "Hit Scan Weapon"),
+    EFT_Projectile UMETA(DisplayName = "Projectile Weapon"),
+    EFT_Shotgun UMETA(DispalyName = "Shotgun Weapon"),
+    EFT_MAX UMETA(DisplayName = "DefaultMAX")
+};
+
 USTRUCT(BlueprintType)
 struct FDecalData
 {

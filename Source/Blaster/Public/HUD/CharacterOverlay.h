@@ -52,6 +52,9 @@ public:
     UImage* WeaponImg;
 
     UPROPERTY(meta = (BindWidget))
+    UImage* HighPingImg;
+
+    UPROPERTY(meta = (BindWidget))
     UVerticalBox* WeaponInfo;
 
     UPROPERTY(meta = (BindWidget))
@@ -62,6 +65,9 @@ public:
 
     UPROPERTY(Transient, meta = (BindWidgetAnim))
     UWidgetAnimation* CountdownAnimation;
+
+    UPROPERTY(Transient, meta = (BindWidgetAnim))
+    UWidgetAnimation* HighPingAnimation;
 
     UPROPERTY(meta = (BindWidget))
     UTextBlock* GrenadesAmount;

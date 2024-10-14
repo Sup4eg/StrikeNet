@@ -109,6 +109,8 @@ void ABlasterCharacter::BeginPlay()
     }
 
     InitializedMaterial = GetMesh()->GetMaterial(0);
+
+    // UE_LOG(LogTemp, Warning, TEXT("Name: %s, Local Role: %s"), *GetName(), *UEnum::GetValueAsString(GetLocalRole()));
 }
 
 void ABlasterCharacter::SpawnDefaultWeapon()
@@ -902,6 +904,11 @@ void ABlasterCharacter::SetMaterial(UMaterialInterface* NewMaterial)
 {
     if (!GetMesh()) return;
     GetMesh()->SetMaterial(0, NewMaterial);
+}
+
+bool ABlasterCharacter::IsLocallyReloading() const
+{
+    return CombatComp && CombatComp->bLocallyReloading;
 }
 
 bool ABlasterCharacter::IsControllerValid()

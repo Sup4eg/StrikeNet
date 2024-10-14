@@ -36,6 +36,41 @@ void ABlasterPlayerController::Tick(float DeltaTime)
 
     SetHUDTime();
     CheckTimeSync(DeltaTime);
+    CheckPing(DeltaTime);
+}
+
+void ABlasterPlayerController::CheckPing(float DeltaTime)
+{
+    HighPingRunningTime += DeltaTime;
+    if (HighPingRunningTime > CheckPingFrequency)
+    {
+        if (!PlayerState)
+        {
+            PlayerState = GetPlayerState<APlayerState>();
+        }
+        if (PlayerState)
+        {
+            if (PlayerState->GetPingInMilliseconds() > HighPingThreshold)
+            {
+                HighPingWarning();
+                PingAnimationRunningTime = 0.f;
+            }
+        }
+        HighPingRunningTime = 0.f;
+    }
+
+    bool bHighPingAnimationPlaying = IsCharacterOverlayValid() &&                        //
+                                     BlasterHUD->CharacterOverlay->HighPingAnimation &&  //                                          //
+                                     BlasterHUD->CharacterOverlay->IsAnimationPlaying(BlasterHUD->CharacterOverlay->HighPingAnimation);  //
+
+    if (bHighPingAnimationPlaying)
+    {
+        PingAnimationRunningTime += DeltaTime;
+        if (PingAnimationRunningTime > HightPingDuration)
+        {
+            StopHighPingWarning();
+        }
+    }
 }
 
 void ABlasterPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -299,6 +334,33 @@ void ABlasterPlayerController::SetHUDAnnouncementCountdown(float CountdownTime)
     {
 
         SetHUDCountdown(CountdownTime, BlasterHUD->AnnouncementWidget->WarmupTime);
+    }
+}
+
+void ABlasterPlayerController::HighPingWarning()
+{
+    bool bHUDValid = IsCharacterOverlayValid() &&                  //
+                     BlasterHUD->CharacterOverlay->HighPingImg &&  //
+                     BlasterHUD->CharacterOverlay->HighPingAnimation;
+    if (bHUDValid)
+    {
+        BlasterHUD->CharacterOverlay->HighPingImg->SetOpacity(1.f);
+        BlasterHUD->CharacterOverlay->PlayAnimation(BlasterHUD->CharacterOverlay->HighPingAnimation, 0.f, 5);
+    }
+}
+
+void ABlasterPlayerController::StopHighPingWarning()
+{
+    bool bHUDValid = IsCharacterOverlayValid() &&                  //
+                     BlasterHUD->CharacterOverlay->HighPingImg &&  //
+                     BlasterHUD->CharacterOverlay->HighPingAnimation;
+    if (bHUDValid)
+    {
+        BlasterHUD->CharacterOverlay->HighPingImg->SetOpacity(0.f);
+        if (BlasterHUD->CharacterOverlay->IsAnimationPlaying(BlasterHUD->CharacterOverlay->HighPingAnimation))
+        {
+            BlasterHUD->CharacterOverlay->StopAnimation(BlasterHUD->CharacterOverlay->HighPingAnimation);
+        }
     }
 }
 
