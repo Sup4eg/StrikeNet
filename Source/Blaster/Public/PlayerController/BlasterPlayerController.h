@@ -49,6 +49,8 @@ public:
     virtual void ReceivedPlayer() override;  // Sync with server clock as soon as possible
     void OnMatchStateSet(FName State);
 
+    float SingleTripTime = 0.f;
+
 protected:
     virtual void BeginPlay() override;
     virtual void OnPossess(APawn* InPawn) override;

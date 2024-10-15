@@ -50,6 +50,20 @@ void AProjectileRocket::BeginPlay()
     }
 }
 
+#if WITH_EDITOR
+void AProjectileRocket::PostEditChangeProperty(FPropertyChangedEvent& Event)
+{
+    Super::PostEditChangeProperty(Event);
+
+    FName PropertyName = Event.Property ? Event.Property->GetFName() : NAME_None;
+    if (PropertyName == GET_MEMBER_NAME_CHECKED(AProjectileRocket, InitialSpeed) && RocketMovementComponent)
+    {
+        RocketMovementComponent->InitialSpeed = InitialSpeed;
+        RocketMovementComponent->MaxSpeed = InitialSpeed;
+    }
+}
+#endif
+
 void AProjectileRocket::OnHit(
     UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {

@@ -449,7 +449,8 @@ void ABlasterPlayerController::ClientReportServerTime_Implementation(float TimeO
 {
     if (!GetWorld()) return;
     float RoundTripTime = GetWorld()->GetTimeSeconds() - TimeOfClientRequest;
-    float CurrentServerTime = TimeServerReceivedClientRequest + (RoundTripTime / 2);
+    SingleTripTime = RoundTripTime / 2;
+    float CurrentServerTime = TimeServerReceivedClientRequest + SingleTripTime;
     ClientServerDelta = CurrentServerTime - GetWorld()->GetTimeSeconds();
 }
 

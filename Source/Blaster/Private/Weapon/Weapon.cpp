@@ -198,8 +198,7 @@ void AWeapon::OnRep_Owner()
 void AWeapon::SetHUDAmmo()
 {
 
-    if (IsBlasterOwnerCharacterValid() &&
-        BlasterUtils::CastOrUseExistsActor(BlasterOwnerController, BlasterOwnerCharacter->GetController()))
+    if (IsBlasterOwnerControllerValid())
     {
         BlasterOwnerController->SetHUDWeaponAmmo(Ammo);
     }
@@ -332,6 +331,12 @@ void AWeapon::Dropped()
 bool AWeapon::IsBlasterOwnerCharacterValid()
 {
     return BlasterUtils::CastOrUseExistsActor(BlasterOwnerCharacter, GetOwner());
+}
+
+bool AWeapon::IsBlasterOwnerControllerValid()
+{
+    return IsBlasterOwnerCharacterValid() &&
+           BlasterUtils::CastOrUseExistsActor(BlasterOwnerController, BlasterOwnerCharacter->GetController());
 }
 
 FVector AWeapon::TraceEndWithScatter(const FVector& HitTarget, const FVector& TraceStart)

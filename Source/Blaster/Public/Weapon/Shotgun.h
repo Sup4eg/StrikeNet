@@ -19,7 +19,13 @@ protected:
     virtual void SpawnImpactSound(FHitResult& FireHit, FImpactData& ImpactData) override;
 
 private:
-    void ApplyMultipleDamage(TMap<ABlasterCharacter*, uint32>& HitMap, AController* InstigatorController);
+    void ApplyMultipleDamage(                          //
+        TMap<ABlasterCharacter*, uint32>& HitMap,      //
+        AController* InstigatorController,             //
+        const FVector& Start,                          //
+        const TArray<FVector_NetQuantize>& HitTargets  //
+    );
+
     void AddToHitMap(FHitResult& FireHit, TMap<ABlasterCharacter*, uint32>& OutHitMap);
 
     UPROPERTY(EditAnywhere, Category = "Weapon Scatter")

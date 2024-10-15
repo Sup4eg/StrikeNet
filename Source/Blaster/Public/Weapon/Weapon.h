@@ -118,6 +118,10 @@ protected:
     virtual void OnEquippedSecondary();
     virtual void OnDropped();
 
+    bool IsBlasterOwnerCharacterValid();
+
+    bool IsBlasterOwnerControllerValid();
+
     UFUNCTION()
     virtual void OnsphereOverlap(UPrimitiveComponent* OverlappedComponent,  //
         AActor* OtherActor,                                                 //
@@ -141,6 +145,15 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Weapon Scatter")
     float SphereRadius = 75.f;
 
+    UPROPERTY(EditAnywhere)
+    bool bUseServerSideRewind = false;
+
+    UPROPERTY()
+    ABlasterCharacter* BlasterOwnerCharacter;
+
+    UPROPERTY()
+    ABlasterPlayerController* BlasterOwnerController;
+
 private:
     UFUNCTION(Client, Reliable)
     void ClientUpdateAmmo(int32 ServerAmmo);
@@ -149,8 +162,6 @@ private:
     void ClientAddAmmo(int32 AmmoToAdd);
 
     void SpendRound();
-
-    bool IsBlasterOwnerCharacterValid();
 
     UPROPERTY(VisibleAnywhere, Category = "Weapon properties")
     USkeletalMeshComponent* WeaponMesh;
@@ -195,12 +206,6 @@ private:
 
     UPROPERTY(EditAnywhere, Category = "Weapon Properties")
     float AllowedGapToWall = 60.f;
-
-    UPROPERTY()
-    ABlasterCharacter* BlasterOwnerCharacter;
-
-    UPROPERTY()
-    ABlasterPlayerController* BlasterOwnerController;
 
     UPROPERTY(EditAnywhere, Category = "Weapon Properties")
     EWeaponType WeaponType;

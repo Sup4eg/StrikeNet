@@ -10,6 +10,8 @@
 #include "Particles/ParticleSystem.h"
 #include "GameFramework/DamageType.h"
 #include "Components/DecalComponent.h"
+#include "BlasterPlayerController.h"
+#include "LagCompensationComponent.h"
 #include "Shotgun.h"
 
 void AShotgun::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
@@ -40,7 +42,7 @@ void AShotgun::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
                 Super::SpawnImpactFXAndSound(FireHit);
             }
         }
-        ApplyMultipleDamage(HitMap, InstigatorController);
+        ApplyMultipleDamage(HitMap, InstigatorController, Start, HitTargets);
     }
 }
 
@@ -54,13 +56,18 @@ void AShotgun::ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVect
     }
 }
 
-void AShotgun::ApplyMultipleDamage(TMap<ABlasterCharacter*, uint32>& HitMap, AController* InstigatorController)
+void AShotgun::ApplyMultipleDamage(            //
+    TMap<ABlasterCharacter*, uint32>& HitMap,  //
+    AController* InstigatorController,         //
+    const FVector& Start,                      //
+    const TArray<FVector_NetQuantize>& HitTargets)
 {
-    if (InstigatorController && HasAuthority())
+    TArray<ABlasterCharacter*> HitCharacters;
+    for (auto HitPair : HitMap)
     {
-        for (auto HitPair : HitMap)
+        if (HitPair.Key)
         {
-            if (HitPair.Key)
+            if (HasAuthority() && !bUseServerSideRewind && InstigatorController)
             {
                 UGameplayStatics::ApplyDamage(HitPair.Key,  //
                     Damage * HitPair.Value,                 //
@@ -68,7 +75,29 @@ void AShotgun::ApplyMultipleDamage(TMap<ABlasterCharacter*, uint32>& HitMap, ACo
                     this,                                   //
                     UDamageType::StaticClass());
             }
+            HitCharacters.Add(HitPair.Key);
         }
+    }
+
+    bool bServerSideRewindDamage = !HasAuthority() &&                                       //
+                                   bUseServerSideRewind &&                                  //
+                                   IsBlasterOwnerControllerValid() &&                       //
+                                   BlasterOwnerCharacter->GetLagCompensationComponent() &&  //
+                                   !HitCharacters.IsEmpty() &&                              //
+                                   !HitTargets.IsEmpty() &&                                 //
+                                   BlasterOwnerCharacter->IsLocallyControlled();
+
+    if (bServerSideRewindDamage)
+    {
+        float HitTime = BlasterOwnerController->GetServerTime() - BlasterOwnerController->SingleTripTime;
+
+        BlasterOwnerCharacter->GetLagCompensationComponent()->ShotgunServerScoreRequest(  //
+            HitCharacters,                                                                //
+            Start,                                                                        //
+            HitTargets,                                                                   //
+            HitTime,                                                                      //
+            Damage,                                                                       //
+            this);
     }
 }
 

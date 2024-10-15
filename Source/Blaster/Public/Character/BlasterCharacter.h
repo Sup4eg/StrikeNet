@@ -19,6 +19,7 @@ class UWidgetComponent;
 class AWeapon;
 class UCombatComponent;
 class UBuffComp;
+class ULagCompensationComponent;
 class ABlasterPlayerController;
 class UMaterialInstanceDynamic;
 class UMaterialInstance;
@@ -28,6 +29,7 @@ class ABlasterPlayerState;
 class UStaticMeshComponent;
 class UNiagaraComponent;
 class UMaterialInterface;
+class UBoxComponent;
 
 UCLASS()
 class BLASTER_API ABlasterCharacter : public ACharacter, public IInteractWithCrosshairsInterface
@@ -81,6 +83,14 @@ public:
      */
     void SetUpInputMappingContext(UInputMappingContext* MappingContext);
 
+    void SpawnDefaultWeapon();
+
+    bool IsControllerValid();
+
+#if WITH_EDITOR
+    virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
+
     bool bDrawCrosshair = true;
 
     /**
@@ -96,9 +106,8 @@ public:
     UPROPERTY(EditAnywhere, Category = "Movement")
     float AimWalkSpeed = 450.f;
 
-    void SpawnDefaultWeapon();
-
-    bool IsControllerValid();
+    UPROPERTY()
+    TMap<FName, UBoxComponent*> HitCollisionBoxes;
 
 protected:
     virtual void BeginPlay() override;
@@ -164,6 +173,64 @@ protected:
     UPROPERTY(Replicated, VisibleInstanceOnly)
     bool bGameplayDisabled = false;
 
+    /** Hit boxes used for server-side rewind */
+    UPROPERTY(EditAnywhere)
+    UBoxComponent* head;
+
+    UPROPERTY(EditAnywhere)
+    UBoxComponent* pelvis;
+
+    UPROPERTY(EditAnywhere)
+    UBoxComponent* spine_02;
+
+    UPROPERTY(EditAnywhere)
+    UBoxComponent* spine_03;
+
+    UPROPERTY(EditAnywhere)
+    UBoxComponent* upperarm_l;
+
+    UPROPERTY(EditAnywhere)
+    UBoxComponent* upperarm_r;
+
+    UPROPERTY(EditAnywhere)
+    UBoxComponent* lowerarm_l;
+
+    UPROPERTY(EditAnywhere)
+    UBoxComponent* lowerarm_r;
+
+    UPROPERTY(EditAnywhere)
+    UBoxComponent* hand_l;
+
+    UPROPERTY(EditAnywhere)
+    UBoxComponent* hand_r;
+
+    UPROPERTY(EditAnywhere)
+    UBoxComponent* backpack;
+
+    UPROPERTY(EditAnywhere)
+    UBoxComponent* blanket_l;
+
+    UPROPERTY(EditAnywhere)
+    UBoxComponent* blanket_r;
+
+    UPROPERTY(EditAnywhere)
+    UBoxComponent* thigh_l;
+
+    UPROPERTY(EditAnywhere)
+    UBoxComponent* thigh_r;
+
+    UPROPERTY(EditAnywhere)
+    UBoxComponent* calf_l;
+
+    UPROPERTY(EditAnywhere)
+    UBoxComponent* calf_r;
+
+    UPROPERTY(EditAnywhere)
+    UBoxComponent* foot_l;
+
+    UPROPERTY(EditAnywhere)
+    UBoxComponent* foot_r;
+
 private:
     UFUNCTION()
     void OnRep_OverlappingWeapon(AWeapon* LastWeapon);
@@ -207,20 +274,29 @@ private:
 
     void SetDynamicDissolveMaterialInstance(float Dissolve, float Glow);
 
+    void SetUpHitBoxesServerSideRewind();
+
     UPROPERTY(VisibleAnywhere, Category = Camera)
     USpringArmComponent* CameraBoom;
 
     UPROPERTY(VisibleAnywhere, Category = Camera)
     UCameraComponent* FollowCamera;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-    UCombatComponent* CombatComp;
-
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
     UWidgetComponent* OverheadWidget;
 
+    /**
+     * Blaster components
+     */
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+    UCombatComponent* CombatComp;
+
     UPROPERTY(VisibleAnywhere)
     UBuffComp* BuffComp;
+
+    UPROPERTY(VisibleAnywhere)
+    ULagCompensationComponent* LagCompensationComp;
 
     UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon, VisibleInstanceOnly)
     AWeapon* OverlappingWeapon;
@@ -355,6 +431,9 @@ private:
 
     float CurrentSensitivity = 1.f;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+    bool bMoveForward = false;
+
 public:
     void SetOverlappingWeapon(AWeapon* Weapon);
     bool IsWeaponEquipped();
@@ -369,6 +448,8 @@ public:
     AWeapon* GetSecondaryWeapon() const;
     void SetDefaultMaterial();
     void SetMaterial(UMaterialInterface* NewMaterial);
+
+    bool IsLocallyReloading();
 
     FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; };
     FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; };
@@ -385,6 +466,7 @@ public:
     FORCEINLINE bool GetIsElimmed() const { return bElimmed; };
     FORCEINLINE UCombatComponent* GetCombatComponent() const { return CombatComp; };
     FORCEINLINE UBuffComp* GetBuffComponent() const { return BuffComp; };
+    FORCEINLINE ULagCompensationComponent* GetLagCompensationComponent() const { return LagCompensationComp; };
     FORCEINLINE bool GetIsGameplayDisabled() const { return bGameplayDisabled; };
     FORCEINLINE void SetIsGameplayDisabled(bool bDisable) { bGameplayDisabled = bDisable; };
     FORCEINLINE UAnimMontage* GetReloadMontage() const { return ReloadMontage; };
@@ -394,5 +476,4 @@ public:
     FORCEINLINE UTimelineComponent* GetInvisibilityTimeLine() const { return InvisibilityTimeline; };
     FORCEINLINE void SetCurrentSensitivity(float NewSensitivity) { CurrentSensitivity = NewSensitivity; };
     FORCEINLINE ABlasterPlayerController* GetBlasterPlayerController() const { return BlasterPlayerController; };
-    FORCEINLINE bool IsLocallyReloading() const;
 };

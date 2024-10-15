@@ -4,6 +4,7 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Engine/World.h"
 #include "BlasterCharacter.h"
+#include "BlasterPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/DamageType.h"
@@ -14,6 +15,7 @@
 #include "Components/DecalComponent.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "WeaponTypes.h"
+#include "LagCompensationComponent.h"
 #include "HitScanWeapon.h"
 
 void AHitScanWeapon::Fire(const FVector& HitTarget)
@@ -35,11 +37,36 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 
         if (FireHit.bBlockingHit)
         {
-            if (HasAuthority() && InstigatorController && FireHit.GetActor()->ActorHasTag("BlasterCharacter"))
+            if (InstigatorController && FireHit.GetActor()->ActorHasTag("BlasterCharacter"))
             {
                 if (ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(FireHit.GetActor()))
                 {
-                    UGameplayStatics::ApplyDamage(BlasterCharacter, Damage, InstigatorController, this, UDamageType::StaticClass());
+                    // Apply Damage on server
+                    if (HasAuthority() && !bUseServerSideRewind)
+                    {
+                        UGameplayStatics::ApplyDamage(BlasterCharacter,  //
+                            Damage,                                      //
+                            InstigatorController,                        //
+                            this,                                        //
+                            UDamageType::StaticClass());
+                    }
+                    // Apply Damage on client, use SSR
+                    else if (!HasAuthority() &&                                       //
+                             bUseServerSideRewind &&                                  //
+                             IsBlasterOwnerControllerValid() &&                       //
+                             BlasterOwnerCharacter->GetLagCompensationComponent() &&  //
+                             BlasterOwnerCharacter->IsLocallyControlled())
+                    {
+                        float HitTime = BlasterOwnerController->GetServerTime() - BlasterOwnerController->SingleTripTime;
+
+                        BlasterOwnerCharacter->GetLagCompensationComponent()->ServerScoreRequest(  //
+                            BlasterCharacter,                                                      //
+                            Start,                                                                 //
+                            HitTarget,                                                             //
+                            HitTime,                                                               //
+                            Damage,                                                                //
+                            this);
+                    }
                 }
             }
             SpawnImpactFXAndSound(FireHit);
