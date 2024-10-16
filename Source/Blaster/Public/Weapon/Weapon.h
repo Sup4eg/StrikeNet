@@ -136,6 +136,9 @@ protected:
         UPrimitiveComponent* OtherComp,                                        //
         int32 OtherBodyIndex);
 
+    UFUNCTION()
+    void OnPingTooHigh(bool bPingTooHigh);
+
     /**
      * Trace end with scatter
      */
@@ -145,8 +148,11 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Weapon Scatter")
     float SphereRadius = 75.f;
 
-    UPROPERTY(EditAnywhere)
+    UPROPERTY(Replicated, EditAnywhere)
     bool bUseServerSideRewind = false;
+
+    UPROPERTY(EditAnywhere)
+    bool bUseServerSideRewindDefault = false;
 
     UPROPERTY()
     ABlasterCharacter* BlasterOwnerCharacter;

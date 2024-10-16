@@ -19,4 +19,8 @@ public:
 private:
     UPROPERTY(EditAnywhere)
     TSubclassOf<AProjectile> ProjectileClass;
+
+    // Using server - side rewind algorithm
+    UPROPERTY(EditAnywhere)
+    TSubclassOf<AProjectile> SSRProjectileClass;
 };

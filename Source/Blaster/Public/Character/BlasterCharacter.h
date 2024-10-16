@@ -54,6 +54,7 @@ public:
     void PlayElimMontage();
     void PlayThrowGrenadeMontage();
     void PlayReloadMontage();
+    void PlaySwapWeaponsMontage();
     void PlayMontage(UAnimMontage* Montage, FName SectionName = NAME_None);
     void StopAllMontages();
 
@@ -108,6 +109,8 @@ public:
 
     UPROPERTY()
     TMap<FName, UBoxComponent*> HitCollisionBoxes;
+
+    bool bFinishSwapping = true;
 
 protected:
     virtual void BeginPlay() override;
@@ -330,6 +333,9 @@ private:
 
     UPROPERTY(EditAnywhere, Category = "Combat")
     UAnimMontage* ThrowGrenadeMontage;
+
+    UPROPERTY(EditAnywhere, Category = "Combat")
+    UAnimMontage* SwapWeaponsMontage;
 
     UPROPERTY(EditAnywhere)
     float CameraThreshold = 200.f;

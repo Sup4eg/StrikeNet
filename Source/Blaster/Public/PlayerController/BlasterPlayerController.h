@@ -15,6 +15,8 @@ class UInputMappingContext;
 class UTextBlock;
 class ABlasterCharacter;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FHighPingDelegate, bool, bPingTooHigh);
+
 UCLASS()
 class BLASTER_API ABlasterPlayerController : public APlayerController
 {
@@ -50,6 +52,8 @@ public:
     void OnMatchStateSet(FName State);
 
     float SingleTripTime = 0.f;
+
+    FHighPingDelegate HighPingDelegate;
 
 protected:
     virtual void BeginPlay() override;
@@ -113,6 +117,9 @@ private:
 
     bool IsGameModeValid();
 
+    UFUNCTION(Server, Reliable)
+    void ServerReportPingStatus(bool bHighPing);
+
     UPROPERTY()
     ABlasterHUD* BlasterHUD;
 
@@ -136,7 +143,7 @@ private:
     UPROPERTY(ReplicatedUsing = OnRep_MatchState)
     FName MatchState;
 
-    float HighPingRunningTime = 0.f;
+    float HighPingRunningTime = 20.f;
 
     UPROPERTY(EditAnywhere)
     float HightPingDuration = 5.f;

@@ -1,10 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Kismet/GameplayStatics.h"
-#include "GameFramework/Character.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/DamageType.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "BlasterCharacter.h"
+#include "BlasterPlayerController.h"
+#include "LagCompensationComponent.h"
+#include "Weapon.h"
 #include "ProjectileBullet.h"
 
 AProjectileBullet::AProjectileBullet()
@@ -30,33 +33,40 @@ void AProjectileBullet::PostEditChangeProperty(FPropertyChangedEvent& Event)
 }
 #endif
 
-void AProjectileBullet::BeginPlay()
-{
-    Super::BeginPlay();
-
-    FPredictProjectilePathParams PathParams;
-    PathParams.bTraceWithChannel = true;
-    PathParams.bTraceWithCollision = true;
-    PathParams.DrawDebugTime = 5.f;
-    PathParams.DrawDebugType = EDrawDebugTrace::ForDuration;
-    PathParams.LaunchVelocity = GetActorForwardVector() * InitialSpeed;
-    PathParams.MaxSimTime = 4.f;
-    PathParams.ProjectileRadius = 5.f;
-    PathParams.SimFrequency = 30.f;
-    PathParams.StartLocation = GetActorLocation();
-    PathParams.TraceChannel = ECollisionChannel::ECC_Visibility;
-    PathParams.ActorsToIgnore.Add(this);
-
-    FPredictProjectilePathResult PathResult;
-
-    UGameplayStatics::PredictProjectilePath(this, PathParams, PathResult);
-}
-
 void AProjectileBullet::OnHit(
     UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-    ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
-    if (!OwnerCharacter || !OwnerCharacter->GetController()) return;
-    UGameplayStatics::ApplyDamage(OtherActor, Damage, OwnerCharacter->GetController(), this, UDamageType::StaticClass());
+    if (ABlasterCharacter* OwnerCharacter = Cast<ABlasterCharacter>(GetOwner()))
+    {
+        if (ABlasterPlayerController* OwnerController = Cast<ABlasterPlayerController>(OwnerCharacter->GetController()))
+        {
+            if (OwnerCharacter->HasAuthority() && !bUseServerSideRewind)
+            {
+                UGameplayStatics::ApplyDamage(
+                    OtherActor, Damage, OwnerController, OwnerCharacter->GetEquippedWeapon(), UDamageType::StaticClass());
+                Super::OnHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
+                return;
+            }
+
+            if (OtherActor && OtherActor->ActorHasTag("BlasterCharacter"))
+            {
+                if (ABlasterCharacter* HitCharacter = Cast<ABlasterCharacter>(OtherActor))
+                {
+                    // TODO, Potantial LEAK HERE, Damage and damage causer must be validated
+                    if (bUseServerSideRewind && OwnerCharacter->GetLagCompensationComponent() && OwnerCharacter->IsLocallyControlled())
+                    {
+                        float HitTime = OwnerController->GetServerTime() - OwnerController->SingleTripTime;
+                        OwnerCharacter->GetLagCompensationComponent()->ProjectileServerScoreRequest(  //
+                            HitCharacter,                                                             //
+                            TraceStart,                                                               //
+                            InitialVelocity,                                                          //
+                            HitTime,                                                                  //
+                            Damage,                                                                   //
+                            OwnerCharacter->GetEquippedWeapon());
+                    }
+                }
+            }
+        }
+    }
     Super::OnHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
 }

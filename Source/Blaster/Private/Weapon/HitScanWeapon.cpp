@@ -41,8 +41,9 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
             {
                 if (ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(FireHit.GetActor()))
                 {
+                    bool bCauseAuthDamage = !bUseServerSideRewind || OwnerPawn->IsLocallyControlled();
                     // Apply Damage on server
-                    if (HasAuthority() && !bUseServerSideRewind)
+                    if (HasAuthority() && bCauseAuthDamage)
                     {
                         UGameplayStatics::ApplyDamage(BlasterCharacter,  //
                             Damage,                                      //
@@ -51,11 +52,11 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
                             UDamageType::StaticClass());
                     }
                     // Apply Damage on client, use SSR
-                    else if (!HasAuthority() &&                                       //
-                             bUseServerSideRewind &&                                  //
-                             IsBlasterOwnerControllerValid() &&                       //
-                             BlasterOwnerCharacter->GetLagCompensationComponent() &&  //
-                             BlasterOwnerCharacter->IsLocallyControlled())
+                    else if (!HasAuthority() &&                                     //
+                             bUseServerSideRewind &&                                //
+                             BlasterOwnerCharacter->IsLocallyControlled() &&        //
+                             IsBlasterOwnerControllerValid() &&                     //
+                             BlasterOwnerCharacter->GetLagCompensationComponent())  //
                     {
                         float HitTime = BlasterOwnerController->GetServerTime() - BlasterOwnerController->SingleTripTime;
 

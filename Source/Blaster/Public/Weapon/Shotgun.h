@@ -21,6 +21,7 @@ protected:
 private:
     void ApplyMultipleDamage(                          //
         TMap<ABlasterCharacter*, uint32>& HitMap,      //
+        APawn* OwnerPawn,                              //
         AController* InstigatorController,             //
         const FVector& Start,                          //
         const TArray<FVector_NetQuantize>& HitTargets  //

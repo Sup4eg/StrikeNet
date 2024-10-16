@@ -50,10 +50,16 @@ void ABlasterPlayerController::CheckPing(float DeltaTime)
         }
         if (PlayerState)
         {
+            UE_LOG(LogTemp, Warning, TEXT("PlayerState->GetPingInMilliseconds() : %f"), PlayerState->GetPingInMilliseconds());
             if (PlayerState->GetPingInMilliseconds() > HighPingThreshold)
             {
                 HighPingWarning();
                 PingAnimationRunningTime = 0.f;
+                ServerReportPingStatus(true);
+            }
+            else
+            {
+                ServerReportPingStatus(false);
             }
         }
         HighPingRunningTime = 0.f;
@@ -659,4 +665,10 @@ bool ABlasterPlayerController::IsGameModeValid()
 {
 
     return BlasterUtils::CastOrUseExistsActor(BlasterGameMode, UGameplayStatics::GetGameMode(this));
+}
+
+// Is the ping too high?
+void ABlasterPlayerController::ServerReportPingStatus_Implementation(bool bHighPing)
+{
+    HighPingDelegate.Broadcast(bHighPing);
 }

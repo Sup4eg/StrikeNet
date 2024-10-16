@@ -85,8 +85,12 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
     }
     else
     {
+        CombatState = ECombatState::ECS_Unoccupied;
+        BlasterCharacter->StopAllMontages();
         DropEquippedWeapon();
         EquipPrimaryWeapon(WeaponToEquip);
+        ReloadEmptyWeapon();
+        ReloadAfterEquip = false;
     }
 
     BlasterCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
@@ -95,8 +99,31 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 
 void UCombatComponent::SwapWeapons()
 {
-    if (!BlasterCharacter || BlasterCharacter->GetWorldTimerManager().IsTimerActive(SwapWeaponsTimer)) return;
-    BlasterCharacter->GetWorldTimerManager().SetTimer(SwapWeaponsTimer, this, &ThisClass::SwapWeaponsTimerFinished, SwapWeaponsDelay);
+    if (BlasterCharacter && CombatState == ECombatState::ECS_Unoccupied)
+    {
+        BlasterCharacter->StopAllMontages();
+        CombatState = ECombatState::ECS_SwappingWeapons;
+        BlasterCharacter->bFinishSwapping = false;
+        BlasterCharacter->PlaySwapWeaponsMontage();
+    }
+}
+
+void UCombatComponent::FinishSwapWeapons()
+{
+    if (BlasterCharacter && BlasterCharacter->HasAuthority())
+    {
+        CombatState = ECombatState::ECS_Unoccupied;
+    }
+    if (BlasterCharacter)
+    {
+        BlasterCharacter->bFinishSwapping = true;
+    }
+}
+
+void UCombatComponent::FinishSwapAttachWeapons()
+{
+    EquipSecondaryWeapon(PendingSwapSecondaryWeapon);
+    EquipPrimaryWeapon(PendingSwapEquippedWeapon);
 }
 
 bool UCombatComponent::ShouldSwapWeapons() const
@@ -104,30 +131,25 @@ bool UCombatComponent::ShouldSwapWeapons() const
     return EquippedWeapon && SecondaryWeapon;
 }
 
-void UCombatComponent::SwapWeaponsTimerFinished()
+void UCombatComponent::CachePendingSwapWeapons()
 {
-    AWeapon* TempWeapon = EquippedWeapon;
-
-    EquipPrimaryWeapon(SecondaryWeapon);
-    EquipSecondaryWeapon(TempWeapon);
+    PendingSwapEquippedWeapon = SecondaryWeapon;
+    PendingSwapSecondaryWeapon = EquippedWeapon;
 }
 
 void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
 {
     if (!WeaponToEquip || !BlasterCharacter) return;
 
-    BlasterCharacter->StopAllMontages();
-    CombatState = ECombatState::ECS_Unoccupied;
-
     WeaponToEquip->SetIsHovering(false);
     HandleWeaponSpecificLogic(EquippedWeapon, WeaponToEquip);
     EquippedWeapon = WeaponToEquip;
+    EquippedWeapon->SetOwner(BlasterCharacter);
     EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 
     AttachWeaponToRightHand(EquippedWeapon);
     PlayEquipWeaponSound(EquippedWeapon);
 
-    EquippedWeapon->SetOwner(BlasterCharacter);
     EquippedWeapon->SetHUDAmmo();
 
     SetCarriedAmmo();
@@ -140,16 +162,14 @@ void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
     }
 
     SetEquippedWeaponInvisible();
-    ReloadEmptyWeapon();
 }
 
 void UCombatComponent::OnRep_EquippedWeapon(AWeapon* LastEquippedWeapon)
 {
     if (!EquippedWeapon || !BlasterCharacter) return;
-    EquippedWeapon->SetIsHovering(false);
-    BlasterCharacter->StopAllMontages();
-    HandleWeaponSpecificLogic(LastEquippedWeapon, EquippedWeapon);
 
+    EquippedWeapon->SetIsHovering(false);
+    HandleWeaponSpecificLogic(LastEquippedWeapon, EquippedWeapon);
     EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
     AttachWeaponToRightHand(EquippedWeapon);
     PlayEquipWeaponSound(EquippedWeapon);
@@ -168,29 +188,24 @@ void UCombatComponent::OnRep_EquippedWeapon(AWeapon* LastEquippedWeapon)
 
 void UCombatComponent::EquipSecondaryWeapon(AWeapon* WeaponToEquip)
 {
-    if (!WeaponToEquip) return;
-    WeaponToEquip->SetIsHovering(false);
-    BlasterCharacter->StopAllMontages();
-    CombatState = ECombatState::ECS_Unoccupied;
+    if (!WeaponToEquip || !BlasterCharacter) return;
 
+    WeaponToEquip->SetIsHovering(false);
     SecondaryWeapon = WeaponToEquip;
+    SecondaryWeapon->SetOwner(BlasterCharacter);
     SecondaryWeapon->SetWeaponState(EWeaponState::EWS_EquippedSecondary);
     AttachWeaponToBackpack(WeaponToEquip);
-    SecondaryWeapon->SetOwner(BlasterCharacter);
-
     SetSecondaryWeaponInvisible();
 }
 
 void UCombatComponent::OnRep_SecondaryWeapon(AWeapon* LastSecondaryWeapon)
 {
     if (!SecondaryWeapon || !BlasterCharacter) return;
+
     SecondaryWeapon->SetIsHovering(false);
-    BlasterCharacter->StopAllMontages();
     SecondaryWeapon->SetWeaponState(EWeaponState::EWS_EquippedSecondary);
     AttachWeaponToBackpack(SecondaryWeapon);
-
     SetSecondaryWeaponInvisible();
-
     if (!LastSecondaryWeapon)
     {
         PlayEquipWeaponSound(SecondaryWeapon);
@@ -305,9 +320,11 @@ void UCombatComponent::HandleWeaponSpecificLogic(AWeapon* LastWeapon, AWeapon* N
 
 void UCombatComponent::Reload()
 {
+
     if (CanReload())
     {
         ServerReload();
+
         HandleReload();
         bLocallyReloading = true;
     }
@@ -319,6 +336,7 @@ void UCombatComponent::ServerReload_Implementation()
     CombatState = ECombatState::ECS_Reloading;
     if (!BlasterCharacter->IsLocallyControlled())
     {
+
         HandleReload();
     }
 }
@@ -371,6 +389,17 @@ void UCombatComponent::UpdateShotgunAmmoValues()
 
 bool UCombatComponent::CanReload()
 {
+
+    if (!BlasterCharacter->HasAuthority() && BlasterCharacter->IsLocallyControlled())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("EQUIPPED weapon : %s"), EquippedWeapon == nullptr ? TEXT("NO") : TEXT("YES"));
+        UE_LOG(LogTemp, Warning, TEXT("EquippedWeapon->GetAmmo() : %d"), EquippedWeapon->GetAmmo());
+        UE_LOG(LogTemp, Warning, TEXT("EquippedWeapon->GetMagCapacity() : %d"), EquippedWeapon->GetMagCapacity());
+        UE_LOG(LogTemp, Warning, TEXT("Carried ammo : %d"), CarriedAmmo);
+        UE_LOG(LogTemp, Warning, TEXT("CombatState : %s"), *UEnum::GetValueAsString(CombatState));
+        UE_LOG(LogTemp, Warning, TEXT("locally reloading: %s"), bLocallyReloading == true ? TEXT("YES") : TEXT("NO"));
+    }
+
     return EquippedWeapon &&                                                //
            EquippedWeapon->GetAmmo() < EquippedWeapon->GetMagCapacity() &&  //
            CarriedAmmo > 0 &&                                               //
@@ -387,8 +416,17 @@ void UCombatComponent::OnRep_CombatState()
             {
                 HandleReload();
             }
+            if (BlasterCharacter->IsLocallyControlled() && ReloadAfterEquip)
+            {
+                ReloadAfterEquip = false;
+                HandleReload();
+            }
             break;
         case ECombatState::ECS_Unoccupied:
+            if (BlasterCharacter)
+            {
+                BlasterCharacter->StopAllMontages();
+            }
             if (bFireButtonPressed)
             {
                 Fire();
@@ -400,6 +438,12 @@ void UCombatComponent::OnRep_CombatState()
                 AttachWeaponToLeftHand(EquippedWeapon);
                 BlasterCharacter->PlayThrowGrenadeMontage();
                 ShowAttachedGrenade(true);
+            }
+            break;
+        case ECombatState::ECS_SwappingWeapons:
+            if (BlasterCharacter && !BlasterCharacter->IsLocallyControlled())
+            {
+                BlasterCharacter->PlaySwapWeaponsMontage();
             }
             break;
 
@@ -835,6 +879,15 @@ void UCombatComponent::FireTimerFinished()
 
 bool UCombatComponent::CanFire()
 {
+
+    if (BlasterCharacter && !BlasterCharacter->HasAuthority() && BlasterCharacter->IsLocallyControlled())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("EQUIPPED weapon : %s"), EquippedWeapon == nullptr ? TEXT("NO") : TEXT("YES"));
+        UE_LOG(LogTemp, Warning, TEXT("bCanFire : %s"), bCanFire == false ? TEXT("NO") : TEXT("YES"));
+        UE_LOG(LogTemp, Warning, TEXT("CombatState : %s"), *UEnum::GetValueAsString(CombatState));
+        UE_LOG(LogTemp, Warning, TEXT("bLocallyReloading : %s"), bLocallyReloading == false ? TEXT("NO") : TEXT("YES"));
+    }
+
     if (!EquippedWeapon || IsCloseToWall()) return false;
     // Shotgun shells
     if (!EquippedWeapon->IsEmpty() && bCanFire && CombatState == ECombatState::ECS_Reloading &&

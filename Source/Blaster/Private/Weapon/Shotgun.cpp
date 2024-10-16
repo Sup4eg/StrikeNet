@@ -42,7 +42,7 @@ void AShotgun::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
                 Super::SpawnImpactFXAndSound(FireHit);
             }
         }
-        ApplyMultipleDamage(HitMap, InstigatorController, Start, HitTargets);
+        ApplyMultipleDamage(HitMap, OwnerPawn, InstigatorController, Start, HitTargets);
     }
 }
 
@@ -58,6 +58,7 @@ void AShotgun::ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVect
 
 void AShotgun::ApplyMultipleDamage(            //
     TMap<ABlasterCharacter*, uint32>& HitMap,  //
+    APawn* OwnerPawn,                          //
     AController* InstigatorController,         //
     const FVector& Start,                      //
     const TArray<FVector_NetQuantize>& HitTargets)
@@ -65,9 +66,11 @@ void AShotgun::ApplyMultipleDamage(            //
     TArray<ABlasterCharacter*> HitCharacters;
     for (auto HitPair : HitMap)
     {
-        if (HitPair.Key)
+        if (HitPair.Key && OwnerPawn)
         {
-            if (HasAuthority() && !bUseServerSideRewind && InstigatorController)
+            bool bCauseAuthDamage = !bUseServerSideRewind || OwnerPawn->IsLocallyControlled();
+
+            if (HasAuthority() && bCauseAuthDamage && InstigatorController)
             {
                 UGameplayStatics::ApplyDamage(HitPair.Key,  //
                     Damage * HitPair.Value,                 //
@@ -81,11 +84,11 @@ void AShotgun::ApplyMultipleDamage(            //
 
     bool bServerSideRewindDamage = !HasAuthority() &&                                       //
                                    bUseServerSideRewind &&                                  //
+                                   BlasterOwnerCharacter->IsLocallyControlled() &&          //
                                    IsBlasterOwnerControllerValid() &&                       //
                                    BlasterOwnerCharacter->GetLagCompensationComponent() &&  //
                                    !HitCharacters.IsEmpty() &&                              //
-                                   !HitTargets.IsEmpty() &&                                 //
-                                   BlasterOwnerCharacter->IsLocallyControlled();
+                                   !HitTargets.IsEmpty();                                   //
 
     if (bServerSideRewindDamage)
     {

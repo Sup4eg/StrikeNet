@@ -93,6 +93,7 @@ void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
     DOREPLIFETIME(AWeapon, WeaponState);
+    DOREPLIFETIME_CONDITION(AWeapon, bUseServerSideRewind, COND_OwnerOnly);
 }
 
 void AWeapon::ShowPickupWidget(bool bShowWidget)
@@ -244,6 +245,14 @@ void AWeapon::OnEquipped()
         WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
     }
     EnableCustomDepth(false);
+    if (HasAuthority() &&                                       //
+        bUseServerSideRewindDefault &&                          //
+        IsBlasterOwnerControllerValid() &&                      //
+        !BlasterOwnerController->HighPingDelegate.IsBound() &&  //
+        !BlasterOwnerCharacter->IsLocallyControlled())
+    {
+        BlasterOwnerController->HighPingDelegate.AddDynamic(this, &ThisClass::OnPingTooHigh);
+    }
 }
 
 void AWeapon::OnEquippedSecondary()
@@ -261,6 +270,15 @@ void AWeapon::OnEquippedSecondary()
     WeaponMesh->SetCustomDepthStencilValue(CUSTOM_DEPTH_TAN);
     WeaponMesh->MarkRenderStateDirty();
     EnableCustomDepth(true);
+
+    if (HasAuthority() &&                                      //
+        bUseServerSideRewindDefault &&                         //
+        IsBlasterOwnerControllerValid() &&                     //
+        BlasterOwnerController->HighPingDelegate.IsBound() &&  //
+        !BlasterOwnerCharacter->IsLocallyControlled())
+    {
+        BlasterOwnerController->HighPingDelegate.RemoveDynamic(this, &ThisClass::OnPingTooHigh);
+    }
 }
 
 void AWeapon::OnDropped()
@@ -286,6 +304,21 @@ void AWeapon::OnDropped()
         SetDefaultMaterial();
         bIsInvisible = false;
     }
+
+    if (HasAuthority() &&                                      //
+        bUseServerSideRewindDefault &&                         //
+        IsBlasterOwnerControllerValid() &&                     //
+        BlasterOwnerController->HighPingDelegate.IsBound() &&  //
+        !BlasterOwnerCharacter->IsLocallyControlled()          //
+    )
+    {
+        BlasterOwnerController->HighPingDelegate.RemoveDynamic(this, &ThisClass::OnPingTooHigh);
+    }
+}
+
+void AWeapon::OnPingTooHigh(bool bPingTooHigh)
+{
+    bUseServerSideRewind = !bPingTooHigh;
 }
 
 bool AWeapon::IsEmpty()

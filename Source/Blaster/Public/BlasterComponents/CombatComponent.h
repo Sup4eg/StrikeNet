@@ -37,6 +37,12 @@ public:
     UFUNCTION(BlueprintCallable)
     void FinishReloading();
 
+    UFUNCTION(BlueprintCallable)
+    void FinishSwapWeapons();
+
+    UFUNCTION(BlueprintCallable)
+    void FinishSwapAttachWeapons();
+
     void SetAiming(bool bIsAiming);
 
     void FireButtonPressed(bool bPressed);
@@ -54,6 +60,8 @@ public:
     void ServerLaunchGranade(const FVector_NetQuantize Target);
 
     void PickupAmmo(EWeaponType WeaponType, uint32 AmmoAmount);
+
+    void CachePendingSwapWeapons();
 
     bool bLocallyReloading = false;
 
@@ -122,7 +130,6 @@ private:
     void ShotgunLocalFire(const TArray<FVector_NetQuantize>& TraceHitTargets);
     void StartFireTimer();
     void FireTimerFinished();
-    void SwapWeaponsTimerFinished();
     bool CanFire();
     void InitializeCarriedAmmo();
     bool CanReload();
@@ -172,10 +179,18 @@ private:
     UPROPERTY(ReplicatedUsing = OnRep_SecondaryWeapon)
     AWeapon* SecondaryWeapon;
 
+    UPROPERTY(Transient)
+    AWeapon* PendingSwapEquippedWeapon;
+
+    UPROPERTY(Transient)
+    AWeapon* PendingSwapSecondaryWeapon;
+
     UPROPERTY(ReplicatedUsing = OnRep_Aiming)
     bool bAiming = false;
 
     bool bAimButtonPressed = false;
+
+    bool ReloadAfterEquip = false;
 
     bool bFireButtonPressed;
 
@@ -207,11 +222,6 @@ private:
 
     FTimerHandle FireTimer;
     bool bCanFire = true;
-
-    FTimerHandle SwapWeaponsTimer;
-
-    UPROPERTY(EditAnywhere)
-    float SwapWeaponsDelay = 0.25f;
 
     // Carried ammo for the currently-equipped weapon
     UPROPERTY(ReplicatedUsing = OnRep_CarriedAmmo)
