@@ -30,6 +30,7 @@ class UStaticMeshComponent;
 class UNiagaraComponent;
 class UMaterialInterface;
 class UBoxComponent;
+class UCapsuleComponent;
 
 UCLASS()
 class BLASTER_API ABlasterCharacter : public ACharacter, public IInteractWithCrosshairsInterface
@@ -87,6 +88,10 @@ public:
     void SpawnDefaultWeapon();
 
     bool IsControllerValid();
+
+    virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
+
+    virtual void OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
 
 #if WITH_EDITOR
     virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -234,6 +239,9 @@ protected:
     UPROPERTY(EditAnywhere)
     UBoxComponent* foot_r;
 
+    UPROPERTY(EditAnywhere)
+    UCapsuleComponent* bodyHitCapsule;
+
 private:
     UFUNCTION()
     void OnRep_OverlappingWeapon(AWeapon* LastWeapon);
@@ -277,7 +285,7 @@ private:
 
     void SetDynamicDissolveMaterialInstance(float Dissolve, float Glow);
 
-    void SetUpHitBoxesServerSideRewind();
+    void SetUpHitShapesSSR();
 
     UPROPERTY(VisibleAnywhere, Category = Camera)
     USpringArmComponent* CameraBoom;
@@ -440,6 +448,18 @@ private:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     bool bMoveForward = false;
 
+    UPROPERTY(EditDefaultsOnly)
+    float HitCapsuleBodyHalfHeight = 100.f;
+
+    UPROPERTY(EditDefaultsOnly)
+    float HitCapsuleBodyZLocation = 100.f;
+
+    UPROPERTY(EditDefaultsOnly)
+    float HitCapsuleBodyHalfHeightCrouched = 75.f;
+
+    UPROPERTY(EditDefaultsOnly)
+    float HitCapsuleBodyZLocationCrouched = 75.f;
+
 public:
     void SetOverlappingWeapon(AWeapon* Weapon);
     bool IsWeaponEquipped();
@@ -482,4 +502,5 @@ public:
     FORCEINLINE UTimelineComponent* GetInvisibilityTimeLine() const { return InvisibilityTimeline; };
     FORCEINLINE void SetCurrentSensitivity(float NewSensitivity) { CurrentSensitivity = NewSensitivity; };
     FORCEINLINE ABlasterPlayerController* GetBlasterPlayerController() const { return BlasterPlayerController; };
+    FORCEINLINE UCapsuleComponent* GetBodyHitCapsule() const { return bodyHitCapsule; };
 };

@@ -26,6 +26,24 @@ struct FBoxInformation
 };
 
 USTRUCT(BlueprintType)
+struct FCapsuleInformation
+{
+    GENERATED_USTRUCT_BODY()
+
+    UPROPERTY()
+    FVector Location;
+
+    UPROPERTY()
+    FRotator Rotation;
+
+    UPROPERTY()
+    float HalfHeight;
+
+    UPROPERTY()
+    float Radius;
+};
+
+USTRUCT(BlueprintType)
 struct FFramePackage
 {
     GENERATED_USTRUCT_BODY()
@@ -35,6 +53,9 @@ struct FFramePackage
 
     UPROPERTY()
     TMap<FName, FBoxInformation> HitBoxInfo;
+
+    UPROPERTY()
+    FCapsuleInformation HitCapsuleInfo;
 
     UPROPERTY();
     ABlasterCharacter* Character;
@@ -103,11 +124,11 @@ public:
      */
 
     UFUNCTION(Server, Reliable)
-    void ExplosionProjectileServerScoreRequest(TArray<ABlasterCharacter*>& HitCharacters,  //
-        const FVector_NetQuantize& TraceStart,                                             //
-        const FVector_NetQuantize100& InitialVelocity,                                     //
-        float HitTime,                                                                     //
-        float Damage                                                                       //
+    void ExplosionProjectileServerScoreRequest(const TArray<ABlasterCharacter*>& HitCharacters,  //
+        const FVector_NetQuantize& TraceStart,                                                   //
+        const FVector_NetQuantize100& InitialVelocity,                                           //
+        float HitTime,                                                                           //
+        float Damage                                                                             //
     );
 
     /**
@@ -133,7 +154,9 @@ protected:
         float HitTime);
 
     void CacheBoxPositions(ABlasterCharacter* HitCharacter, FFramePackage& OutFramePackage);
+    void CacheCapsulePosition(ABlasterCharacter* HitCharacter, FFramePackage& OutFramePackage);
     void MoveBoxes(ABlasterCharacter* HitCharacter, const FFramePackage& Package);
+    void MoveCapsule(ABlasterCharacter* HitCharacter, const FFramePackage& Package);
     void ResetHitBoxes(ABlasterCharacter* HitCharacter, const FFramePackage& Package);
     void EnableCharacterMeshCollision(ABlasterCharacter* HitCharacter, ECollisionEnabled::Type CollisionEnabled);
     void SaveFramePackage();
@@ -165,6 +188,20 @@ protected:
         ABlasterCharacter* HitCharacter,                                        //
         const FVector_NetQuantize& TraceStart,                                  //
         const FVector_NetQuantize100& InitialVelocity,                          //
+        float HitTime);
+
+    /**
+     * Explosion projectiles
+     */
+
+    FServerSideRewindResult ExplosionProjectileServerSideRewind(const TArray<ABlasterCharacter*>& HitCharacters,  //
+        const FVector_NetQuantize& TraceStart,                                                                    //
+        const FVector_NetQuantize100& InitialVelocity,                                                            //
+        float HitTime);
+
+    FServerSideRewindResult ExplosionProjectileConfirmHit(const TArray<FFramePackage>& FramePackages,  //
+        const FVector_NetQuantize& TraceStart,                                                         //
+        const FVector_NetQuantize100& InitialVelocity,                                                 //
         float HitTime);
 
     /**
