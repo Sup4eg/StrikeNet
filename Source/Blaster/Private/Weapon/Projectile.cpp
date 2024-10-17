@@ -19,7 +19,7 @@
 AProjectile::AProjectile()
 {
     PrimaryActorTick.bCanEverTick = false;
-    bReplicates = true;
+    bReplicates = false;
 
     CollisionBox = CreateDefaultSubobject<UBoxComponent>("CollisionBox");
     SetRootComponent(CollisionBox);
@@ -43,13 +43,10 @@ void AProjectile::BeginPlay()
             Tracer, CollisionBox, FName(), GetActorLocation(), GetActorRotation(), EAttachLocation::KeepWorldPosition);
     }
 
-    if (HasAuthority())
-    {
-        CollisionBox->OnComponentHit.AddDynamic(this, &ThisClass::OnHit);
-        CollisionBox->IgnoreActorWhenMoving(Owner, true);
-        CollisionBox->bReturnMaterialOnMove = true;
-        SetLifeSpan(LifeSpan);
-    }
+    CollisionBox->OnComponentHit.AddDynamic(this, &ThisClass::OnHit);
+    CollisionBox->IgnoreActorWhenMoving(Owner, true);
+    CollisionBox->bReturnMaterialOnMove = true;
+    SetLifeSpan(LifeSpan);
 }
 
 void AProjectile::Tick(float DeltaTime)
@@ -60,13 +57,8 @@ void AProjectile::Tick(float DeltaTime)
 void AProjectile::OnHit(
     UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-    MulticastHit(Hit);
-    Destroy();
-}
-
-void AProjectile::MulticastHit_Implementation(const FHitResult& Hit)
-{
     SpawnImpactFXAndSound(Hit);
+    Destroy();
 }
 
 void AProjectile::SpawnTrailSystem()

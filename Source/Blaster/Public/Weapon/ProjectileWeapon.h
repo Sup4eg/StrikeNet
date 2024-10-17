@@ -20,7 +20,5 @@ private:
     UPROPERTY(EditAnywhere)
     TSubclassOf<AProjectile> ProjectileClass;
 
-    // Using server - side rewind algorithm
-    UPROPERTY(EditAnywhere)
-    TSubclassOf<AProjectile> SSRProjectileClass;
+    void SetProjectileSSR(AProjectile* SpawnedProjectile, APawn* InstigatorPawn, FVector_NetQuantize TraceStart);
 };

@@ -13,7 +13,9 @@
 		"typescript.tsc.autoDetect": "off",
 		"npm.autoDetect": "off",
 		"files.associations": {
-			"xtr1common": "cpp"
+			"xtr1common": "cpp",
+			"__config": "cpp",
+			"*.rh": "cpp"
 		}
 	},
 	"extensions": {

@@ -196,6 +196,27 @@ void ULagCompensationComponent::ProjectileServerScoreRequest_Implementation(ABla
     }
 }
 
+void ULagCompensationComponent::ExplosionProjectileServerScoreRequest(TArray<ABlasterCharacter*>& HitCharacters,  //
+    const FVector_NetQuantize& TraceStart,                                                                        //
+    const FVector_NetQuantize100& InitialVelocity,                                                                //
+    float HitTime,                                                                                                //
+    float Damage                                                                                                  //
+)
+{
+    if (!BlasterCharacter || HitCharacters.IsEmpty()) return;
+    FServerSideRewindResult Confirm = ProjectileServerSideRewind(HitCharacter, TraceStart, InitialVelocity, HitTime);
+    if (Confirm.bHitConfirmed)
+    {
+        UGameplayStatics::ApplyDamage(          //
+            HitCharacter,                       //
+            Damage,                             //
+            BlasterCharacter->GetController(),  //
+            DamageCauser,                       //
+            UDamageType::StaticClass()          //
+        );
+    }
+}
+
 void ULagCompensationComponent::ShotgunServerScoreRequest_Implementation(const TArray<ABlasterCharacter*>& HitCharacters,  //
     const FVector_NetQuantize& TraceStart,                                                                                 //
     const TArray<FVector_NetQuantize>& HitLocations,                                                                       //

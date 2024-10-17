@@ -36,6 +36,7 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Movement")
     float InitialSpeed = 15000.f;
+
 protected:
     virtual void BeginPlay() override;
 
@@ -55,9 +56,6 @@ protected:
     UFUNCTION()
     virtual void OnHit(
         UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
-
-    UFUNCTION(NetMulticast, Reliable)
-    void MulticastHit(const FHitResult& Hit);
 
     UPROPERTY(EditAnywhere)
     float Damage = 20.f;

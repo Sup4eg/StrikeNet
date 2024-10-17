@@ -56,7 +56,7 @@ void AProjectileGrenade::OnBounce(const FHitResult& ImpactResult, const FVector&
 void AProjectileGrenade::DestroyTimerFinished()
 {
     ExplodeDamage();
-    MulticastHit(GetClosestResultToExplosion());
+    Super::SpawnImpactFXAndSound(GetClosestResultToExplosion());
     Super::DestroyTimerFinished();
 }
 

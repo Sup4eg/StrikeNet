@@ -9,6 +9,11 @@
 #include "Sound/SoundBase.h"
 #include "Sound/SoundAttenuation.h"
 #include "RocketMovementComponent.h"
+#include "Engine/World.h"
+#include "BlasterCharacter.h"
+#include "BlasterPlayerController.h"
+#include "GameFramework/DamageType.h"
+#include "LagCompensationComponent.h"
 #include "ProjectileRocket.h"
 
 AProjectileRocket::AProjectileRocket()
@@ -25,11 +30,6 @@ AProjectileRocket::AProjectileRocket()
 void AProjectileRocket::BeginPlay()
 {
     Super::BeginPlay();
-
-    if (!HasAuthority())
-    {
-        CollisionBox->OnComponentHit.AddDynamic(this, &ThisClass::OnHit);
-    }
 
     SpawnTrailSystem();
     if (ProjectileLoop && LoopingSoundAttenuation)
@@ -70,7 +70,44 @@ void AProjectileRocket::OnHit(
 
     if (OtherActor == GetOwner()) return;
 
-    ExplodeDamage();
+    if (ABlasterCharacter* OwnerCharacter = Cast<ABlasterCharacter>(GetOwner()))
+    {
+        if (OwnerCharacter->HasAuthority() && !bUseServerSideRewind)
+        {
+            UGameplayStatics::ApplyRadialDamageWithFalloff(  //
+                this,                                        // World context object
+                Damage,                                      // Base damage
+                10.f,                                        // Minimum damage
+                GetActorLocation(),                          // Origin
+                DamageInnerRadius,                           // DamageInnerRadius
+                DamageOuterRadius,                           // DamageOuterRadius
+                1.f,                                         // DamageFallOff
+                UDamageType::StaticClass(),                  // DamageType class
+                TArray<AActor*>{},                           // Ignor actors
+                this,                                        // Damage causer
+                OwnerCharacter->GetController()              // Instigator Controller
+            );
+        }
+        else if (bUseServerSideRewind && OwnerCharacter->GetLagCompensationComponent() && OwnerCharacter->IsLocallyControlled())
+        {
+            TArray<ABlasterCharacter*> HitCharacters;
+            GetHitCharacters(HitCharacters);
+
+            if (!HitCharacters.IsEmpty())
+            {
+                ABlasterPlayerController* OwnerController = Cast<ABlasterPlayerController>(OwnerCharacter->GetController());
+                float HitTime = OwnerController->GetServerTime() - OwnerController->SingleTripTime;
+                OwnerCharacter->GetLagCompensationComponent()->ExplosionProjectileServerScoreRequest(  //
+                    HitCharacters,                                                                     //
+                    TraceStart,                                                                        //
+                    InitialVelocity,                                                                   //
+                    HitTime,                                                                           //
+                    Damage                                                                             //
+                );
+            }
+        }
+    }
+
     StartDestoryTimer();
     SpawnImpactFXAndSound(Hit);
 
@@ -89,5 +126,28 @@ void AProjectileRocket::OnHit(
     if (ProjectileLoopComponent && ProjectileLoopComponent->IsPlaying())
     {
         ProjectileLoopComponent->Stop();
+    }
+}
+
+void AProjectileRocket::GetHitCharacters(TArray<ABlasterCharacter*>& OutHitCharacters)
+{
+    TArray<FHitResult> HitResults;
+    FCollisionQueryParams QueryParams;
+    QueryParams.AddIgnoredActor(GetOwner());
+    FCollisionObjectQueryParams ObjectParams;
+    ObjectParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
+
+    GetWorld()->SweepMultiByObjectType(HitResults, GetActorLocation(), GetActorLocation(), FQuat::Identity, ObjectParams,
+        FCollisionShape::MakeSphere(DamageOuterRadius), QueryParams);
+
+    for (FHitResult& HitResult : HitResults)
+    {
+        if (HitResult.bBlockingHit && HitResult.GetActor() && HitResult.GetActor()->ActorHasTag("BlasterCharacter"))
+        {
+            if (ABlasterCharacter* HitCharacter = Cast<ABlasterCharacter>(HitResult.GetActor()))
+            {
+                OutHitCharacters.AddUnique(HitCharacter);
+            }
+        }
     }
 }

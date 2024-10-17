@@ -389,16 +389,17 @@ void UCombatComponent::UpdateShotgunAmmoValues()
 
 bool UCombatComponent::CanReload()
 {
+    //Debug purpose
 
-    if (!BlasterCharacter->HasAuthority() && BlasterCharacter->IsLocallyControlled())
-    {
-        UE_LOG(LogTemp, Warning, TEXT("EQUIPPED weapon : %s"), EquippedWeapon == nullptr ? TEXT("NO") : TEXT("YES"));
-        UE_LOG(LogTemp, Warning, TEXT("EquippedWeapon->GetAmmo() : %d"), EquippedWeapon->GetAmmo());
-        UE_LOG(LogTemp, Warning, TEXT("EquippedWeapon->GetMagCapacity() : %d"), EquippedWeapon->GetMagCapacity());
-        UE_LOG(LogTemp, Warning, TEXT("Carried ammo : %d"), CarriedAmmo);
-        UE_LOG(LogTemp, Warning, TEXT("CombatState : %s"), *UEnum::GetValueAsString(CombatState));
-        UE_LOG(LogTemp, Warning, TEXT("locally reloading: %s"), bLocallyReloading == true ? TEXT("YES") : TEXT("NO"));
-    }
+    // if (!BlasterCharacter->HasAuthority() && BlasterCharacter->IsLocallyControlled())
+    // {
+    //     UE_LOG(LogTemp, Warning, TEXT("EQUIPPED weapon : %s"), EquippedWeapon == nullptr ? TEXT("NO") : TEXT("YES"));
+    //     UE_LOG(LogTemp, Warning, TEXT("EquippedWeapon->GetAmmo() : %d"), EquippedWeapon->GetAmmo());
+    //     UE_LOG(LogTemp, Warning, TEXT("EquippedWeapon->GetMagCapacity() : %d"), EquippedWeapon->GetMagCapacity());
+    //     UE_LOG(LogTemp, Warning, TEXT("Carried ammo : %d"), CarriedAmmo);
+    //     UE_LOG(LogTemp, Warning, TEXT("CombatState : %s"), *UEnum::GetValueAsString(CombatState));
+    //     UE_LOG(LogTemp, Warning, TEXT("locally reloading: %s"), bLocallyReloading == true ? TEXT("YES") : TEXT("NO"));
+    // }
 
     return EquippedWeapon &&                                                //
            EquippedWeapon->GetAmmo() < EquippedWeapon->GetMagCapacity() &&  //
@@ -899,14 +900,15 @@ void UCombatComponent::FireTimerFinished()
 
 bool UCombatComponent::CanFire()
 {
+    //Debug purpose
 
-    if (BlasterCharacter && !BlasterCharacter->HasAuthority() && BlasterCharacter->IsLocallyControlled())
-    {
-        UE_LOG(LogTemp, Warning, TEXT("EQUIPPED weapon : %s"), EquippedWeapon == nullptr ? TEXT("NO") : TEXT("YES"));
-        UE_LOG(LogTemp, Warning, TEXT("bCanFire : %s"), bCanFire == false ? TEXT("NO") : TEXT("YES"));
-        UE_LOG(LogTemp, Warning, TEXT("CombatState : %s"), *UEnum::GetValueAsString(CombatState));
-        UE_LOG(LogTemp, Warning, TEXT("bLocallyReloading : %s"), bLocallyReloading == false ? TEXT("NO") : TEXT("YES"));
-    }
+    // if (BlasterCharacter && !BlasterCharacter->HasAuthority() && BlasterCharacter->IsLocallyControlled())
+    // {
+    //     UE_LOG(LogTemp, Warning, TEXT("EQUIPPED weapon : %s"), EquippedWeapon == nullptr ? TEXT("NO") : TEXT("YES"));
+    //     UE_LOG(LogTemp, Warning, TEXT("bCanFire : %s"), bCanFire == false ? TEXT("NO") : TEXT("YES"));
+    //     UE_LOG(LogTemp, Warning, TEXT("CombatState : %s"), *UEnum::GetValueAsString(CombatState));
+    //     UE_LOG(LogTemp, Warning, TEXT("bLocallyReloading : %s"), bLocallyReloading == false ? TEXT("NO") : TEXT("YES"));
+    // }
 
     if (!EquippedWeapon || IsCloseToWall()) return false;
     // Shotgun shells

@@ -96,6 +96,21 @@ public:
     );
 
     /**
+     * Explosion projectile
+     * Rocket
+     * Grenade Launcher
+     * Grenades
+     */
+
+    UFUNCTION(Server, Reliable)
+    void ExplosionProjectileServerScoreRequest(TArray<ABlasterCharacter*>& HitCharacters,  //
+        const FVector_NetQuantize& TraceStart,                                             //
+        const FVector_NetQuantize100& InitialVelocity,                                     //
+        float HitTime,                                                                     //
+        float Damage                                                                       //
+    );
+
+    /**
      * Shotgun
      */
     UFUNCTION(Server, Reliable)
