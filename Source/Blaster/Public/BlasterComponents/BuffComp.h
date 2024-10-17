@@ -117,6 +117,8 @@ private:
 
     void SetDynamicInvisibilityMaterialInstance(float Dissolve, float Glow);
 
+    void PlayInvisibilitySound();
+
     FOnTimelineFloat InvisibilityTrack;
 
     UPROPERTY(EditAnywhere, Category = "Invisibility Buff")
@@ -143,7 +145,7 @@ private:
     float TargetOpacity = 0.05f;
 
     UPROPERTY(EditAnywhere)
-    USoundBase* FinishInvisibilityBuffSound;
+    USoundBase* InvisibilityBuffSound;
 
     bool bIsInvisibility = false;
 

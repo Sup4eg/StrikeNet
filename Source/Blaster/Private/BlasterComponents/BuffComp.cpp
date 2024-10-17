@@ -123,16 +123,22 @@ void UBuffComp::MulticastStartInvisibilityBuff_Implementation(double Opacity)
     TargetOpacity = Opacity;
     bIsInvisibility = true;
     SetDynamicInvisibilityMaterialInstance(-0.55f, 200.f);
+    PlayInvisibilitySound();
     StartInvisibilityEffect();
 }
 
 void UBuffComp::MulticastFinishInvisibilityBuff_Implementation()
 {
-    if (BlasterCharacter && FinishInvisibilityBuffSound)
-    {
-        UGameplayStatics::PlaySoundAtLocation(this, FinishInvisibilityBuffSound, BlasterCharacter->GetActorLocation());
-    }
+    PlayInvisibilitySound();
     FinishInvisibilityEffect();
+}
+
+void UBuffComp::PlayInvisibilitySound()
+{
+    if (BlasterCharacter && InvisibilityBuffSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(this, InvisibilityBuffSound, BlasterCharacter->GetActorLocation());
+    }
 }
 
 void UBuffComp::StartInvisibilityEffect()

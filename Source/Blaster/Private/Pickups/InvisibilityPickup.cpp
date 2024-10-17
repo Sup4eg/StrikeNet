@@ -9,6 +9,7 @@ AInvisibilityPickup::AInvisibilityPickup()
     bReplicates = true;
 }
 
+
 void AInvisibilityPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent,  //
     AActor* OtherActor,                                                              //
     UPrimitiveComponent* OtherComp,                                                  //

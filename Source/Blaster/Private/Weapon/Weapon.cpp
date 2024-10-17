@@ -17,7 +17,7 @@
 AWeapon::AWeapon()
 {
     PrimaryActorTick.bCanEverTick = true;
-    bReplicates = true;
+    bReplicates = false;
 
     SetReplicateMovement(true);
 
@@ -47,13 +47,10 @@ void AWeapon::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
-    if (HasAuthority())
+    RunningTime += DeltaTime;
+    if (bIsHovering)
     {
-        RunningTime += DeltaTime;
-        if (bIsHovering)
-        {
-            AddActorWorldOffset(FVector(0.f, 0.f, TransformedSin()));
-        }
+        AddActorWorldOffset(FVector(0.f, 0.f, TransformedSin()));
     }
 }
 

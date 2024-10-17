@@ -226,8 +226,6 @@ void ABlasterCharacter::BeginPlay()
     }
 
     InitializedMaterial = GetMesh()->GetMaterial(0);
-
-    // UE_LOG(LogTemp, Warning, TEXT("Name: %s, Local Role: %s"), *GetName(), *UEnum::GetValueAsString(GetLocalRole()));
 }
 
 void ABlasterCharacter::SpawnDefaultWeapon()
@@ -241,6 +239,7 @@ void ABlasterCharacter::SpawnDefaultWeapon()
         {
             if (AWeapon* StartingWeapon = GetWorld()->SpawnActor<AWeapon>(DefaultWeaponClass))
             {
+                StartingWeapon->SetReplicates(true);
                 StartingWeapon->bDestroyWeapon = true;
                 if (CombatComp)
                 {
@@ -763,9 +762,9 @@ void ABlasterCharacter::EquipButtonPressed()
 {
     if (!CombatComp) return;
     CombatComp->bLocallyReloading = false;
-    CombatComp->ReloadAfterEquip = true;
     if (CombatComp->CombatState != ECombatState::ECS_SwappingWeapons)
     {
+        CombatComp->ReloadAfterEquip = true;
         ServerEquipButtonPressed();
     }
 }
