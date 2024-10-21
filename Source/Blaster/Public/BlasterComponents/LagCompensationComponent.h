@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Engine/HitResult.h"
 #include "LagCompensationComponent.generated.h"
 
 class ABlasterCharacter;
@@ -26,24 +27,6 @@ struct FBoxInformation
 };
 
 USTRUCT(BlueprintType)
-struct FCapsuleInformation
-{
-    GENERATED_USTRUCT_BODY()
-
-    UPROPERTY()
-    FVector Location;
-
-    UPROPERTY()
-    FRotator Rotation;
-
-    UPROPERTY()
-    float HalfHeight;
-
-    UPROPERTY()
-    float Radius;
-};
-
-USTRUCT(BlueprintType)
 struct FFramePackage
 {
     GENERATED_USTRUCT_BODY()
@@ -53,9 +36,6 @@ struct FFramePackage
 
     UPROPERTY()
     TMap<FName, FBoxInformation> HitBoxInfo;
-
-    UPROPERTY()
-    FCapsuleInformation HitCapsuleInfo;
 
     UPROPERTY();
     ABlasterCharacter* Character;
@@ -79,6 +59,18 @@ struct FShotgunServerSideRewindResult
     TMap<ABlasterCharacter*, uint32> Shots;
 };
 
+USTRUCT(BlueprintType)
+struct FExplosionProjectileServerSideRewindResult
+{
+    GENERATED_USTRUCT_BODY()
+
+    UPROPERTY()
+    FVector Origin;
+
+    UPROPERTY()
+    TMap<AActor*, FHitResult> OverlapCharactersMap;
+};
+
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class BLASTER_API ULagCompensationComponent : public UActorComponent
 {
@@ -97,7 +89,7 @@ public:
     UFUNCTION(Server, Reliable)
     void ServerScoreRequest(ABlasterCharacter* HitCharacter,  //
         const FVector_NetQuantize& TraceStart,                //
-        const FVector_NetQuantize& HitLocation,               //
+        const FVector_NetQuantize100& HitLocation,               //
         float HitTime,
         float Damage,          //
         AWeapon* DamageCauser  //
@@ -111,6 +103,7 @@ public:
     void ProjectileServerScoreRequest(ABlasterCharacter* HitCharacter,  //
         const FVector_NetQuantize& TraceStart,                          //
         const FVector_NetQuantize100& InitialVelocity,                  //
+        float GravityScale,                                             //
         float HitTime,                                                  //
         float Damage,                                                   //
         AWeapon* DamageCauser                                           //
@@ -124,11 +117,16 @@ public:
      */
 
     UFUNCTION(Server, Reliable)
-    void ExplosionProjectileServerScoreRequest(const TArray<ABlasterCharacter*>& HitCharacters,  //
-        const FVector_NetQuantize& TraceStart,                                                   //
-        const FVector_NetQuantize100& InitialVelocity,                                           //
-        float HitTime,                                                                           //
-        float Damage                                                                             //
+    void ExplosionProjectileServerScoreRequest(           //
+        const TArray<ABlasterCharacter*>& HitCharacters,  //
+        const FVector_NetQuantize& TraceStart,            //
+        const FVector_NetQuantize100& InitialVelocity,    //
+        float GravityScale,                               //
+        float Damage,                                     //
+        float DamageInnerRadius,                          //
+        float DamageOuterRadius,                          //
+        AWeapon* DamageCauser,
+        float HitTime  //
     );
 
     /**
@@ -138,7 +136,7 @@ public:
     void ShotgunServerScoreRequest(                       //
         const TArray<ABlasterCharacter*>& HitCharacters,  //
         const FVector_NetQuantize& TraceStart,            //
-        const TArray<FVector_NetQuantize>& HitLocations,  //
+        const TArray<FVector_NetQuantize100>& HitLocations,  //
         float HitTime,                                    //
         float Damage,                                     //
         AWeapon* DamageCauser                             //
@@ -154,9 +152,7 @@ protected:
         float HitTime);
 
     void CacheBoxPositions(ABlasterCharacter* HitCharacter, FFramePackage& OutFramePackage);
-    void CacheCapsulePosition(ABlasterCharacter* HitCharacter, FFramePackage& OutFramePackage);
     void MoveBoxes(ABlasterCharacter* HitCharacter, const FFramePackage& Package);
-    void MoveCapsule(ABlasterCharacter* HitCharacter, const FFramePackage& Package);
     void ResetHitBoxes(ABlasterCharacter* HitCharacter, const FFramePackage& Package);
     void EnableCharacterMeshCollision(ABlasterCharacter* HitCharacter, ECollisionEnabled::Type CollisionEnabled);
     void SaveFramePackage();
@@ -167,13 +163,13 @@ protected:
      */
     FServerSideRewindResult ServerSideRewind(ABlasterCharacter* HitCharacter,  //
         const FVector_NetQuantize& TraceStart,                                 //
-        const FVector_NetQuantize& HitLocation,                                //
+        const FVector_NetQuantize100& HitLocation,                                //
         float HitTime);
 
     FServerSideRewindResult ConfirmHit(const FFramePackage& Package,  //
         ABlasterCharacter* HitCharacter,                              //
         const FVector_NetQuantize& TraceStart,                        //
-        const FVector_NetQuantize& HitLocation);
+        const FVector_NetQuantize100& HitLocation);
 
     /**
      * Projectile
@@ -182,26 +178,34 @@ protected:
     FServerSideRewindResult ProjectileServerSideRewind(ABlasterCharacter* HitCharacter,  //
         const FVector_NetQuantize& TraceStart,                                           //
         const FVector_NetQuantize100& InitialVelocity,                                   //
+        float GravityScale,                                                              //
         float HitTime);
 
     FServerSideRewindResult ProjectileConfirmHit(const FFramePackage& Package,  //
         ABlasterCharacter* HitCharacter,                                        //
         const FVector_NetQuantize& TraceStart,                                  //
         const FVector_NetQuantize100& InitialVelocity,                          //
+        float GravityScale,                                                     //
         float HitTime);
 
     /**
      * Explosion projectiles
      */
 
-    FServerSideRewindResult ExplosionProjectileServerSideRewind(const TArray<ABlasterCharacter*>& HitCharacters,  //
-        const FVector_NetQuantize& TraceStart,                                                                    //
-        const FVector_NetQuantize100& InitialVelocity,                                                            //
+    FExplosionProjectileServerSideRewindResult ExplosionProjectileServerSideRewind(  //
+        const TArray<ABlasterCharacter*>& HitCharacters,                             //
+        const FVector_NetQuantize& TraceStart,                                       //
+        const FVector_NetQuantize100& InitialVelocity,                               //
+        float GravityScale,                                                          //
+        float DamageOuterRadius,                                                     //
         float HitTime);
 
-    FServerSideRewindResult ExplosionProjectileConfirmHit(const TArray<FFramePackage>& FramePackages,  //
-        const FVector_NetQuantize& TraceStart,                                                         //
-        const FVector_NetQuantize100& InitialVelocity,                                                 //
+    FExplosionProjectileServerSideRewindResult ExplosionProjectileConfirmHit(  //
+        const TArray<FFramePackage>& FramePackages,                            //
+        const FVector_NetQuantize& TraceStart,                                 //
+        const FVector_NetQuantize100& InitialVelocity,                         //
+        float GravityScale,                                                    //
+        float DamageOuterRadius,                                               //
         float HitTime);
 
     /**
@@ -210,13 +214,13 @@ protected:
     FShotgunServerSideRewindResult ShotgunServerSideRewind(  //
         const TArray<ABlasterCharacter*>& HitCharacters,     //
         const FVector_NetQuantize& TraceStart,               //
-        const TArray<FVector_NetQuantize>& HitLocations,     //
+        const TArray<FVector_NetQuantize100>& HitLocations,     //
         float HitTime);                                      //
 
     FShotgunServerSideRewindResult ShotgunConfirmHit(  //
         const TArray<FFramePackage>& FramePackages,    //
         const FVector_NetQuantize& TraceStart,         //
-        const TArray<FVector_NetQuantize>& HitLocations);
+        const TArray<FVector_NetQuantize100>& HitLocations);
 
 private:
     bool IsCharacterValid();

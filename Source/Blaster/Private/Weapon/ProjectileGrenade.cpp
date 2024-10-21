@@ -42,6 +42,10 @@ void AProjectileGrenade::PostEditChangeProperty(FPropertyChangedEvent& Event)
         ProjectileMovementComponent->InitialSpeed = InitialSpeed;
         ProjectileMovementComponent->MaxSpeed = InitialSpeed;
     }
+    else if (PropertyName == GET_MEMBER_NAME_CHECKED(AProjectileGrenade, GravityScale) && ProjectileMovementComponent)
+    {
+        ProjectileMovementComponent->ProjectileGravityScale = GravityScale;
+    }
 }
 #endif
 
@@ -55,7 +59,7 @@ void AProjectileGrenade::OnBounce(const FHitResult& ImpactResult, const FVector&
 
 void AProjectileGrenade::DestroyTimerFinished()
 {
-    ExplodeDamage();
+    ExplodeDamage(GetActorLocation());
     Super::SpawnImpactFXAndSound(GetClosestResultToExplosion());
     Super::DestroyTimerFinished();
 }

@@ -12,8 +12,9 @@
 #include "Engine/World.h"
 #include "BlasterCharacter.h"
 #include "BlasterPlayerController.h"
-#include "GameFramework/DamageType.h"
 #include "LagCompensationComponent.h"
+#include "Weapon.h"
+#include "BlasterGameplayStatics.h"
 #include "ProjectileRocket.h"
 
 AProjectileRocket::AProjectileRocket()
@@ -48,6 +49,25 @@ void AProjectileRocket::BeginPlay()
             (USoundConcurrency*)nullptr,                                 //
             false);
     }
+
+    // Debug purpose
+
+    // FPredictProjectilePathParams PathParams;
+    // PathParams.bTraceWithChannel = true;
+    // PathParams.bTraceWithCollision = true;
+    // PathParams.MaxSimTime = 4.f;
+    // PathParams.LaunchVelocity = GetActorForwardVector() * InitialSpeed;
+    // PathParams.OverrideGravityZ = GetWorld()->GetGravityZ() * RocketMovementComponent->ProjectileGravityScale;
+    // PathParams.StartLocation = GetActorLocation();
+    // PathParams.SimFrequency = 15.f;
+    // PathParams.ProjectileRadius = 5.f;
+    // PathParams.TraceChannel = ECC_Visibility;
+    // PathParams.ActorsToIgnore.Add(this);
+    // PathParams.DrawDebugTime = 5.f;
+    // PathParams.DrawDebugType = EDrawDebugTrace::ForDuration;
+
+    // FPredictProjectilePathResult PathResult;
+    // UGameplayStatics::PredictProjectilePath(this, PathParams, PathResult);
 }
 
 #if WITH_EDITOR
@@ -61,6 +81,10 @@ void AProjectileRocket::PostEditChangeProperty(FPropertyChangedEvent& Event)
         RocketMovementComponent->InitialSpeed = InitialSpeed;
         RocketMovementComponent->MaxSpeed = InitialSpeed;
     }
+    else if (PropertyName == GET_MEMBER_NAME_CHECKED(AProjectileRocket, GravityScale) && RocketMovementComponent)
+    {
+        RocketMovementComponent->ProjectileGravityScale = GravityScale;
+    }
 }
 #endif
 
@@ -70,44 +94,7 @@ void AProjectileRocket::OnHit(
 
     if (OtherActor == GetOwner()) return;
 
-    if (ABlasterCharacter* OwnerCharacter = Cast<ABlasterCharacter>(GetOwner()))
-    {
-        if (OwnerCharacter->HasAuthority() && !bUseServerSideRewind)
-        {
-            UGameplayStatics::ApplyRadialDamageWithFalloff(  //
-                this,                                        // World context object
-                Damage,                                      // Base damage
-                10.f,                                        // Minimum damage
-                GetActorLocation(),                          // Origin
-                DamageInnerRadius,                           // DamageInnerRadius
-                DamageOuterRadius,                           // DamageOuterRadius
-                1.f,                                         // DamageFallOff
-                UDamageType::StaticClass(),                  // DamageType class
-                TArray<AActor*>{},                           // Ignor actors
-                this,                                        // Damage causer
-                OwnerCharacter->GetController()              // Instigator Controller
-            );
-        }
-        else if (bUseServerSideRewind && OwnerCharacter->GetLagCompensationComponent() && OwnerCharacter->IsLocallyControlled())
-        {
-            TArray<ABlasterCharacter*> HitCharacters;
-            GetHitCharacters(HitCharacters);
-
-            if (!HitCharacters.IsEmpty())
-            {
-                ABlasterPlayerController* OwnerController = Cast<ABlasterPlayerController>(OwnerCharacter->GetController());
-                float HitTime = OwnerController->GetServerTime() - OwnerController->SingleTripTime;
-                OwnerCharacter->GetLagCompensationComponent()->ExplosionProjectileServerScoreRequest(  //
-                    HitCharacters,                                                                     //
-                    TraceStart,                                                                        //
-                    InitialVelocity,                                                                   //
-                    HitTime,                                                                           //
-                    Damage                                                                             //
-                );
-            }
-        }
-    }
-
+    ExplodeDamage(Hit.ImpactPoint);
     StartDestoryTimer();
     SpawnImpactFXAndSound(Hit);
 
@@ -126,28 +113,5 @@ void AProjectileRocket::OnHit(
     if (ProjectileLoopComponent && ProjectileLoopComponent->IsPlaying())
     {
         ProjectileLoopComponent->Stop();
-    }
-}
-
-void AProjectileRocket::GetHitCharacters(TArray<ABlasterCharacter*>& OutHitCharacters)
-{
-    TArray<FHitResult> HitResults;
-    FCollisionQueryParams QueryParams;
-    QueryParams.AddIgnoredActor(GetOwner());
-    FCollisionObjectQueryParams ObjectParams;
-    ObjectParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
-
-    GetWorld()->SweepMultiByObjectType(HitResults, GetActorLocation(), GetActorLocation(), FQuat::Identity, ObjectParams,
-        FCollisionShape::MakeSphere(DamageOuterRadius), QueryParams);
-
-    for (FHitResult& HitResult : HitResults)
-    {
-        if (HitResult.bBlockingHit && HitResult.GetActor() && HitResult.GetActor()->ActorHasTag("BlasterCharacter"))
-        {
-            if (ABlasterCharacter* HitCharacter = Cast<ABlasterCharacter>(HitResult.GetActor()))
-            {
-                OutHitCharacters.AddUnique(HitCharacter);
-            }
-        }
     }
 }

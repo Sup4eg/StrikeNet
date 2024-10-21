@@ -46,7 +46,7 @@ public:
 
     void ShowPickupWidget(bool bShowWidget);
 
-    virtual void Fire(const FVector& HitTarget);
+    virtual void Fire(const FVector_NetQuantize100& HitTarget);
 
     void Dropped();
 

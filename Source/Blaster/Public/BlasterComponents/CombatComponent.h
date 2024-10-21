@@ -34,6 +34,7 @@ public:
     void SwapWeapons();
     void Reload();
 
+
     UFUNCTION(BlueprintCallable)
     void FinishReloading();
 
@@ -56,8 +57,11 @@ public:
     UFUNCTION(BlueprintCallable)
     void LaunchGrenade();
 
+    UFUNCTION(NetMulticast, Reliable)
+    void MulticastLaunchGrenade(const FVector_NetQuantize& Target);
+
     UFUNCTION(Server, Reliable)
-    void ServerLaunchGranade(const FVector_NetQuantize Target);
+    void ServerLaunchGrenade(const FVector_NetQuantize& Target);
 
     void PickupAmmo(EWeaponType WeaponType, uint32 AmmoAmount);
 
@@ -85,16 +89,16 @@ protected:
     int32 GetAmountToReload();
 
     UFUNCTION(Server, Reliable, WithValidation)
-    void ServerFire(const FVector_NetQuantize& TraceHitTarget, float FireDelay);
+    void ServerFire(const FVector_NetQuantize100& TraceHitTarget, float FireDelay);
 
     UFUNCTION(NetMulticast, Reliable)
-    void MulticastFire(const FVector_NetQuantize& TraceHitTarget);
+    void MulticastFire(const FVector_NetQuantize100& TraceHitTarget);
 
     UFUNCTION(Server, Reliable, WithValidation)
-    void ServerShotgunFire(const TArray<FVector_NetQuantize>& TraceHitTargets, float FireDelay);
+    void ServerShotgunFire(const TArray<FVector_NetQuantize100>& TraceHitTargets, float FireDelay);
 
     UFUNCTION(NetMulticast, Reliable)
-    void MulticastShotgunFire(const TArray<FVector_NetQuantize>& TraceHitTargets);
+    void MulticastShotgunFire(const TArray<FVector_NetQuantize100>& TraceHitTargets);
 
     void TraceUnderCrosshairs(FHitResult& TraceHitResult);
 
@@ -126,8 +130,8 @@ private:
     void FireProjectileWeapon();
     void FireHitScanWeapon();
     void FireShotgun();
-    void LocalFire(const FVector_NetQuantize& TraceHitTarget);
-    void ShotgunLocalFire(const TArray<FVector_NetQuantize>& TraceHitTargets);
+    void LocalFire(const FVector_NetQuantize100& TraceHitTarget);
+    void ShotgunLocalFire(const TArray<FVector_NetQuantize100>& TraceHitTargets);
     void StartFireTimer();
     void FireTimerFinished();
     bool CanFire();
@@ -164,6 +168,8 @@ private:
 
     void UpdateHUDGrenades();
 
+    void SpawnGrenade(const FVector_NetQuantize& Target);
+
     UPROPERTY()
     ABlasterCharacter* BlasterCharacter;
 
@@ -189,8 +195,6 @@ private:
     bool bAiming = false;
 
     bool bAimButtonPressed = false;
-
-    bool ReloadAfterEquip = false;
 
     bool bFireButtonPressed;
 

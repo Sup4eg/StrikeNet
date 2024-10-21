@@ -8,7 +8,7 @@
 #include "DrawDebugHelpers.h"
 #include "ProjectileWeapon.h"
 
-void AProjectileWeapon::Fire(const FVector& HitTarget)
+void AProjectileWeapon::Fire(const FVector_NetQuantize100& HitTarget)
 {
     Super::Fire(HitTarget);
 
@@ -29,6 +29,7 @@ void AProjectileWeapon::Fire(const FVector& HitTarget)
         if (AProjectile* SpawnedProjectile =
                 GetWorld()->SpawnActor<AProjectile>(ProjectileClass, SocketTransform.GetLocation(), TargetRotation, SpawnParams))
         {
+            SpawnedProjectile->SetOwningWeapon(this);
             SetProjectileSSR(SpawnedProjectile, InstigatorPawn, SocketTransform.GetLocation());
         }
     }

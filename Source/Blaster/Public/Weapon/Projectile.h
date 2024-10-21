@@ -17,6 +17,7 @@ class UParticleSystemComponent;
 class UPrimitiveComponent;
 class USoundBase;
 class UPhysicalMaterial;
+class AWeapon;
 
 UCLASS()
 class BLASTER_API AProjectile : public AActor
@@ -37,6 +38,9 @@ public:
     UPROPERTY(EditAnywhere, Category = "Movement")
     float InitialSpeed = 15000.f;
 
+    UPROPERTY(EditAnywhere, Category = "Movement")
+    float GravityScale = 1.f;
+
 protected:
     virtual void BeginPlay() override;
 
@@ -46,7 +50,7 @@ protected:
 
     void SpawnTrailSystem();
 
-    void ExplodeDamage();
+    void ExplodeDamage(const FVector& ImpactPoint);
 
     virtual void SpawnImpactFXAndSound(const FHitResult& Hit);
     virtual void SpawnImpactParticles(const FHitResult& FireHit, FImpactData& ImpactData);
@@ -56,9 +60,6 @@ protected:
     UFUNCTION()
     virtual void OnHit(
         UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
-
-    UPROPERTY(EditAnywhere)
-    float Damage = 20.f;
 
     UPROPERTY(EditAnywhere)
     FImpactData DefaultImpactData;
@@ -87,6 +88,12 @@ protected:
     UPROPERTY(EditAnywhere)
     float DamageOuterRadius = 500.f;
 
+    UPROPERTY(EditAnywhere)
+    float Damage = 20.f;
+
+    UPROPERTY()
+    AWeapon* OwningWeapon;
+
 private:
     FImpactData GetImpactData(const FHitResult& FireHit);
 
@@ -106,4 +113,5 @@ private:
 
 public:
     FORCEINLINE UBoxComponent* GetCollisionBox() const { return CollisionBox; };
+    FORCEINLINE void SetOwningWeapon(AWeapon* NewWeapon) { OwningWeapon = NewWeapon; }
 };

@@ -30,6 +30,10 @@ void AProjectileBullet::PostEditChangeProperty(FPropertyChangedEvent& Event)
         ProjectileMovementComponent->InitialSpeed = InitialSpeed;
         ProjectileMovementComponent->MaxSpeed = InitialSpeed;
     }
+    else if (PropertyName == GET_MEMBER_NAME_CHECKED(AProjectileBullet, GravityScale) && ProjectileMovementComponent)
+    {
+        ProjectileMovementComponent->ProjectileGravityScale = GravityScale;
+    }
 }
 #endif
 
@@ -42,8 +46,7 @@ void AProjectileBullet::OnHit(
         {
             if (OwnerCharacter->HasAuthority() && !bUseServerSideRewind)
             {
-                UGameplayStatics::ApplyDamage(
-                    OtherActor, Damage, OwnerController, OwnerCharacter->GetEquippedWeapon(), UDamageType::StaticClass());
+                UGameplayStatics::ApplyDamage(OtherActor, Damage, OwnerController, OwningWeapon, UDamageType::StaticClass());
                 Super::OnHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
                 return;
             }
@@ -60,9 +63,11 @@ void AProjectileBullet::OnHit(
                             HitCharacter,                                                             //
                             TraceStart,                                                               //
                             InitialVelocity,                                                          //
+                            GravityScale,                                                             //
                             HitTime,                                                                  //
                             Damage,                                                                   //
-                            OwnerCharacter->GetEquippedWeapon());
+                            OwningWeapon                                                              //
+                        );
                     }
                 }
             }

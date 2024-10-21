@@ -12,8 +12,8 @@ class BLASTER_API AShotgun : public AHitScanWeapon
     GENERATED_BODY()
 
 public:
-    virtual void FireShotgun(const TArray<FVector_NetQuantize>& HitTargets);
-    void ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVector_NetQuantize>& HitTargets);
+    virtual void FireShotgun(const TArray<FVector_NetQuantize100>& HitTargets);
+    void ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVector_NetQuantize100>& HitTargets);
 
 protected:
     virtual void SpawnImpactSound(FHitResult& FireHit, FImpactData& ImpactData) override;
@@ -24,7 +24,7 @@ private:
         APawn* OwnerPawn,                              //
         AController* InstigatorController,             //
         const FVector& Start,                          //
-        const TArray<FVector_NetQuantize>& HitTargets  //
+        const TArray<FVector_NetQuantize100>& HitTargets  //
     );
 
     void AddToHitMap(FHitResult& FireHit, TMap<ABlasterCharacter*, uint32>& OutHitMap);

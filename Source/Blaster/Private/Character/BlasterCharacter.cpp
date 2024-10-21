@@ -171,9 +171,6 @@ void ABlasterCharacter::SetUpHitShapesSSR()
     foot_r->SetupAttachment(GetMesh(), "foot_r");
     HitCollisionBoxes.Add("foot_r", foot_r);
 
-    bodyHitCapsule = CreateDefaultSubobject<UCapsuleComponent>("body");
-    bodyHitCapsule->SetupAttachment(GetMesh());
-
     for (auto& Box : HitCollisionBoxes)
     {
         if (Box.Value)
@@ -184,21 +181,13 @@ void ABlasterCharacter::SetUpHitShapesSSR()
             Box.Value->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         }
     }
-
-    if (bodyHitCapsule)
-    {
-        bodyHitCapsule->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
-        bodyHitCapsule->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-        bodyHitCapsule->SetCollisionResponseToChannel(ECC_HitBox, ECollisionResponse::ECR_Block);
-        bodyHitCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    }
 }
 
 #if WITH_EDITOR
 void ABlasterCharacter::PostEditChangeProperty(FPropertyChangedEvent& Event)
 {
     Super::PostEditChangeProperty(Event);
-    if (!GetCharacterMovement() || !bodyHitCapsule) return;
+    if (!GetCharacterMovement()) return;
 
     FName PropertyName = Event.Property ? Event.Property->GetFName() : NAME_None;
     if (PropertyName == GET_MEMBER_NAME_CHECKED(ABlasterCharacter, BaseWalkSpeed))
@@ -208,16 +197,6 @@ void ABlasterCharacter::PostEditChangeProperty(FPropertyChangedEvent& Event)
     else if (PropertyName == GET_MEMBER_NAME_CHECKED(ABlasterCharacter, CrouchWalkSpeed))
     {
         GetCharacterMovement()->MaxWalkSpeedCrouched = CrouchWalkSpeed;
-    }
-    else if (PropertyName == GET_MEMBER_NAME_CHECKED(ABlasterCharacter, HitCapsuleBodyHalfHeight))
-    {
-        bodyHitCapsule->SetCapsuleHalfHeight(HitCapsuleBodyHalfHeight);
-    }
-    else if (PropertyName == GET_MEMBER_NAME_CHECKED(ABlasterCharacter, HitCapsuleBodyZLocation))
-    {
-        FVector CurrentLocation = bodyHitCapsule->GetRelativeLocation();
-        CurrentLocation.Z = HitCapsuleBodyZLocation;
-        bodyHitCapsule->SetRelativeLocation(CurrentLocation);
     }
 }
 #endif
@@ -781,18 +760,17 @@ void ABlasterCharacter::Jump()
 
 void ABlasterCharacter::EquipButtonPressed()
 {
-    if (!CombatComp) return;
+    if (!OverlappingWeapon || !CombatComp) return;
     CombatComp->bLocallyReloading = false;
     if (CombatComp->CombatState != ECombatState::ECS_SwappingWeapons)
     {
-        CombatComp->ReloadAfterEquip = true;
         ServerEquipButtonPressed();
     }
 }
 
 void ABlasterCharacter::ServerEquipButtonPressed_Implementation()
 {
-    if (!CombatComp) return;
+    if (!OverlappingWeapon || !CombatComp) return;
     CombatComp->EquipWeapon(OverlappingWeapon);
 }
 
@@ -830,26 +808,6 @@ void ABlasterCharacter::CrouchButtonPressed()
     else
     {
         Crouch();
-    }
-}
-
-void ABlasterCharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
-{
-    Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
-    if (GetCharacterMovement() && bodyHitCapsule)
-    {
-        bodyHitCapsule->SetCapsuleHalfHeight(HitCapsuleBodyHalfHeightCrouched);
-        bodyHitCapsule->SetRelativeLocation(FVector(0, 0, HitCapsuleBodyZLocationCrouched));
-    }
-}
-
-void ABlasterCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
-{
-    Super::OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
-    if (bodyHitCapsule)
-    {
-        bodyHitCapsule->SetCapsuleHalfHeight(HitCapsuleBodyHalfHeight);
-        bodyHitCapsule->SetRelativeLocation(FVector(0, 0, HitCapsuleBodyZLocation));
     }
 }
 

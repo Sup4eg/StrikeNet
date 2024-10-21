@@ -90,7 +90,6 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
         DropEquippedWeapon();
         EquipPrimaryWeapon(WeaponToEquip);
         ReloadEmptyWeapon();
-        ReloadAfterEquip = false;
     }
 
     BlasterCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
@@ -389,17 +388,17 @@ void UCombatComponent::UpdateShotgunAmmoValues()
 
 bool UCombatComponent::CanReload()
 {
-    //Debug purpose
+    // Debug purpose
 
-    // if (!BlasterCharacter->HasAuthority() && BlasterCharacter->IsLocallyControlled())
-    // {
-    //     UE_LOG(LogTemp, Warning, TEXT("EQUIPPED weapon : %s"), EquippedWeapon == nullptr ? TEXT("NO") : TEXT("YES"));
-    //     UE_LOG(LogTemp, Warning, TEXT("EquippedWeapon->GetAmmo() : %d"), EquippedWeapon->GetAmmo());
-    //     UE_LOG(LogTemp, Warning, TEXT("EquippedWeapon->GetMagCapacity() : %d"), EquippedWeapon->GetMagCapacity());
-    //     UE_LOG(LogTemp, Warning, TEXT("Carried ammo : %d"), CarriedAmmo);
-    //     UE_LOG(LogTemp, Warning, TEXT("CombatState : %s"), *UEnum::GetValueAsString(CombatState));
-    //     UE_LOG(LogTemp, Warning, TEXT("locally reloading: %s"), bLocallyReloading == true ? TEXT("YES") : TEXT("NO"));
-    // }
+    if (!BlasterCharacter->HasAuthority() && BlasterCharacter->IsLocallyControlled())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("EQUIPPED weapon : %s"), EquippedWeapon == nullptr ? TEXT("NO") : TEXT("YES"));
+        UE_LOG(LogTemp, Warning, TEXT("EquippedWeapon->GetAmmo() : %d"), EquippedWeapon->GetAmmo());
+        UE_LOG(LogTemp, Warning, TEXT("EquippedWeapon->GetMagCapacity() : %d"), EquippedWeapon->GetMagCapacity());
+        UE_LOG(LogTemp, Warning, TEXT("Carried ammo : %d"), CarriedAmmo);
+        UE_LOG(LogTemp, Warning, TEXT("CombatState : %s"), *UEnum::GetValueAsString(CombatState));
+        UE_LOG(LogTemp, Warning, TEXT("locally reloading: %s"), bLocallyReloading == true ? TEXT("YES") : TEXT("NO"));
+    }
 
     return EquippedWeapon &&                                                //
            EquippedWeapon->GetAmmo() < EquippedWeapon->GetMagCapacity() &&  //
@@ -413,13 +412,8 @@ void UCombatComponent::OnRep_CombatState()
     switch (CombatState)
     {
         case ECombatState::ECS_Reloading:
-            if (BlasterCharacter && !BlasterCharacter->IsLocallyControlled())
+            if (!bLocallyReloading)
             {
-                HandleReload();
-            }
-            if (BlasterCharacter->IsLocallyControlled() && ReloadAfterEquip)
-            {
-                ReloadAfterEquip = false;
                 HandleReload();
             }
             break;
@@ -532,11 +526,23 @@ void UCombatComponent::LaunchGrenade()
     ShowAttachedGrenade(false);
     if (BlasterCharacter && BlasterCharacter->IsLocallyControlled())
     {
-        ServerLaunchGranade(HitTarget);
+        SpawnGrenade(HitTarget);
+        ServerLaunchGrenade(HitTarget);
     }
 }
 
-void UCombatComponent::ServerLaunchGranade_Implementation(const FVector_NetQuantize Target)
+void UCombatComponent::ServerLaunchGrenade_Implementation(const FVector_NetQuantize& Target)
+{
+    MulticastLaunchGrenade(Target);
+}
+
+void UCombatComponent::MulticastLaunchGrenade_Implementation(const FVector_NetQuantize& Target)
+{
+    if (BlasterCharacter && BlasterCharacter->IsLocallyControlled()) return;
+    SpawnGrenade(Target);
+}
+
+void UCombatComponent::SpawnGrenade(const FVector_NetQuantize& Target)
 {
     bool bSpawnGrenade = BlasterCharacter &&                        //
                          GrenadeClass &&                            //
@@ -559,6 +565,7 @@ void UCombatComponent::ServerLaunchGranade_Implementation(const FVector_NetQuant
 
         if (Grenade)
         {
+            // TODO Use server side rewind algorithm
             FCollisionQueryParams QueryParams;
             QueryParams.AddIgnoredActor(SpawnParams.Owner);
             Grenade->GetCollisionBox()->IgnoreActorWhenMoving(SpawnParams.Owner, true);
@@ -584,12 +591,12 @@ void UCombatComponent::PickupAmmo(EWeaponType WeaponType, uint32 AmmoAmount)
     }
 }
 
-void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& TraceHitTarget, float FireDelay)
+void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize100& TraceHitTarget, float FireDelay)
 {
     MulticastFire(TraceHitTarget);
 }
 
-bool UCombatComponent::ServerFire_Validate(const FVector_NetQuantize& TraceHitTarget, float FireDelay)
+bool UCombatComponent::ServerFire_Validate(const FVector_NetQuantize100& TraceHitTarget, float FireDelay)
 {
     if (EquippedWeapon)
     {
@@ -599,18 +606,18 @@ bool UCombatComponent::ServerFire_Validate(const FVector_NetQuantize& TraceHitTa
     return true;
 }
 
-void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& TraceHitTarget)
+void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize100& TraceHitTarget)
 {
     if (BlasterCharacter && BlasterCharacter->IsLocallyControlled()) return;
     LocalFire(TraceHitTarget);
 }
 
-void UCombatComponent::ServerShotgunFire_Implementation(const TArray<FVector_NetQuantize>& TraceHitTargets, float FireDelay)
+void UCombatComponent::ServerShotgunFire_Implementation(const TArray<FVector_NetQuantize100>& TraceHitTargets, float FireDelay)
 {
     MulticastShotgunFire(TraceHitTargets);
 }
 
-bool UCombatComponent::ServerShotgunFire_Validate(const TArray<FVector_NetQuantize>& TraceHitTargets, float FireDelay)
+bool UCombatComponent::ServerShotgunFire_Validate(const TArray<FVector_NetQuantize100>& TraceHitTargets, float FireDelay)
 {
     if (EquippedWeapon)
     {
@@ -620,13 +627,13 @@ bool UCombatComponent::ServerShotgunFire_Validate(const TArray<FVector_NetQuanti
     return true;
 }
 
-void UCombatComponent::MulticastShotgunFire_Implementation(const TArray<FVector_NetQuantize>& TraceHitTargets)
+void UCombatComponent::MulticastShotgunFire_Implementation(const TArray<FVector_NetQuantize100>& TraceHitTargets)
 {
     if (BlasterCharacter && BlasterCharacter->IsLocallyControlled()) return;
     ShotgunLocalFire(TraceHitTargets);
 }
 
-void UCombatComponent::LocalFire(const FVector_NetQuantize& TraceHitTarget)
+void UCombatComponent::LocalFire(const FVector_NetQuantize100& TraceHitTarget)
 {
     if (BlasterCharacter && EquippedWeapon && CombatState == ECombatState::ECS_Unoccupied)
     {
@@ -635,7 +642,7 @@ void UCombatComponent::LocalFire(const FVector_NetQuantize& TraceHitTarget)
     }
 }
 
-void UCombatComponent::ShotgunLocalFire(const TArray<FVector_NetQuantize>& TraceHitTargets)
+void UCombatComponent::ShotgunLocalFire(const TArray<FVector_NetQuantize100>& TraceHitTargets)
 {
     AShotgun* Shotgun = Cast<AShotgun>(EquippedWeapon);
     if (!Shotgun || !BlasterCharacter) return;
@@ -855,7 +862,7 @@ void UCombatComponent::FireShotgun()
     {
         if (AShotgun* Shotgun = Cast<AShotgun>(EquippedWeapon))
         {
-            TArray<FVector_NetQuantize> HitTargets;
+            TArray<FVector_NetQuantize100> HitTargets;
             Shotgun->ShotgunTraceEndWithScatter(HitTarget, HitTargets);
             ShotgunLocalFire(HitTargets);
             ServerShotgunFire(HitTargets, EquippedWeapon->FireDelay);
@@ -900,7 +907,7 @@ void UCombatComponent::FireTimerFinished()
 
 bool UCombatComponent::CanFire()
 {
-    //Debug purpose
+    // Debug purpose
 
     // if (BlasterCharacter && !BlasterCharacter->HasAuthority() && BlasterCharacter->IsLocallyControlled())
     // {

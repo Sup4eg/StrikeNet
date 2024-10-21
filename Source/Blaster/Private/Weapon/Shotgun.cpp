@@ -14,7 +14,7 @@
 #include "LagCompensationComponent.h"
 #include "Shotgun.h"
 
-void AShotgun::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
+void AShotgun::FireShotgun(const TArray<FVector_NetQuantize100>& HitTargets)
 {
     if (HitTargets.IsEmpty()) return;
     AWeapon::Fire(FVector());
@@ -31,7 +31,7 @@ void AShotgun::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
 
         // Maps hit character to number of times hit
         TMap<ABlasterCharacter*, uint32> HitMap;
-        for (const FVector_NetQuantize& HitTarget : HitTargets)
+        for (const FVector_NetQuantize100& HitTarget : HitTargets)
         {
             FHitResult FireHit;
             WeaponTraceHit(Start, HitTarget, FireHit);
@@ -46,7 +46,7 @@ void AShotgun::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
     }
 }
 
-void AShotgun::ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVector_NetQuantize>& HitTargets)
+void AShotgun::ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVector_NetQuantize100>& HitTargets)
 {
 
     const FVector& TraceStart = GetTraceStart();
@@ -61,7 +61,7 @@ void AShotgun::ApplyMultipleDamage(            //
     APawn* OwnerPawn,                          //
     AController* InstigatorController,         //
     const FVector& Start,                      //
-    const TArray<FVector_NetQuantize>& HitTargets)
+    const TArray<FVector_NetQuantize100>& HitTargets)
 {
     TArray<ABlasterCharacter*> HitCharacters;
     for (auto HitPair : HitMap)

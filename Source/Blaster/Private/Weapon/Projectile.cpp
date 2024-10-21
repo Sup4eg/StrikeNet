@@ -13,6 +13,11 @@
 #include "Sound/SoundBase.h"
 #include "TimerManager.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
+#include "BlasterCharacter.h"
+#include "LagCompensationComponent.h"
+#include "BlasterGameplayStatics.h"
+#include "Weapon.h"
+#include "BlasterPlayerController.h"
 #include "Blaster.h"
 #include "Projectile.h"
 
@@ -76,26 +81,46 @@ void AProjectile::SpawnTrailSystem()
     }
 }
 
-void AProjectile::ExplodeDamage()
+void AProjectile::ExplodeDamage(const FVector& ImpactPoint)
 {
 
-    APawn* FiringPawn = GetInstigator();
-    if (FiringPawn && FiringPawn->GetController() && HasAuthority())
+    if (ABlasterCharacter* OwnerCharacter = Cast<ABlasterCharacter>(GetOwner()))
     {
-        AController* FiringController = FiringPawn->GetController();
-        UGameplayStatics::ApplyRadialDamageWithFalloff(  //
-            this,                                        // World context object
-            Damage,                                      // Base damage
-            10.f,                                        // Minimum damage
-            GetActorLocation(),                          // Origin
-            DamageInnerRadius,                           // DamageInnerRadius
-            DamageOuterRadius,                           // DamageOuterRadius
-            1.f,                                         // DamageFallOff
-            UDamageType::StaticClass(),                  // DamageType class
-            TArray<AActor*>{},                           // Ignor actors
-            this,                                        // Damage causer
-            FiringController                             // Instigator Controller
-        );
+        UE_LOG(LogTemp, Warning, TEXT("try to apply damage"));
+
+        if (OwnerCharacter->HasAuthority() && !bUseServerSideRewind)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Apply damage as server"));
+
+            TMap<AActor*, FHitResult> HitCharacters;
+            UBlasterGameplayStatics::GetOverlapActorsBySphereTrace(
+                this, HitCharacters, ImpactPoint, FName("BlasterCharacter"), ECC_SkeletalMesh, DamageOuterRadius);
+
+            UBlasterGameplayStatics::MakeRadialDamageWithFallOff(
+                HitCharacters, ImpactPoint, Damage, DamageInnerRadius, DamageOuterRadius, OwnerCharacter->GetController(), OwningWeapon);
+        }
+        else if (bUseServerSideRewind && OwnerCharacter->GetLagCompensationComponent() && OwnerCharacter->IsLocallyControlled())
+        {
+            TArray<ABlasterCharacter*> HitCharacters;
+            UBlasterGameplayStatics::GetOverlapCharactersBySphereTrace(
+                this, HitCharacters, GetActorLocation(), ECC_SkeletalMesh, DamageOuterRadius);
+            if (!HitCharacters.IsEmpty())
+            {
+                ABlasterPlayerController* OwnerController = Cast<ABlasterPlayerController>(OwnerCharacter->GetController());
+                float HitTime = OwnerController->GetServerTime() - OwnerController->SingleTripTime;
+                OwnerCharacter->GetLagCompensationComponent()->ExplosionProjectileServerScoreRequest(  //
+                    HitCharacters,                                                                     //
+                    TraceStart,                                                                        //
+                    InitialVelocity,                                                                   //
+                    GravityScale,                                                                      //
+                    Damage,                                                                            //
+                    DamageInnerRadius,                                                                 //
+                    DamageOuterRadius,                                                                 //
+                    OwningWeapon,                                                                      //
+                    HitTime                                                                            //
+                );
+            }
+        }
     }
 }
 

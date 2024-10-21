@@ -1,7 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Components/BoxComponent.h"
-#include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "BlasterCharacter.h"
 #include "Engine/World.h"
@@ -9,8 +8,10 @@
 #include "BlasterUtils.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/DamageType.h"
+#include "Engine/World.h"
 #include "Weapon.h"
 #include "Blaster.h"
+#include "BlasterGameplayStatics.h"
 #include "LagCompensationComponent.h"
 
 ULagCompensationComponent::ULagCompensationComponent()
@@ -31,17 +32,15 @@ void ULagCompensationComponent::TickComponent(float DeltaTime, ELevelTick TickTy
 
 void ULagCompensationComponent::ShowFramePackage(const FFramePackage& Package, const FColor& Color)
 {
-    // for (auto& BoxInfo : Package.HitBoxInfo)
-    // {
-    //     DrawDebugBox(GetWorld(), BoxInfo.Value.Location, BoxInfo.Value.BoxExtent, FQuat(BoxInfo.Value.Rotation), Color, false, 4.f);
-    // }
-    DrawDebugCapsule(GetWorld(), Package.HitCapsuleInfo.Location, Package.HitCapsuleInfo.HalfHeight, Package.HitCapsuleInfo.Radius,
-        FQuat(Package.HitCapsuleInfo.Rotation), FColor::Orange, false, 4.f);
+    for (auto& BoxInfo : Package.HitBoxInfo)
+    {
+        DrawDebugBox(GetWorld(), BoxInfo.Value.Location, BoxInfo.Value.BoxExtent, FQuat(BoxInfo.Value.Rotation), Color, false, 4.f);
+    }
 }
 
 FServerSideRewindResult ULagCompensationComponent::ServerSideRewind(ABlasterCharacter* HitCharacter,  //
     const FVector_NetQuantize& TraceStart,                                                            //
-    const FVector_NetQuantize& HitLocation,                                                           //
+    const FVector_NetQuantize100& HitLocation,                                                           //
     float HitTime)
 {
     FFramePackage FrameToCheck = GetFrameToCheck(HitCharacter, HitTime);
@@ -51,25 +50,31 @@ FServerSideRewindResult ULagCompensationComponent::ServerSideRewind(ABlasterChar
 FServerSideRewindResult ULagCompensationComponent::ProjectileServerSideRewind(ABlasterCharacter* HitCharacter,  //
     const FVector_NetQuantize& TraceStart,                                                                      //
     const FVector_NetQuantize100& InitialVelocity,                                                              //
+    float GravityScale,                                                                                         //
     float HitTime)
 {
     FFramePackage FrameToCheck = GetFrameToCheck(HitCharacter, HitTime);
-    return ProjectileConfirmHit(FrameToCheck, HitCharacter, TraceStart, InitialVelocity, HitTime);
+    return ProjectileConfirmHit(FrameToCheck, HitCharacter, TraceStart, InitialVelocity, GravityScale, HitTime);
 }
 
-FServerSideRewindResult ULagCompensationComponent::ExplosionProjectileServerSideRewind(const TArray<ABlasterCharacter*>& HitCharacters,
-    const FVector_NetQuantize& TraceStart, const FVector_NetQuantize100& InitialVelocity, float HitTime)
+FExplosionProjectileServerSideRewindResult ULagCompensationComponent::ExplosionProjectileServerSideRewind(
+    const TArray<ABlasterCharacter*>& HitCharacters,  //
+    const FVector_NetQuantize& TraceStart,            //
+    const FVector_NetQuantize100& InitialVelocity,    //
+    float GravityScale,                               //
+    float DamageOuterRadius,                          //
+    float HitTime)
 {
     TArray<FFramePackage> FramesToCheck;
     for (ABlasterCharacter* HitCharacter : HitCharacters)
     {
         FramesToCheck.Add(GetFrameToCheck(HitCharacter, HitTime));
     }
-    return ExplosionProjectileConfirmHit(FramesToCheck, TraceStart, InitialVelocity, HitTime);
+    return ExplosionProjectileConfirmHit(FramesToCheck, TraceStart, InitialVelocity, GravityScale, DamageOuterRadius, HitTime);
 }
 
 FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunServerSideRewind(const TArray<ABlasterCharacter*>& HitCharacters,
-    const FVector_NetQuantize& TraceStart, const TArray<FVector_NetQuantize>& HitLocations, float HitTime)
+    const FVector_NetQuantize& TraceStart, const TArray<FVector_NetQuantize100>& HitLocations, float HitTime)
 {
     TArray<FFramePackage> FramesToCheck;
     for (ABlasterCharacter* HitCharacter : HitCharacters)
@@ -164,23 +169,12 @@ FFramePackage ULagCompensationComponent::InterpBetweenFrames(  //
             InterpFramePackage.HitBoxInfo.Add(BoxInfoName, InterpBoxInfo);
         }
     }
-
-    // interpolate capsule
-    FCapsuleInformation InterpCapsuleInfo;
-    InterpCapsuleInfo.Location =
-        FMath::VInterpTo(OlderFrame.HitCapsuleInfo.Location, YoungerFrame.HitCapsuleInfo.Location, 1.f, InterpFraction);
-    InterpCapsuleInfo.Rotation =
-        FMath::RInterpTo(OlderFrame.HitCapsuleInfo.Rotation, YoungerFrame.HitCapsuleInfo.Rotation, 1.f, InterpFraction);
-    InterpCapsuleInfo.HalfHeight = YoungerFrame.HitCapsuleInfo.HalfHeight;
-    InterpCapsuleInfo.Radius = YoungerFrame.HitCapsuleInfo.Radius;
-
-    InterpFramePackage.HitCapsuleInfo = InterpCapsuleInfo;
     return InterpFramePackage;
 }
 
 void ULagCompensationComponent::ServerScoreRequest_Implementation(ABlasterCharacter* HitCharacter,  //
     const FVector_NetQuantize& TraceStart,                                                          //
-    const FVector_NetQuantize& HitLocation,                                                         //
+    const FVector_NetQuantize100& HitLocation,                                                         //
     float HitTime,                                                                                  //
     float Damage,                                                                                   //
     AWeapon* DamageCauser                                                                           //
@@ -203,13 +197,14 @@ void ULagCompensationComponent::ServerScoreRequest_Implementation(ABlasterCharac
 void ULagCompensationComponent::ProjectileServerScoreRequest_Implementation(ABlasterCharacter* HitCharacter,  //
     const FVector_NetQuantize& TraceStart,                                                                    //
     const FVector_NetQuantize100& InitialVelocity,                                                            //
+    float GravityScale,                                                                                       //
     float HitTime,                                                                                            //
     float Damage,                                                                                             //
     AWeapon* DamageCauser                                                                                     //
 )
 {
     if (!BlasterCharacter || !HitCharacter || !DamageCauser) return;
-    FServerSideRewindResult Confirm = ProjectileServerSideRewind(HitCharacter, TraceStart, InitialVelocity, HitTime);
+    FServerSideRewindResult Confirm = ProjectileServerSideRewind(HitCharacter, TraceStart, InitialVelocity, GravityScale, HitTime);
     if (Confirm.bHitConfirmed)
     {
         UGameplayStatics::ApplyDamage(          //
@@ -222,30 +217,37 @@ void ULagCompensationComponent::ProjectileServerScoreRequest_Implementation(ABla
     }
 }
 
-void ULagCompensationComponent::ExplosionProjectileServerScoreRequest_Implementation(const TArray<ABlasterCharacter*>& HitCharacters,  //
-    const FVector_NetQuantize& TraceStart,                                                                                             //
-    const FVector_NetQuantize100& InitialVelocity,                                                                                     //
-    float HitTime,                                                                                                                     //
-    float Damage                                                                                                                       //
+void ULagCompensationComponent::ExplosionProjectileServerScoreRequest_Implementation(  //
+    const TArray<ABlasterCharacter*>& HitCharacters,                                   //
+    const FVector_NetQuantize& TraceStart,
+    const FVector_NetQuantize100& InitialVelocity,  //
+    float GravityScale,                             //
+    float Damage,                                   //
+    float DamageInnerRadius,                        //
+    float DamageOuterRadius,                        //
+    AWeapon* DamageCauser,
+    float HitTime  //
 )
 {
-    if (!BlasterCharacter || HitCharacters.IsEmpty()) return;
-    FServerSideRewindResult Confirm = ExplosionProjectileServerSideRewind(HitCharacters, TraceStart, InitialVelocity, HitTime);
-    // if (Confirm.bHitConfirmed)
-    // {
-    //     UGameplayStatics::ApplyDamage(          //
-    //         HitCharacter,                       //
-    //         Damage,                             //
-    //         BlasterCharacter->GetController(),  //
-    //         DamageCauser,                       //
-    //         UDamageType::StaticClass()          //
-    //     );
-    // }
+    if (!BlasterCharacter || !DamageCauser || HitCharacters.IsEmpty()) return;
+
+    FExplosionProjectileServerSideRewindResult Confirm =
+        ExplosionProjectileServerSideRewind(HitCharacters, TraceStart, InitialVelocity, GravityScale, DamageOuterRadius, HitTime);
+
+    UBlasterGameplayStatics::MakeRadialDamageWithFallOff(  //
+        Confirm.OverlapCharactersMap,                      //
+        TArray<AActor*>(HitCharacters),                    //
+        Confirm.Origin,                                    //
+        Damage,                                            //
+        DamageInnerRadius,                                 //
+        DamageOuterRadius,                                 //
+        BlasterCharacter->GetController(),                 //
+        DamageCauser);
 }
 
 void ULagCompensationComponent::ShotgunServerScoreRequest_Implementation(const TArray<ABlasterCharacter*>& HitCharacters,  //
     const FVector_NetQuantize& TraceStart,                                                                                 //
-    const TArray<FVector_NetQuantize>& HitLocations,                                                                       //
+    const TArray<FVector_NetQuantize100>& HitLocations,                                                                       //
     float HitTime,                                                                                                         //
     float Damage,
     AWeapon* DamageCauser  //
@@ -272,7 +274,7 @@ void ULagCompensationComponent::ShotgunServerScoreRequest_Implementation(const T
 }
 
 FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackage& Package, ABlasterCharacter* HitCharacter,
-    const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation)
+    const FVector_NetQuantize& TraceStart, const FVector_NetQuantize100& HitLocation)
 {
     FServerSideRewindResult ServerSideRewindResult;
     ServerSideRewindResult.bHitConfirmed = false;
@@ -311,13 +313,14 @@ FServerSideRewindResult ULagCompensationComponent::ProjectileConfirmHit(const FF
     ABlasterCharacter* HitCharacter,                                                                   //
     const FVector_NetQuantize& TraceStart,                                                             //
     const FVector_NetQuantize100& InitialVelocity,                                                     //
+    float GravityScale,                                                                                //
     float HitTime)
 {
 
     FServerSideRewindResult ServerSideRewindResult;
     ServerSideRewindResult.bHitConfirmed = false;
 
-    if (!HitCharacter) return ServerSideRewindResult;
+    if (!HitCharacter || !GetWorld()) return ServerSideRewindResult;
 
     FFramePackage CurrentFrame;
     CacheBoxPositions(HitCharacter, CurrentFrame);
@@ -340,6 +343,7 @@ FServerSideRewindResult ULagCompensationComponent::ProjectileConfirmHit(const FF
     PathParams.MaxSimTime = MaxRecordTime;
     PathParams.LaunchVelocity = InitialVelocity;
     PathParams.StartLocation = TraceStart;
+    PathParams.OverrideGravityZ = GetWorld()->GetGravityZ() * GravityScale;
     PathParams.SimFrequency = 15.f;
     PathParams.ProjectileRadius = 5.f;
     PathParams.TraceChannel = ECC_HitBox;
@@ -357,46 +361,88 @@ FServerSideRewindResult ULagCompensationComponent::ProjectileConfirmHit(const FF
     return ServerSideRewindResult;
 }
 
-FServerSideRewindResult ULagCompensationComponent::ExplosionProjectileConfirmHit(const TArray<FFramePackage>& FramePackages,
-    const FVector_NetQuantize& TraceStart, const FVector_NetQuantize100& InitialVelocity, float HitTime)
+FExplosionProjectileServerSideRewindResult ULagCompensationComponent::ExplosionProjectileConfirmHit(
+    const TArray<FFramePackage>& FramePackages,  //
+    const FVector_NetQuantize& TraceStart,
+    const FVector_NetQuantize100& InitialVelocity,  //
+    float GravityScale,                             //
+    float DamageOuterRadius,                        //
+    float HitTime                                   //
+)
 {
+    FExplosionProjectileServerSideRewindResult ExplosionProjectileResult;
+    if (!GetWorld()) return ExplosionProjectileResult;
 
     TArray<FFramePackage> CurrentFrames;
     // Cache
     for (auto& Frame : FramePackages)
     {
         FFramePackage CurrentFrame;
-        CacheCapsulePosition(Frame.Character, CurrentFrame);
-        MoveCapsule(Frame.Character, Frame);
+        CacheBoxPositions(Frame.Character, CurrentFrame);
+        MoveBoxes(Frame.Character, Frame);
+        EnableCharacterMeshCollision(Frame.Character, ECollisionEnabled::NoCollision);
         CurrentFrame.Character = Frame.Character;
         CurrentFrames.Add(CurrentFrame);
     }
 
-    // EnableCollision for capsule
-
+    // EnableCollision for hit boxes
     for (auto& Frame : FramePackages)
     {
         if (Frame.Character)
         {
-            Frame.Character->GetBodyHitCapsule()->SetCollisionEnabled();
             for (auto& HitBoxPair : Frame.Character->HitCollisionBoxes)
             {
                 if (HitBoxPair.Value)
                 {
                     HitBoxPair.Value->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-                    HitBoxPair.Value->SetCollisionResponseToChannel(ECC_HitBox, ECollisionResponse::ECR_Block);
+                    HitBoxPair.Value->SetCollisionResponseToChannel(ECC_HitBox, ECollisionResponse::ECR_Overlap);
+                    HitBoxPair.Value->SetGenerateOverlapEvents(true);
                 }
             }
         }
     }
 
-    return FServerSideRewindResult();
+    FPredictProjectilePathParams PathParams;
+    PathParams.bTraceWithChannel = true;
+    PathParams.bTraceWithCollision = true;
+    PathParams.MaxSimTime = MaxRecordTime;
+    PathParams.LaunchVelocity = InitialVelocity;
+    PathParams.OverrideGravityZ = GetWorld()->GetGravityZ() * GravityScale;
+    PathParams.StartLocation = TraceStart;
+    PathParams.SimFrequency = 15.f;
+    PathParams.ProjectileRadius = 5.f;
+    PathParams.TraceChannel = ECollisionChannel::ECC_WorldStatic;
+    PathParams.ActorsToIgnore.Add(GetOwner());
+    PathParams.DrawDebugTime = 5.f;
+    PathParams.DrawDebugType = EDrawDebugTrace::Persistent;
+
+    FPredictProjectilePathResult PathResult;
+    UGameplayStatics::PredictProjectilePath(this, PathParams, PathResult);
+
+    if (PathResult.HitResult.bBlockingHit)
+    {
+        ExplosionProjectileResult.Origin = PathResult.HitResult.ImpactPoint;
+
+        UBlasterGameplayStatics::GetOverlapActorsBySphereTrace(this, ExplosionProjectileResult.OverlapCharactersMap,
+            PathResult.HitResult.ImpactPoint, FName("BlasterCharacter"), ECC_HitBox, DamageOuterRadius);
+
+        // Debug
+        DrawDebugSphere(GetWorld(), PathResult.HitResult.ImpactPoint, DamageOuterRadius, 20, FColor::Blue, true);
+    }
+
+    for (auto& Frame : CurrentFrames)
+    {
+        ResetHitBoxes(Frame.Character, Frame);
+        EnableCharacterMeshCollision(Frame.Character, ECollisionEnabled::QueryAndPhysics);
+    }
+
+    return ExplosionProjectileResult;
 }
 
 FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunConfirmHit(  //
     const TArray<FFramePackage>& FramePackages,                               //
     const FVector_NetQuantize& TraceStart,                                    //
-    const TArray<FVector_NetQuantize>& HitLocations)
+    const TArray<FVector_NetQuantize100>& HitLocations)
 {
     FShotgunServerSideRewindResult ShotgunResult;
 
@@ -479,21 +525,6 @@ void ULagCompensationComponent::CacheBoxPositions(ABlasterCharacter* HitCharacte
     }
 }
 
-void ULagCompensationComponent::CacheCapsulePosition(ABlasterCharacter* HitCharacter, FFramePackage& OutFramePackage)
-{
-    if (!HitCharacter) return;
-    FCapsuleInformation CapsuleInfo;
-
-    if (UCapsuleComponent* HitCapsule = HitCharacter->GetBodyHitCapsule())
-    {
-        CapsuleInfo.Location = HitCapsule->GetComponentLocation();
-        CapsuleInfo.Rotation = HitCapsule->GetComponentRotation();
-        CapsuleInfo.HalfHeight = HitCapsule->GetScaledCapsuleHalfHeight();
-        CapsuleInfo.Radius = HitCapsule->GetScaledCapsuleRadius();
-    }
-    OutFramePackage.HitCapsuleInfo = CapsuleInfo;
-}
-
 void ULagCompensationComponent::MoveBoxes(ABlasterCharacter* HitCharacter, const FFramePackage& Package)
 {
     if (!HitCharacter) return;
@@ -506,15 +537,6 @@ void ULagCompensationComponent::MoveBoxes(ABlasterCharacter* HitCharacter, const
             HitBoxPair.Value->SetBoxExtent(Package.HitBoxInfo[HitBoxPair.Key].BoxExtent);
         }
     }
-}
-
-void ULagCompensationComponent::MoveCapsule(ABlasterCharacter* HitCharacter, const FFramePackage& Package)
-{
-    if (!HitCharacter) return;
-    HitCharacter->GetBodyHitCapsule()->SetWorldLocation(Package.HitCapsuleInfo.Location);
-    HitCharacter->GetBodyHitCapsule()->SetWorldRotation(Package.HitCapsuleInfo.Rotation);
-    HitCharacter->GetBodyHitCapsule()->SetCapsuleHalfHeight(Package.HitCapsuleInfo.HalfHeight);
-    HitCharacter->GetBodyHitCapsule()->SetCapsuleRadius(Package.HitCapsuleInfo.Radius);
 }
 
 void ULagCompensationComponent::ResetHitBoxes(ABlasterCharacter* HitCharacter, const FFramePackage& Package)
@@ -578,17 +600,6 @@ void ULagCompensationComponent::SaveFramePackage(FFramePackage& Package)
         BoxInformation.BoxExtent = BoxPair.Value->GetScaledBoxExtent();
 
         Package.HitBoxInfo.Add(BoxPair.Key, BoxInformation);
-    }
-
-    if (UCapsuleComponent* BodyHitCapsule = BlasterCharacter->GetBodyHitCapsule())
-    {
-        FCapsuleInformation CapsuleInformation;
-        CapsuleInformation.Location = BodyHitCapsule->GetComponentLocation();
-        CapsuleInformation.Rotation = BodyHitCapsule->GetComponentRotation();
-        CapsuleInformation.HalfHeight = BodyHitCapsule->GetScaledCapsuleHalfHeight();
-        CapsuleInformation.Radius = BodyHitCapsule->GetScaledCapsuleRadius();
-
-        Package.HitCapsuleInfo = CapsuleInformation;
     }
 }
 

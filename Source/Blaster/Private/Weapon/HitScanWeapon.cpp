@@ -18,7 +18,7 @@
 #include "LagCompensationComponent.h"
 #include "HitScanWeapon.h"
 
-void AHitScanWeapon::Fire(const FVector& HitTarget)
+void AHitScanWeapon::Fire(const FVector_NetQuantize100& HitTarget)
 {
     Super::Fire(HitTarget);
 
@@ -84,7 +84,7 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
     }
 }
 
-void AHitScanWeapon::WeaponTraceHit(const FVector& TraceStart, const FVector& HitTarget, FHitResult& OutHit)
+void AHitScanWeapon::WeaponTraceHit(const FVector& TraceStart, const FVector_NetQuantize100& HitTarget, FHitResult& OutHit)
 {
     if (!GetWorld()) return;
 

@@ -17,10 +17,10 @@ class BLASTER_API AHitScanWeapon : public AWeapon
     GENERATED_BODY()
 
 public:
-    virtual void Fire(const FVector& HitTarget) override;
+    virtual void Fire(const FVector_NetQuantize100& HitTarget) override;
 
 protected:
-    void WeaponTraceHit(const FVector& TraceStart, const FVector& HitTarget, FHitResult& OutHit);
+    void WeaponTraceHit(const FVector& TraceStart, const FVector_NetQuantize100& HitTarget, FHitResult& OutHit);
     virtual void SpawnImpactFXAndSound(FHitResult& FireHit);
     virtual void SpawnImpactParticles(FHitResult& FireHit, FImpactData& ImpactData);
     virtual void SpawnImpactSound(FHitResult& FireHit, FImpactData& ImpactData);

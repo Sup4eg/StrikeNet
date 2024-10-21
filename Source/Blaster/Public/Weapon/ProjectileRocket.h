@@ -39,7 +39,4 @@ protected:
 
     UPROPERTY(VisibleAnywhere)
     URocketMovementComponent* RocketMovementComponent;
-
-private:
-    void GetHitCharacters(TArray<ABlasterCharacter*>& OutHitCharacters);
 };
