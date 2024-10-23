@@ -12,7 +12,7 @@ class BLASTER_API AShotgun : public AHitScanWeapon
     GENERATED_BODY()
 
 public:
-    virtual void FireShotgun(const TArray<FVector_NetQuantize100>& HitTargets);
+    virtual void FireShotgun(const TArray<FVector_NetQuantize100>& HitTargets, const FVector_NetQuantize100& SocketLocation);
     void ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVector_NetQuantize100>& HitTargets);
 
 protected:

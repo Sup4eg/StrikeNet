@@ -18,22 +18,17 @@
 #include "LagCompensationComponent.h"
 #include "HitScanWeapon.h"
 
-void AHitScanWeapon::Fire(const FVector_NetQuantize100& HitTarget)
+void AHitScanWeapon::Fire(const FVector_NetQuantize100& HitTarget, const FVector_NetQuantize100& SocketLocation)
 {
-    Super::Fire(HitTarget);
+    Super::Fire(HitTarget, SocketLocation);
 
     APawn* OwnerPawn = Cast<APawn>(GetOwner());
     if (!OwnerPawn) return;
     AController* InstigatorController = OwnerPawn->GetController();
-
-    const USkeletalMeshSocket* MuzzleFlashSocket = GetWeaponMesh()->GetSocketByName("MuzzleFlash");
-    if (MuzzleFlashSocket && GetWorld())
+    if (GetWorld())
     {
-        FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetWeaponMesh());
-        FVector Start = SocketTransform.GetLocation();
-
         FHitResult FireHit;
-        WeaponTraceHit(Start, HitTarget, FireHit);
+        WeaponTraceHit(SocketLocation, HitTarget, FireHit);
 
         if (FireHit.bBlockingHit)
         {
@@ -62,7 +57,7 @@ void AHitScanWeapon::Fire(const FVector_NetQuantize100& HitTarget)
 
                         BlasterOwnerCharacter->GetLagCompensationComponent()->ServerScoreRequest(  //
                             BlasterCharacter,                                                      //
-                            Start,                                                                 //
+                            SocketLocation,                                                        //
                             HitTarget,                                                             //
                             HitTime,                                                               //
                             Damage,                                                                //
@@ -75,7 +70,7 @@ void AHitScanWeapon::Fire(const FVector_NetQuantize100& HitTarget)
 
         if (MuzzleFlash)
         {
-            UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), MuzzleFlash, SocketTransform);
+            UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), MuzzleFlash, GetLocalWeaponSocketTransform());
         }
         if (FireSound)
         {
@@ -102,7 +97,7 @@ void AHitScanWeapon::WeaponTraceHit(const FVector& TraceStart, const FVector_Net
     if (BeamParticles)
     {
         if (UParticleSystemComponent* Beam =
-                UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BeamParticles, TraceStart, FRotator::ZeroRotator, true))
+                UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BeamParticles, GetLocalWeaponSocketTransform(), true))
         {
             Beam->SetVectorParameter("Target", BeamEnd);
         }
@@ -168,4 +163,18 @@ FImpactData AHitScanWeapon::GetImpactData(FHitResult& FireHit)
     }
 
     return ImpactData;
+}
+
+FTransform AHitScanWeapon::GetLocalWeaponSocketTransform()
+{
+    if (GetWeaponMesh())
+    {
+        const USkeletalMeshSocket* MuzzleFlashSocket = GetWeaponMesh()->GetSocketByName(FName("MuzzleFlash"));
+        if (MuzzleFlashSocket)
+        {
+            FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetWeaponMesh());
+            return SocketTransform;
+        }
+    }
+    return FTransform();
 }

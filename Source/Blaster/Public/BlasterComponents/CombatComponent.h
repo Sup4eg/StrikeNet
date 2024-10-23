@@ -34,7 +34,6 @@ public:
     void SwapWeapons();
     void Reload();
 
-
     UFUNCTION(BlueprintCallable)
     void FinishReloading();
 
@@ -89,16 +88,17 @@ protected:
     int32 GetAmountToReload();
 
     UFUNCTION(Server, Reliable, WithValidation)
-    void ServerFire(const FVector_NetQuantize100& TraceHitTarget, float FireDelay);
+    void ServerFire(const FVector_NetQuantize100& TraceHitTarget, const FVector_NetQuantize100& SocketLocation, float FireDelay);
 
     UFUNCTION(NetMulticast, Reliable)
-    void MulticastFire(const FVector_NetQuantize100& TraceHitTarget);
+    void MulticastFire(const FVector_NetQuantize100& TraceHitTarget, const FVector_NetQuantize100& SocketLocation);
 
     UFUNCTION(Server, Reliable, WithValidation)
-    void ServerShotgunFire(const TArray<FVector_NetQuantize100>& TraceHitTargets, float FireDelay);
+    void ServerShotgunFire(
+        const TArray<FVector_NetQuantize100>& TraceHitTargets, const FVector_NetQuantize100& SocketLocation, float FireDelay);
 
     UFUNCTION(NetMulticast, Reliable)
-    void MulticastShotgunFire(const TArray<FVector_NetQuantize100>& TraceHitTargets);
+    void MulticastShotgunFire(const TArray<FVector_NetQuantize100>& TraceHitTargets, const FVector_NetQuantize100& SocketLocation);
 
     void TraceUnderCrosshairs(FHitResult& TraceHitResult);
 
@@ -130,8 +130,8 @@ private:
     void FireProjectileWeapon();
     void FireHitScanWeapon();
     void FireShotgun();
-    void LocalFire(const FVector_NetQuantize100& TraceHitTarget);
-    void ShotgunLocalFire(const TArray<FVector_NetQuantize100>& TraceHitTargets);
+    void LocalFire(const FVector_NetQuantize100& TraceHitTarget, const FVector_NetQuantize100& SocketLocation);
+    void ShotgunLocalFire(const TArray<FVector_NetQuantize100>& TraceHitTargets, const FVector_NetQuantize100& SocketLocation);
     void StartFireTimer();
     void FireTimerFinished();
     bool CanFire();
@@ -150,6 +150,8 @@ private:
     bool IsInvisibilityActive() const;
 
     bool IsCloseToWall();
+
+    FVector GetWeaponSocketLocation();
 
     /**
      * Rep notifies
@@ -208,6 +210,7 @@ private:
     float CrosshairShootingFactor;
 
     FVector HitTarget;
+
     FHUDPackage HUDPackage;
 
     /**

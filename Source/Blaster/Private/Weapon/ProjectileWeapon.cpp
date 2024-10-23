@@ -1,25 +1,22 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "Components/SkeletalMeshComponent.h"
-#include "Engine/SkeletalMeshSocket.h"
 #include "Projectile.h"
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
 #include "DrawDebugHelpers.h"
 #include "ProjectileWeapon.h"
 
-void AProjectileWeapon::Fire(const FVector_NetQuantize100& HitTarget)
+void AProjectileWeapon::Fire(const FVector_NetQuantize100& HitTarget, const FVector_NetQuantize100& SocketLocation)
 {
-    Super::Fire(HitTarget);
+    Super::Fire(HitTarget, SocketLocation);
 
     APawn* InstigatorPawn = Cast<APawn>(GetOwner());
-    const USkeletalMeshSocket* MuzzleFlashSocket = GetWeaponMesh()->GetSocketByName(FName("MuzzleFlash"));
-    if (MuzzleFlashSocket && GetWorld() && InstigatorPawn && ProjectileClass)
+    if (GetWorld() && InstigatorPawn && ProjectileClass)
     {
-        FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetWeaponMesh());
+        // FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetWeaponMesh());
 
         // From muzzle flash socket to hit location from TraceUnderCrosshairs
-        FVector ToTarget = HitTarget - SocketTransform.GetLocation();
+        FVector ToTarget = HitTarget - SocketLocation;
         FRotator TargetRotation = ToTarget.Rotation();
 
         FActorSpawnParameters SpawnParams;
@@ -27,10 +24,10 @@ void AProjectileWeapon::Fire(const FVector_NetQuantize100& HitTarget)
         SpawnParams.Instigator = InstigatorPawn;
 
         if (AProjectile* SpawnedProjectile =
-                GetWorld()->SpawnActor<AProjectile>(ProjectileClass, SocketTransform.GetLocation(), TargetRotation, SpawnParams))
+                GetWorld()->SpawnActor<AProjectile>(ProjectileClass, SocketLocation, TargetRotation, SpawnParams))
         {
             SpawnedProjectile->SetOwningWeapon(this);
-            SetProjectileSSR(SpawnedProjectile, InstigatorPawn, SocketTransform.GetLocation());
+            SetProjectileSSR(SpawnedProjectile, InstigatorPawn, SocketLocation);
         }
     }
 }

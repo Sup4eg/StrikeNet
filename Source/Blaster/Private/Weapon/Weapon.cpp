@@ -99,7 +99,7 @@ void AWeapon::ShowPickupWidget(bool bShowWidget)
     PickupWidget->SetVisibility(bShowWidget);
 }
 
-void AWeapon::Fire(const FVector_NetQuantize100& HitTarget)
+void AWeapon::Fire(const FVector_NetQuantize100& HitTarget, const FVector_NetQuantize100& SocketLocation)
 {
     if (!WeaponMesh) return;
 

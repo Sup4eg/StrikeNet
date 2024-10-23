@@ -1,7 +1,5 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "Components/SkeletalMeshComponent.h"
-#include "Engine/SkeletalMeshSocket.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 #include "Engine/World.h"
@@ -14,19 +12,16 @@
 #include "LagCompensationComponent.h"
 #include "Shotgun.h"
 
-void AShotgun::FireShotgun(const TArray<FVector_NetQuantize100>& HitTargets)
+void AShotgun::FireShotgun(const TArray<FVector_NetQuantize100>& HitTargets, const FVector_NetQuantize100& SocketLocation)
 {
     if (HitTargets.IsEmpty()) return;
-    AWeapon::Fire(FVector());
+    AWeapon::Fire(FVector(), FVector());
     APawn* OwnerPawn = Cast<APawn>(GetOwner());
     if (!OwnerPawn) return;
     AController* InstigatorController = OwnerPawn->GetController();
 
-    const USkeletalMeshSocket* MuzzleFlashSocket = GetWeaponMesh()->GetSocketByName("MuzzleFlash");
-    if (MuzzleFlashSocket && GetWorld())
+    if (GetWorld())
     {
-        const FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetWeaponMesh());
-        const FVector Start = SocketTransform.GetLocation();
         uint32 Hits = 0;
 
         // Maps hit character to number of times hit
@@ -34,7 +29,7 @@ void AShotgun::FireShotgun(const TArray<FVector_NetQuantize100>& HitTargets)
         for (const FVector_NetQuantize100& HitTarget : HitTargets)
         {
             FHitResult FireHit;
-            WeaponTraceHit(Start, HitTarget, FireHit);
+            WeaponTraceHit(SocketLocation, HitTarget, FireHit);
 
             if (FireHit.bBlockingHit)
             {
@@ -42,7 +37,7 @@ void AShotgun::FireShotgun(const TArray<FVector_NetQuantize100>& HitTargets)
                 Super::SpawnImpactFXAndSound(FireHit);
             }
         }
-        ApplyMultipleDamage(HitMap, OwnerPawn, InstigatorController, Start, HitTargets);
+        ApplyMultipleDamage(HitMap, OwnerPawn, InstigatorController, SocketLocation, HitTargets);
     }
 }
 

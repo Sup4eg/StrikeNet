@@ -1,9 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Components/ShapeComponent.h"
-#include "Kismet/GameplayStatics.h"
-#include "BlasterCharacter.h"
-#include "BlasterGameMode.h"
+#include "BlasterGameplayStatics.h"
 #include "DeathVolume.h"
 
 ADeathVolume::ADeathVolume()
@@ -19,18 +17,5 @@ ADeathVolume::ADeathVolume()
 void ADeathVolume::NotifyActorBeginOverlap(AActor* OtherActor)
 {
     Super::NotifyActorBeginOverlap(OtherActor);
-
-    if (HasAuthority() && OtherActor->ActorHasTag("BlasterCharacter"))
-    {
-        if (ABlasterCharacter* CharacterToKill = Cast<ABlasterCharacter>(OtherActor))
-        {
-            if (ABlasterGameMode* GameMode = Cast<ABlasterGameMode>(UGameplayStatics::GetGameMode(this)))
-            {
-                if (!CharacterToKill->IsControllerValid()) return;
-
-                GameMode->PlayerElimmed(
-                    CharacterToKill, CharacterToKill->GetBlasterPlayerController(), CharacterToKill->GetBlasterPlayerController());
-            }
-        }
-    }
+    UBlasterGameplayStatics::SelfDestruction(OtherActor, FName("BlasterCharacter"));
 }

@@ -48,4 +48,8 @@ public:
         AController* InstigatorController,  //
         AActor* DamageCauser                //
     );
+
+    static void SelfDestruction(AActor* OtherActor, FName ActorTag);
+
+    static void SelfDestruction(ABlasterCharacter* CharacterToKill);
 };

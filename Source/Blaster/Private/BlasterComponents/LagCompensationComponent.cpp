@@ -414,7 +414,7 @@ FExplosionProjectileServerSideRewindResult ULagCompensationComponent::ExplosionP
     PathParams.TraceChannel = ECollisionChannel::ECC_WorldStatic;
     PathParams.ActorsToIgnore.Add(GetOwner());
     PathParams.DrawDebugTime = 5.f;
-    PathParams.DrawDebugType = EDrawDebugTrace::Persistent;
+    PathParams.DrawDebugType = EDrawDebugTrace::None;
 
     FPredictProjectilePathResult PathResult;
     UGameplayStatics::PredictProjectilePath(this, PathParams, PathResult);
@@ -427,7 +427,7 @@ FExplosionProjectileServerSideRewindResult ULagCompensationComponent::ExplosionP
             PathResult.HitResult.ImpactPoint, FName("BlasterCharacter"), ECC_HitBox, DamageOuterRadius);
 
         // Debug
-        DrawDebugSphere(GetWorld(), PathResult.HitResult.ImpactPoint, DamageOuterRadius, 20, FColor::Blue, true);
+        //DrawDebugSphere(GetWorld(), PathResult.HitResult.ImpactPoint, DamageOuterRadius, 20, FColor::Blue, true);
     }
 
     for (auto& Frame : CurrentFrames)

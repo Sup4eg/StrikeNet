@@ -19,8 +19,12 @@
 #include "Kismet/GameplayStatics.h"
 #include "BlasterGameMode.h"
 #include "CombatComponent.h"
-#include "BlasterCharacter.h"
 #include "BlasterGameState.h"
+#include "Components/InputComponent.h"
+#include "Engine/LocalPlayer.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "PauseWidget.h"
 #include "BlasterPlayerController.h"
 
 void ABlasterPlayerController::BeginPlay()
@@ -37,6 +41,17 @@ void ABlasterPlayerController::Tick(float DeltaTime)
     SetHUDTime();
     CheckTimeSync(DeltaTime);
     CheckPing(DeltaTime);
+}
+
+void ABlasterPlayerController::SetupInputComponent()
+{
+    Super::SetupInputComponent();
+    if (!InputComponent) return;
+
+    if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
+    {
+        EnhancedInputComponent->BindAction(QuitAction, ETriggerEvent::Completed, this, &ThisClass::ShowPauseWidget);
+    }
 }
 
 void ABlasterPlayerController::CheckPing(float DeltaTime)
@@ -78,6 +93,68 @@ void ABlasterPlayerController::CheckPing(float DeltaTime)
     }
 }
 
+void ABlasterPlayerController::ShowPauseWidget()
+{
+    BlasterCharacter = Cast<ABlasterCharacter>(GetCharacter());
+    ShowPauseWidget(BlasterCharacter.Get());
+}
+
+void ABlasterPlayerController::ShowPauseWidget(ABlasterCharacter* PlayerCharacter)
+{
+    if (!PauseWidgetClass) return;
+    if (!PauseWidget)
+    {
+        PauseWidget = CreateWidget<UPauseWidget>(this, PauseWidgetClass);
+    }
+    if (PauseWidget)
+    {
+        bPauseWidgetOpen = !bPauseWidgetOpen;
+        if (bPauseWidgetOpen)
+        {
+            PauseWidget->MenuSetup();
+            SetUpInputMappingContext(PauseMappingContext);
+            LastMappingContext = PauseMappingContext;
+            if (PlayerCharacter != nullptr)
+            {
+                PlayerCharacter->SetIsGameplayDisabled(true);
+                if (PlayerCharacter->GetCombatComponent())
+                {
+                    if (PlayerCharacter->IsAiming())
+                    {
+                        PlayerCharacter->GetCombatComponent()->SetAiming(false);
+                    }
+                    PlayerCharacter->GetCombatComponent()->FireButtonPressed(false);
+                }
+            }
+        }
+        else
+        {
+            PauseWidget->MenuTearDown();
+            if (PlayerCharacter != nullptr)
+            {
+                PlayerCharacter->SetIsGameplayDisabled(PlayerCharacter->GetIsElimmed());
+                SetUpInputMappingContext(PlayerCharacter->GetLastMappingContext());
+            }
+            else
+            {
+                PlayerCharacter->SetIsGameplayDisabled(false);
+                SetUpInputMappingContext(InGameMappingContext);
+            }
+            LastMappingContext = nullptr;
+        }
+    }
+}
+
+void ABlasterPlayerController::SetUpInputMappingContext(UInputMappingContext* MappingContext)
+{
+    if (!MappingContext) return;
+    if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
+    {
+        Subsystem->ClearAllMappings();
+        Subsystem->AddMappingContext(MappingContext, 0);
+    }
+}
+
 void ABlasterPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -89,10 +166,9 @@ void ABlasterPlayerController::OnRep_Pawn()
 {
     Super::OnRep_Pawn();
     HideHUDElimmed();
-    ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(GetCharacter());
-    if (BlasterCharacter)
+    if (IsBlasterCharacterValid())
     {
-        SetLogicDependsOnMatchState(BlasterCharacter);
+        SetLogicDependsOnMatchState();
     }
 }
 
@@ -100,18 +176,17 @@ void ABlasterPlayerController::OnPossess(APawn* InPawn)
 {
     Super::OnPossess(InPawn);
 
-    ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(InPawn);
-    if (BlasterCharacter)
+    if (IsBlasterCharacterValid())
     {
         SetHUDHealth(BlasterCharacter->GetHealth(), BlasterCharacter->GetMaxHealth());
         SetHUDShield(BlasterCharacter->GetShield(), BlasterCharacter->GetMaxShield());
         BlasterCharacter->UpdateHUDAmmo();
         HideHUDElimmed();
-        SetLogicDependsOnMatchState(BlasterCharacter);
+        SetLogicDependsOnMatchState();
     }
 }
 
-void ABlasterPlayerController::SetLogicDependsOnMatchState(ABlasterCharacter* BlasterCharacter)
+void ABlasterPlayerController::SetLogicDependsOnMatchState()
 {
     if (MatchState == MatchState::Cooldown)
     {
@@ -520,7 +595,7 @@ void ABlasterPlayerController::HandleMatchHasStarted()
     {
         if (GetCharacter()->ActorHasTag("BlasterCharacter"))
         {
-            if (ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(GetCharacter()))
+            if (IsBlasterCharacterValid())
             {
                 BlasterCharacter->UpdateHUDAmmo();
             }
@@ -547,8 +622,7 @@ void ABlasterPlayerController::HandleMatchCooldown()
             ShowHUDAnnouncement();
         }
     }
-    ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(GetCharacter());
-    if (BlasterCharacter)
+    if (IsBlasterCharacterValid())
     {
         BlasterCharacter->SetIsGameplayDisabled(true);
         BlasterCharacter->SetUpInputMappingContext(CooldownMappingContext);
@@ -670,4 +744,10 @@ bool ABlasterPlayerController::IsGameModeValid()
 void ABlasterPlayerController::ServerReportPingStatus_Implementation(bool bHighPing)
 {
     HighPingDelegate.Broadcast(bHighPing);
+}
+
+bool ABlasterPlayerController::IsBlasterCharacterValid()
+{
+    BlasterCharacter = !BlasterCharacter.IsValid() ? Cast<ABlasterCharacter>(GetCharacter()) : BlasterCharacter;
+    return BlasterCharacter.IsValid();
 }

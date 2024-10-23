@@ -3,6 +3,7 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/SkeletalMeshSocket.h"
 #include "Components/BoxComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -11,7 +12,6 @@
 #include "Engine/GameViewportClient.h"
 #include "Engine/Engine.h"
 #include "Kismet/GameplayStatics.h"
-#include "DrawDebugHelpers.h"
 #include "Weapon.h"
 #include "HitScanWeapon.h"
 #include "BlasterPlayerController.h"
@@ -392,12 +392,12 @@ bool UCombatComponent::CanReload()
 
     if (!BlasterCharacter->HasAuthority() && BlasterCharacter->IsLocallyControlled())
     {
-        UE_LOG(LogTemp, Warning, TEXT("EQUIPPED weapon : %s"), EquippedWeapon == nullptr ? TEXT("NO") : TEXT("YES"));
-        UE_LOG(LogTemp, Warning, TEXT("EquippedWeapon->GetAmmo() : %d"), EquippedWeapon->GetAmmo());
-        UE_LOG(LogTemp, Warning, TEXT("EquippedWeapon->GetMagCapacity() : %d"), EquippedWeapon->GetMagCapacity());
-        UE_LOG(LogTemp, Warning, TEXT("Carried ammo : %d"), CarriedAmmo);
-        UE_LOG(LogTemp, Warning, TEXT("CombatState : %s"), *UEnum::GetValueAsString(CombatState));
-        UE_LOG(LogTemp, Warning, TEXT("locally reloading: %s"), bLocallyReloading == true ? TEXT("YES") : TEXT("NO"));
+        // UE_LOG(LogTemp, Warning, TEXT("EQUIPPED weapon : %s"), EquippedWeapon == nullptr ? TEXT("NO") : TEXT("YES"));
+        // UE_LOG(LogTemp, Warning, TEXT("EquippedWeapon->GetAmmo() : %d"), EquippedWeapon->GetAmmo());
+        // UE_LOG(LogTemp, Warning, TEXT("EquippedWeapon->GetMagCapacity() : %d"), EquippedWeapon->GetMagCapacity());
+        // UE_LOG(LogTemp, Warning, TEXT("Carried ammo : %d"), CarriedAmmo);
+        // UE_LOG(LogTemp, Warning, TEXT("CombatState : %s"), *UEnum::GetValueAsString(CombatState));
+        // UE_LOG(LogTemp, Warning, TEXT("locally reloading: %s"), bLocallyReloading == true ? TEXT("YES") : TEXT("NO"));
     }
 
     return EquippedWeapon &&                                                //
@@ -591,33 +591,14 @@ void UCombatComponent::PickupAmmo(EWeaponType WeaponType, uint32 AmmoAmount)
     }
 }
 
-void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize100& TraceHitTarget, float FireDelay)
+void UCombatComponent::ServerFire_Implementation(
+    const FVector_NetQuantize100& TraceHitTarget, const FVector_NetQuantize100& SocketLocation, float FireDelay)
 {
-    MulticastFire(TraceHitTarget);
+    MulticastFire(TraceHitTarget, SocketLocation);
 }
 
-bool UCombatComponent::ServerFire_Validate(const FVector_NetQuantize100& TraceHitTarget, float FireDelay)
-{
-    if (EquippedWeapon)
-    {
-        bool bNearlyEqual = FMath::IsNearlyEqual(EquippedWeapon->FireDelay, FireDelay, 0.0001f);
-        return bNearlyEqual;
-    }
-    return true;
-}
-
-void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize100& TraceHitTarget)
-{
-    if (BlasterCharacter && BlasterCharacter->IsLocallyControlled()) return;
-    LocalFire(TraceHitTarget);
-}
-
-void UCombatComponent::ServerShotgunFire_Implementation(const TArray<FVector_NetQuantize100>& TraceHitTargets, float FireDelay)
-{
-    MulticastShotgunFire(TraceHitTargets);
-}
-
-bool UCombatComponent::ServerShotgunFire_Validate(const TArray<FVector_NetQuantize100>& TraceHitTargets, float FireDelay)
+bool UCombatComponent::ServerFire_Validate(
+    const FVector_NetQuantize100& TraceHitTarget, const FVector_NetQuantize100& SocketLocation, float FireDelay)
 {
     if (EquippedWeapon)
     {
@@ -627,29 +608,54 @@ bool UCombatComponent::ServerShotgunFire_Validate(const TArray<FVector_NetQuanti
     return true;
 }
 
-void UCombatComponent::MulticastShotgunFire_Implementation(const TArray<FVector_NetQuantize100>& TraceHitTargets)
+void UCombatComponent::MulticastFire_Implementation(
+    const FVector_NetQuantize100& TraceHitTarget, const FVector_NetQuantize100& SocketLocation)
 {
     if (BlasterCharacter && BlasterCharacter->IsLocallyControlled()) return;
-    ShotgunLocalFire(TraceHitTargets);
+    LocalFire(TraceHitTarget, SocketLocation);
 }
 
-void UCombatComponent::LocalFire(const FVector_NetQuantize100& TraceHitTarget)
+void UCombatComponent::ServerShotgunFire_Implementation(
+    const TArray<FVector_NetQuantize100>& TraceHitTargets, const FVector_NetQuantize100& SocketLocation, float FireDelay)
+{
+    MulticastShotgunFire(TraceHitTargets, SocketLocation);
+}
+
+bool UCombatComponent::ServerShotgunFire_Validate(
+    const TArray<FVector_NetQuantize100>& TraceHitTargets, const FVector_NetQuantize100& SocketLocation, float FireDelay)
+{
+    if (EquippedWeapon)
+    {
+        bool bNearlyEqual = FMath::IsNearlyEqual(EquippedWeapon->FireDelay, FireDelay, 0.0001f);
+        return bNearlyEqual;
+    }
+    return true;
+}
+
+void UCombatComponent::MulticastShotgunFire_Implementation(
+    const TArray<FVector_NetQuantize100>& TraceHitTargets, const FVector_NetQuantize100& SocketLocation)
+{
+    if (BlasterCharacter && BlasterCharacter->IsLocallyControlled()) return;
+    ShotgunLocalFire(TraceHitTargets, SocketLocation);
+}
+
+void UCombatComponent::LocalFire(const FVector_NetQuantize100& TraceHitTarget, const FVector_NetQuantize100& SocketLocation)
 {
     if (BlasterCharacter && EquippedWeapon && CombatState == ECombatState::ECS_Unoccupied)
     {
         BlasterCharacter->PlayFireMontage(bAiming);
-        EquippedWeapon->Fire(TraceHitTarget);
+        EquippedWeapon->Fire(TraceHitTarget, SocketLocation);
     }
 }
 
-void UCombatComponent::ShotgunLocalFire(const TArray<FVector_NetQuantize100>& TraceHitTargets)
+void UCombatComponent::ShotgunLocalFire(const TArray<FVector_NetQuantize100>& TraceHitTargets, const FVector_NetQuantize100& SocketLocation)
 {
     AShotgun* Shotgun = Cast<AShotgun>(EquippedWeapon);
     if (!Shotgun || !BlasterCharacter) return;
     if (CombatState == ECombatState::ECS_Reloading || CombatState == ECombatState::ECS_Unoccupied)
     {
         BlasterCharacter->PlayFireMontage(bAiming);
-        Shotgun->FireShotgun(TraceHitTargets);
+        Shotgun->FireShotgun(TraceHitTargets, SocketLocation);
         CombatState = ECombatState::ECS_Unoccupied;
         bLocallyReloading = false;
     }
@@ -834,14 +840,30 @@ void UCombatComponent::Fire()
     }
 }
 
+FVector UCombatComponent::GetWeaponSocketLocation()
+{
+    if (EquippedWeapon->GetWeaponMesh())
+    {
+        const USkeletalMeshSocket* MuzzleFlashSocket = EquippedWeapon->GetWeaponMesh()->GetSocketByName(FName("MuzzleFlash"));
+        if (MuzzleFlashSocket)
+        {
+            FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(EquippedWeapon->GetWeaponMesh());
+            return SocketTransform.GetLocation();
+        }
+    }
+    return FVector();
+}
+
 void UCombatComponent::FireProjectileWeapon()
 {
     if (EquippedWeapon)
     {
         HitTarget =
             EquippedWeapon->bUseScatter ? EquippedWeapon->TraceEndWithScatter(HitTarget, EquippedWeapon->GetTraceStart()) : HitTarget;
-        LocalFire(HitTarget);
-        ServerFire(HitTarget, EquippedWeapon->FireDelay);
+
+        FVector SocketLocation = GetWeaponSocketLocation();
+        LocalFire(HitTarget, SocketLocation);
+        ServerFire(HitTarget, SocketLocation, EquippedWeapon->FireDelay);
     }
 }
 
@@ -851,8 +873,9 @@ void UCombatComponent::FireHitScanWeapon()
     {
         HitTarget =
             EquippedWeapon->bUseScatter ? EquippedWeapon->TraceEndWithScatter(HitTarget, EquippedWeapon->GetTraceStart()) : HitTarget;
-        LocalFire(HitTarget);
-        ServerFire(HitTarget, EquippedWeapon->FireDelay);
+        FVector SocketLocation = GetWeaponSocketLocation();
+        LocalFire(HitTarget, SocketLocation);
+        ServerFire(HitTarget, SocketLocation, EquippedWeapon->FireDelay);
     }
 }
 
@@ -862,10 +885,11 @@ void UCombatComponent::FireShotgun()
     {
         if (AShotgun* Shotgun = Cast<AShotgun>(EquippedWeapon))
         {
+            FVector SocketLocation = GetWeaponSocketLocation();
             TArray<FVector_NetQuantize100> HitTargets;
             Shotgun->ShotgunTraceEndWithScatter(HitTarget, HitTargets);
-            ShotgunLocalFire(HitTargets);
-            ServerShotgunFire(HitTargets, EquippedWeapon->FireDelay);
+            ShotgunLocalFire(HitTargets, SocketLocation);
+            ServerShotgunFire(HitTargets, SocketLocation, EquippedWeapon->FireDelay);
         }
     }
 }

@@ -88,15 +88,24 @@ void UBlasterAnimInstance::SetHandsTransform(float DeltaTime)
         LeftHandTransform.SetLocation(OutPosition);
         LeftHandTransform.SetRotation(FQuat(OutRotation));
 
-        if (BlasterCharacter->IsLocallyControlled())
+        if (BlasterCharacter && BlasterCharacter->IsLocallyControlled() && !BlasterCharacter->HasAuthority())
         {
-            bLocallyControlled = true;
-            FTransform RightHandTransform = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
-
-            FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(RightHandTransform.GetLocation(),
-                RightHandTransform.GetLocation() + (RightHandTransform.GetLocation() - BlasterCharacter->GetHitTarget()));
-
-            RightHandRotation = FMath::RInterpTo(RightHandRotation, LookAtRotation, DeltaTime, 20.f);
+            TransformRightHand(BlasterCharacter->GetHitTarget(), DeltaTime);
+            BlasterCharacter->ServerUpdateRightHandTransform(RightHandRotation);
+        }
+        if (BlasterCharacter && BlasterCharacter->IsLocallyControlled() && BlasterCharacter->HasAuthority())
+        {
+            TransformRightHand(BlasterCharacter->GetHitTarget(), DeltaTime);
+            BlasterCharacter->SetRightHandRotation(RightHandRotation);
         }
     }
+}
+
+void UBlasterAnimInstance::TransformRightHand(const FVector& HitTarget, float DeltaTime)
+{
+    FTransform RightHandTransform = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
+    FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(
+        RightHandTransform.GetLocation(), RightHandTransform.GetLocation() + (RightHandTransform.GetLocation() - HitTarget));
+
+    RightHandRotation = FMath::RInterpTo(RightHandRotation, LookAtRotation, DeltaTime, 20.f);
 }

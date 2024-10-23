@@ -35,6 +35,7 @@
 #include "Weapontypes.h"
 #include "GameFramework/Pawn.h"
 #include "NiagaraComponent.h"
+#include "BlasterGameplayStatics.h"
 #include "BlasterCharacter.h"
 
 ABlasterCharacter::ABlasterCharacter()
@@ -213,7 +214,7 @@ void ABlasterCharacter::BeginPlay()
     check(GetCharacterMovement());
     Tags.Add("BlasterCharacter");
 
-    SetUpInputMappingContext(DefaultMappingContext);
+    SetUpInputMappingContext(InGameMappingContext);
 
     if (HasAuthority())
     {
@@ -226,6 +227,11 @@ void ABlasterCharacter::BeginPlay()
     }
 
     InitializedMaterial = GetMesh()->GetMaterial(0);
+
+    if (IsControllerValid())
+    {
+        BlasterPlayerController->OnPlayerCharacterBeginPlay.Broadcast();
+    }
 }
 
 void ABlasterCharacter::SpawnDefaultWeapon()
@@ -261,19 +267,28 @@ void ABlasterCharacter::Tick(float DeltaTime)
 void ABlasterCharacter::PossessedBy(AController* NewController)
 {
     Super::PossessedBy(NewController);
-    SetUpInputMappingContext(DefaultMappingContext);
+    SetUpInputMappingContext(InGameMappingContext);
+    if (IsControllerValid())
+    {
+        BlasterPlayerController->OnPlayerCharacterBeginPlay.Broadcast();
+    }
 }
 
 void ABlasterCharacter::SetUpInputMappingContext(UInputMappingContext* MappingContext)
 {
     if (!MappingContext) return;
-    if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+    if (IsControllerValid())
     {
         if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
-                ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+                ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(BlasterPlayerController->GetLocalPlayer()))
         {
-            Subsystem->ClearAllMappings();
-            Subsystem->AddMappingContext(MappingContext, 0);
+            LastMappingContext = MappingContext;
+
+            if (!BlasterPlayerController->GetLastMappingContext())
+            {
+                Subsystem->ClearAllMappings();
+                Subsystem->AddMappingContext(MappingContext, 0);
+            }
         }
     }
 }
@@ -306,6 +321,7 @@ void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
     DOREPLIFETIME_CONDITION(ABlasterCharacter, OverlappingWeapon, COND_OwnerOnly);
     DOREPLIFETIME(ABlasterCharacter, Health);
     DOREPLIFETIME(ABlasterCharacter, Shield);
+    DOREPLIFETIME(ABlasterCharacter, RightHandRotation);
     DOREPLIFETIME(ABlasterCharacter, bGameplayDisabled);
 }
 
@@ -516,6 +532,28 @@ void ABlasterCharacter::OnRep_ReplicatedMovement()
     TimeSinceLastMovementReplication = 0.f;
 }
 
+void ABlasterCharacter::OnRep_RightHandTransform()
+{
+    if (!IsLocallyControlled() && IsBlasterAnimInstanceValid())
+    {
+        BlasterAnimInstance->SetRightHandRotation(RightHandRotation);
+    }
+}
+
+void ABlasterCharacter::ServerUpdateRightHandTransform_Implementation(const FRotator& NewRightHandRotation)
+{
+    RightHandRotation = NewRightHandRotation;
+    if (IsBlasterAnimInstanceValid())
+    {
+        BlasterAnimInstance->SetRightHandRotation(NewRightHandRotation);
+    }
+}
+
+void ABlasterCharacter::ServerSelfDestruction_Implementation()
+{
+    UBlasterGameplayStatics::SelfDestruction(this);
+}
+
 void ABlasterCharacter::DropOrDestroyWeapon(AWeapon* Weapon)
 {
     if (!Weapon) return;
@@ -559,6 +597,11 @@ void ABlasterCharacter::MulticastElim_Implementation()
         BlasterPlayerController->SetHUDHealth(0, GetMaxHealth());
         BlasterPlayerController->SetHUDShield(0, GetMaxShield());
         SetIsGameplayDisabled(true);
+
+        if (IsLocallyControlled() && BlasterPlayerController->bPauseWidgetOpen)
+        {
+            BlasterPlayerController->ShowPauseWidget(this);
+        }
     }
 
     PlayElimMontage();
@@ -577,9 +620,10 @@ void ABlasterCharacter::MulticastElim_Implementation()
     GetCharacterMovement()->StopMovementImmediately();
     SetUpInputMappingContext(ElimmedMappingContext);
 
-    // Diable Collision
+    // Disable Collision
     GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    GetMesh()->SetCollisionResponseToChannels(ECollisionResponse::ECR_Ignore);
+    GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Block);
 
     // Spawn Elim bot
     if (ElimBotEffect && ElimBotSound)
@@ -911,14 +955,7 @@ void ABlasterCharacter::HideCamera(bool bIsHidden)
 
 void ABlasterCharacter::CalculateAO_Pitch()
 {
-    AO_Pitch = GetBaseAimRotation().Pitch;
-    if (AO_Pitch > 90.f && !IsLocallyControlled())
-    {
-        // map pitch from [270, 360) to [-90, 0)
-        FVector2D InRange(270.f, 360.f);
-        FVector2D OutRange(-90.f, 0.f);
-        AO_Pitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AO_Pitch);
-    }
+    AO_Pitch = GetBaseAimRotation().GetNormalized().Pitch;
 }
 
 float ABlasterCharacter::CalculateSpeed()
@@ -1020,6 +1057,12 @@ FVector ABlasterCharacter::GetHitTarget() const
     return CombatComp->HitTarget;
 }
 
+void ABlasterCharacter::SetHitTarget(const FVector& NewHitTarget)
+{
+    if (!CombatComp) return;
+    CombatComp->HitTarget = NewHitTarget;
+}
+
 ECombatState ABlasterCharacter::GetCombatState() const
 {
     if (!CombatComp) return ECombatState::ECS_MAX;
@@ -1064,4 +1107,11 @@ bool ABlasterCharacter::IsLocallyReloading()
 bool ABlasterCharacter::IsControllerValid()
 {
     return BlasterUtils::CastOrUseExistsActor<ABlasterPlayerController>(BlasterPlayerController, GetController());
+}
+
+bool ABlasterCharacter::IsBlasterAnimInstanceValid()
+{
+    if (!GetMesh()->GetAnimInstance()) return false;
+    BlasterAnimInstance = BlasterAnimInstance == nullptr ? Cast<UBlasterAnimInstance>(GetMesh()->GetAnimInstance()) : BlasterAnimInstance;
+    return BlasterAnimInstance != nullptr;
 }

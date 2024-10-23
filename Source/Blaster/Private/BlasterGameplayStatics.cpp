@@ -1,3 +1,5 @@
+
+#include "Kismet/GameplayStatics.h"
 #include "GameFramework/DamageType.h"
 #include "Engine/OverlapResult.h"
 #include "CollisionQueryParams.h"
@@ -6,6 +8,8 @@
 #include "Components/PrimitiveComponent.h"
 #include "BlasterCharacter.h"
 #include "Engine/DamageEvents.h"
+#include "BlasterGameMode.h"
+#include "GameFramework/Character.h"
 #include "BlasterGameplayStatics.h"
 
 void UBlasterGameplayStatics::GetOverlapActorsBySphereTrace(UObject* WorldObject,  //
@@ -140,6 +144,37 @@ void UBlasterGameplayStatics::MakeRadialDamageWithFallOff(const TMap<AActor*, FH
                     InstigatorController,         //
                     DamageCauser);
             }
+        }
+    }
+}
+
+void UBlasterGameplayStatics::SelfDestruction(AActor* OtherActor, FName ActorTag)
+{
+    if (OtherActor && OtherActor->HasAuthority() && OtherActor->ActorHasTag(ActorTag))
+    {
+        if (ABlasterCharacter* CharacterToKill = Cast<ABlasterCharacter>(OtherActor))
+        {
+            if (ABlasterGameMode* GameMode = Cast<ABlasterGameMode>(UGameplayStatics::GetGameMode(OtherActor)))
+            {
+                if (!CharacterToKill->IsControllerValid()) return;
+
+                GameMode->PlayerElimmed(
+                    CharacterToKill, CharacterToKill->GetBlasterPlayerController(), CharacterToKill->GetBlasterPlayerController());
+            }
+        }
+    }
+}
+
+void UBlasterGameplayStatics::SelfDestruction(ABlasterCharacter* CharacterToKill)
+{
+    if (CharacterToKill && CharacterToKill->HasAuthority())
+    {
+        if (ABlasterGameMode* GameMode = Cast<ABlasterGameMode>(UGameplayStatics::GetGameMode(CharacterToKill)))
+        {
+            if (!CharacterToKill->IsControllerValid()) return;
+
+            GameMode->PlayerElimmed(
+                CharacterToKill, CharacterToKill->GetBlasterPlayerController(), CharacterToKill->GetBlasterPlayerController());
         }
     }
 }

@@ -30,6 +30,8 @@ class UStaticMeshComponent;
 class UNiagaraComponent;
 class UMaterialInterface;
 class UBoxComponent;
+class UBlasterAnimInstance;
+
 
 UCLASS()
 class BLASTER_API ABlasterCharacter : public ACharacter, public IInteractWithCrosshairsInterface
@@ -75,6 +77,9 @@ public:
     UFUNCTION(BlueprintImplementableEvent)
     void ShowSniperScopeWidget(bool bShowScope);
 
+    UFUNCTION(Server, Reliable)
+    void ServerSelfDestruction();
+
     void UpdateHUDHealth();
     void UpdateHUDShield();
     void UpdateHUDAmmo();
@@ -87,6 +92,11 @@ public:
     void SpawnDefaultWeapon();
 
     bool IsControllerValid();
+
+    bool IsBlasterAnimInstanceValid();
+
+    UFUNCTION(Server, Unreliable)
+    void ServerUpdateRightHandTransform(const FRotator& NewRightHandRotation);
 
 #if WITH_EDITOR
     virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -138,7 +148,7 @@ protected:
     void ThrowGrenadeButtonPressed();
 
     UPROPERTY(EditAnywhere, Category = "Input")
-    UInputMappingContext* DefaultMappingContext;
+    UInputMappingContext* InGameMappingContext;
 
     UPROPERTY(EditAnywhere, Category = "Input")
     UInputMappingContext* ElimmedMappingContext;
@@ -243,6 +253,9 @@ private:
 
     UFUNCTION()
     void OnRep_Shield();
+
+    UFUNCTION()
+    void OnRep_RightHandTransform();
 
     UFUNCTION(Server, Reliable)
     void ServerEquipButtonPressed();
@@ -369,6 +382,9 @@ private:
     UPROPERTY()
     ABlasterPlayerController* BlasterPlayerController;
 
+    UPROPERTY()
+    UBlasterAnimInstance* BlasterAnimInstance;
+
     bool bElimmed = false;
 
     FTimerHandle ElimTimer;
@@ -440,6 +456,12 @@ private:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     bool bMoveForward = false;
 
+    UPROPERTY(ReplicatedUsing = OnRep_RightHandTransform)
+    FRotator RightHandRotation;
+
+    UPROPERTY()
+    UInputMappingContext* LastMappingContext;
+
 public:
     void SetOverlappingWeapon(AWeapon* Weapon);
     bool IsWeaponEquipped();
@@ -447,6 +469,7 @@ public:
     bool IsAiming();
     AWeapon* GetEquippedWeapon();
     FVector GetHitTarget() const;
+    void SetHitTarget(const FVector& NewHitTarget);
     ECombatState GetCombatState() const;
     void SetCombatState(ECombatState NewCombatState);
 
@@ -482,4 +505,6 @@ public:
     FORCEINLINE UTimelineComponent* GetInvisibilityTimeLine() const { return InvisibilityTimeline; };
     FORCEINLINE void SetCurrentSensitivity(float NewSensitivity) { CurrentSensitivity = NewSensitivity; };
     FORCEINLINE ABlasterPlayerController* GetBlasterPlayerController() const { return BlasterPlayerController; };
+    FORCEINLINE void SetRightHandRotation(const FRotator& NewRightHandRotation) { RightHandRotation = NewRightHandRotation; };
+    FORCEINLINE UInputMappingContext* GetLastMappingContext() const { return LastMappingContext; };
 };

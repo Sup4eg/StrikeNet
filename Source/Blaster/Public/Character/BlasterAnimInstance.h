@@ -23,6 +23,7 @@ private:
     void SetYawOffset(float DeltaTime);
     void SetLean(float DeltaTime);
     void SetHandsTransform(float DeltaTime);
+    void TransformRightHand(const FVector& HitTarget, float DeltaTime);
 
     UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
     ABlasterCharacter* BlasterCharacter;
@@ -66,12 +67,6 @@ private:
     ETurningInPlace TurningInPlace;
 
     UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-    FRotator RightHandRotation;
-
-    UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-    bool bLocallyControlled;
-
-    UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
     bool bRotateRootBone;
 
     UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
@@ -86,7 +81,13 @@ private:
     UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
     bool bTransformRightHand;
 
+    UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+    FRotator RightHandRotation;
+
     FRotator CharacterRotationLastFrame;
     FRotator CharacterRotation;
     FRotator DeltaRotation;
+
+public:
+    FORCEINLINE void SetRightHandRotation(const FRotator& NewRightHandRotation) { RightHandRotation = NewRightHandRotation; };
 };

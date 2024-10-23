@@ -12,10 +12,13 @@ class UTexture;
 class UCharacterOverlay;
 class ABlasterGameMode;
 class UInputMappingContext;
+class UInputAction;
 class UTextBlock;
 class ABlasterCharacter;
+class UPauseWidget;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FHighPingDelegate, bool, bPingTooHigh);
+DECLARE_MULTICAST_DELEGATE(FPlayerCharacterBeginPlay);
 
 UCLASS()
 class BLASTER_API ABlasterPlayerController : public APlayerController
@@ -42,6 +45,7 @@ public:
     void HideHUDElimmed();
     void SetHUDMatchCountdown(float CountdownTime);
     void SetHUDAnnouncementCountdown(float CountdownTime);
+    void ShowPauseWidget(ABlasterCharacter* PlayerCharacter);
 
     virtual void Tick(float DeltaTime) override;
 
@@ -55,11 +59,20 @@ public:
 
     FHighPingDelegate HighPingDelegate;
 
+    FPlayerCharacterBeginPlay OnPlayerCharacterBeginPlay;
+
+    bool bPauseWidgetOpen = false;
+
 protected:
     virtual void BeginPlay() override;
+
+    virtual void SetupInputComponent() override;
+
     virtual void OnPossess(APawn* InPawn) override;
 
     void SetHUDTime();
+
+    void SetUpInputMappingContext(UInputMappingContext* MappingContext);
 
     /**
      * Sync time between client and server
@@ -86,13 +99,20 @@ protected:
     void StopHighPingWarning();
     void CheckPing(float DeltaTime);
 
+    /** Callbacks for input */
+    void ShowPauseWidget();
+
+    UPROPERTY(EditAnywhere, Category = "Input")
+    UInputAction* QuitAction;
+
 private:
     bool IsHUDValid();
     bool IsCharacterOverlayValid();
     bool IsAnnouncementWidgetValid();
     void ShowHUDAnnouncement();
     void SetHUDCountdown(float CountdownTime, UTextBlock* TimeTextBlock);
-    void SetLogicDependsOnMatchState(ABlasterCharacter* BlasterCharacter);
+    void SetLogicDependsOnMatchState();
+    bool IsBlasterCharacterValid();
 
     float GetTimeLeft();
     uint32 GetSecondsLeft(float TimeLeft);
@@ -132,6 +152,12 @@ private:
     UPROPERTY(EditAnywhere, Category = "Input")
     UInputMappingContext* CooldownMappingContext;
 
+    UPROPERTY(EditAnywhere, Category = "Input")
+    UInputMappingContext* InGameMappingContext;
+
+    UPROPERTY(EditAnywhere, Category = "Input")
+    UInputMappingContext* PauseMappingContext;
+
     /** Time */
     float MatchTime = 0.f;
     float WarmupTime = 0.f;
@@ -155,4 +181,23 @@ private:
 
     UPROPERTY(EditDefaultsOnly)
     float HighPingThreshold = 50.f;
+
+    /**
+     * Return to main menu
+     */
+
+    UPROPERTY(EditDefaultsOnly, Category = HUD)
+    TSubclassOf<UUserWidget> PauseWidgetClass;
+
+    UPROPERTY()
+    UPauseWidget* PauseWidget;
+
+    UPROPERTY()
+    UInputMappingContext* LastMappingContext;
+
+    UPROPERTY()
+    TWeakObjectPtr<ABlasterCharacter> BlasterCharacter;
+
+public:
+    FORCEINLINE UInputMappingContext* GetLastMappingContext() const { return LastMappingContext; };
 };

@@ -86,12 +86,8 @@ void AProjectile::ExplodeDamage(const FVector& ImpactPoint)
 
     if (ABlasterCharacter* OwnerCharacter = Cast<ABlasterCharacter>(GetOwner()))
     {
-        UE_LOG(LogTemp, Warning, TEXT("try to apply damage"));
-
         if (OwnerCharacter->HasAuthority() && !bUseServerSideRewind)
         {
-            UE_LOG(LogTemp, Warning, TEXT("Apply damage as server"));
-
             TMap<AActor*, FHitResult> HitCharacters;
             UBlasterGameplayStatics::GetOverlapActorsBySphereTrace(
                 this, HitCharacters, ImpactPoint, FName("BlasterCharacter"), ECC_SkeletalMesh, DamageOuterRadius);
