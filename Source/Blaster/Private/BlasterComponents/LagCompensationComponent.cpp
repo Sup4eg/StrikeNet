@@ -40,7 +40,7 @@ void ULagCompensationComponent::ShowFramePackage(const FFramePackage& Package, c
 
 FServerSideRewindResult ULagCompensationComponent::ServerSideRewind(ABlasterCharacter* HitCharacter,  //
     const FVector_NetQuantize& TraceStart,                                                            //
-    const FVector_NetQuantize100& HitLocation,                                                           //
+    const FVector_NetQuantize100& HitLocation,                                                        //
     float HitTime)
 {
     FFramePackage FrameToCheck = GetFrameToCheck(HitCharacter, HitTime);
@@ -174,7 +174,7 @@ FFramePackage ULagCompensationComponent::InterpBetweenFrames(  //
 
 void ULagCompensationComponent::ServerScoreRequest_Implementation(ABlasterCharacter* HitCharacter,  //
     const FVector_NetQuantize& TraceStart,                                                          //
-    const FVector_NetQuantize100& HitLocation,                                                         //
+    const FVector_NetQuantize100& HitLocation,                                                      //
     float HitTime,                                                                                  //
     float Damage,                                                                                   //
     AWeapon* DamageCauser                                                                           //
@@ -182,8 +182,13 @@ void ULagCompensationComponent::ServerScoreRequest_Implementation(ABlasterCharac
 {
     if (!BlasterCharacter || !HitCharacter || !DamageCauser) return;
     FServerSideRewindResult Confirm = ServerSideRewind(HitCharacter, TraceStart, HitLocation, HitTime);
+    UE_LOG(LogTemp, Warning, TEXT("-------AFTER CONFIRM HIT-----"));
+
     if (Confirm.bHitConfirmed)
     {
+
+        UE_LOG(LogTemp, Warning, TEXT("-------Try to apply DAMAGE-----"));
+
         UGameplayStatics::ApplyDamage(          //
             HitCharacter,                       //
             Damage,                             //
@@ -247,7 +252,7 @@ void ULagCompensationComponent::ExplosionProjectileServerScoreRequest_Implementa
 
 void ULagCompensationComponent::ShotgunServerScoreRequest_Implementation(const TArray<ABlasterCharacter*>& HitCharacters,  //
     const FVector_NetQuantize& TraceStart,                                                                                 //
-    const TArray<FVector_NetQuantize100>& HitLocations,                                                                       //
+    const TArray<FVector_NetQuantize100>& HitLocations,                                                                    //
     float HitTime,                                                                                                         //
     float Damage,
     AWeapon* DamageCauser  //
@@ -284,6 +289,7 @@ FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackag
     FFramePackage CurrentFrame;
     CacheBoxPositions(HitCharacter, CurrentFrame);
     MoveBoxes(HitCharacter, Package);
+
     EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::NoCollision);
 
     // EnableCollision for hit boxes
@@ -293,19 +299,39 @@ FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackag
         {
             HitBoxPair.Value->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
             HitBoxPair.Value->SetCollisionResponseToChannel(ECC_HitBox, ECollisionResponse::ECR_Block);
+
+            // Debug purpose
+            // UE_LOG(LogTemp, Warning, TEXT("Component Location: %s"), *HitBoxPair.Value->GetComponentLocation().ToString());
+            // UE_LOG(LogTemp, Warning, TEXT("Scaled Box Extent: %s"), *HitBoxPair.Value->GetScaledBoxExtent().ToString());
+            // UE_LOG(LogTemp, Warning, TEXT("Component rotation: %s"), *HitBoxPair.Value->GetComponentRotation().ToString());
+
+            DrawDebugBox(GetWorld(), HitBoxPair.Value->GetComponentLocation(), HitBoxPair.Value->GetUnscaledBoxExtent(),
+                FQuat(HitBoxPair.Value->GetComponentRotation()), FColor::Red, false, 4.f);
         }
     }
 
     FHitResult ConfirmHitResult;
     const FVector TraceEnd = TraceStart + (HitLocation - TraceStart) * 1.25f;
     UWorld* World = GetWorld();
+
+    UE_LOG(LogTemp, Warning, TEXT("We are here!!!"));
     if (World)
     {
         World->LineTraceSingleByChannel(ConfirmHitResult, TraceStart, TraceEnd, ECC_HitBox);
         ServerSideRewindResult.bHitConfirmed = ConfirmHitResult.bBlockingHit;
+
+        if (ConfirmHitResult.bBlockingHit)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("BLOCK HIT!!!"));
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT(" NOT BLOCK HIT!!!"));
+        }
     }
     ResetHitBoxes(HitCharacter, CurrentFrame);
     EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryAndPhysics);
+
     return ServerSideRewindResult;
 }
 
@@ -427,7 +453,7 @@ FExplosionProjectileServerSideRewindResult ULagCompensationComponent::ExplosionP
             PathResult.HitResult.ImpactPoint, FName("BlasterCharacter"), ECC_HitBox, DamageOuterRadius);
 
         // Debug
-        //DrawDebugSphere(GetWorld(), PathResult.HitResult.ImpactPoint, DamageOuterRadius, 20, FColor::Blue, true);
+        // DrawDebugSphere(GetWorld(), PathResult.HitResult.ImpactPoint, DamageOuterRadius, 20, FColor::Blue, true);
     }
 
     for (auto& Frame : CurrentFrames)
@@ -518,7 +544,7 @@ void ULagCompensationComponent::CacheBoxPositions(ABlasterCharacter* HitCharacte
             FBoxInformation BoxInfo;
             BoxInfo.Location = HitBoxPair.Value->GetComponentLocation();
             BoxInfo.Rotation = HitBoxPair.Value->GetComponentRotation();
-            BoxInfo.BoxExtent = HitBoxPair.Value->GetScaledBoxExtent();
+            BoxInfo.BoxExtent = HitBoxPair.Value->GetUnscaledBoxExtent();
 
             OutFramePackage.HitBoxInfo.Add(HitBoxPair.Key, BoxInfo);
         }
@@ -597,7 +623,7 @@ void ULagCompensationComponent::SaveFramePackage(FFramePackage& Package)
         FBoxInformation BoxInformation;
         BoxInformation.Location = BoxPair.Value->GetComponentLocation();
         BoxInformation.Rotation = BoxPair.Value->GetComponentRotation();
-        BoxInformation.BoxExtent = BoxPair.Value->GetScaledBoxExtent();
+        BoxInformation.BoxExtent = BoxPair.Value->GetUnscaledBoxExtent();
 
         Package.HitBoxInfo.Add(BoxPair.Key, BoxInformation);
     }

@@ -53,6 +53,7 @@ void AHitScanWeapon::Fire(const FVector_NetQuantize100& HitTarget, const FVector
                              IsBlasterOwnerControllerValid() &&                     //
                              BlasterOwnerCharacter->GetLagCompensationComponent())  //
                     {
+
                         float HitTime = BlasterOwnerController->GetServerTime() - BlasterOwnerController->SingleTripTime;
 
                         BlasterOwnerCharacter->GetLagCompensationComponent()->ServerScoreRequest(  //

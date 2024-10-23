@@ -89,7 +89,7 @@ public:
     UFUNCTION(Server, Reliable)
     void ServerScoreRequest(ABlasterCharacter* HitCharacter,  //
         const FVector_NetQuantize& TraceStart,                //
-        const FVector_NetQuantize100& HitLocation,               //
+        const FVector_NetQuantize100& HitLocation,            //
         float HitTime,
         float Damage,          //
         AWeapon* DamageCauser  //
@@ -133,13 +133,13 @@ public:
      * Shotgun
      */
     UFUNCTION(Server, Reliable)
-    void ShotgunServerScoreRequest(                       //
-        const TArray<ABlasterCharacter*>& HitCharacters,  //
-        const FVector_NetQuantize& TraceStart,            //
+    void ShotgunServerScoreRequest(                          //
+        const TArray<ABlasterCharacter*>& HitCharacters,     //
+        const FVector_NetQuantize& TraceStart,               //
         const TArray<FVector_NetQuantize100>& HitLocations,  //
-        float HitTime,                                    //
-        float Damage,                                     //
-        AWeapon* DamageCauser                             //
+        float HitTime,                                       //
+        float Damage,                                        //
+        AWeapon* DamageCauser                                //
     );
 
 protected:
@@ -163,7 +163,7 @@ protected:
      */
     FServerSideRewindResult ServerSideRewind(ABlasterCharacter* HitCharacter,  //
         const FVector_NetQuantize& TraceStart,                                 //
-        const FVector_NetQuantize100& HitLocation,                                //
+        const FVector_NetQuantize100& HitLocation,                             //
         float HitTime);
 
     FServerSideRewindResult ConfirmHit(const FFramePackage& Package,  //
@@ -214,7 +214,7 @@ protected:
     FShotgunServerSideRewindResult ShotgunServerSideRewind(  //
         const TArray<ABlasterCharacter*>& HitCharacters,     //
         const FVector_NetQuantize& TraceStart,               //
-        const TArray<FVector_NetQuantize100>& HitLocations,     //
+        const TArray<FVector_NetQuantize100>& HitLocations,  //
         float HitTime);                                      //
 
     FShotgunServerSideRewindResult ShotgunConfirmHit(  //
@@ -235,4 +235,7 @@ private:
 
     UPROPERTY(EditAnywhere)
     float MaxRecordTime = 4.f;
+
+
+    FCriticalSection CriticalSection;
 };
