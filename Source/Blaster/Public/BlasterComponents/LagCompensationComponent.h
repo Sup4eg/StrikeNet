@@ -86,7 +86,7 @@ public:
     /**
      * HitScan
      */
-    UFUNCTION(Server, Reliable)
+    UFUNCTION(Server, Reliable, WithValidation)
     void ServerScoreRequest(ABlasterCharacter* HitCharacter,  //
         const FVector_NetQuantize& TraceStart,                //
         const FVector_NetQuantize100& HitLocation,            //
@@ -99,7 +99,7 @@ public:
      * Projectile
      */
 
-    UFUNCTION(Server, Reliable)
+    UFUNCTION(Server, Reliable, WithValidation)
     void ProjectileServerScoreRequest(ABlasterCharacter* HitCharacter,  //
         const FVector_NetQuantize& TraceStart,                          //
         const FVector_NetQuantize100& InitialVelocity,                  //
@@ -116,7 +116,7 @@ public:
      * Grenades
      */
 
-    UFUNCTION(Server, Reliable)
+    UFUNCTION(Server, Reliable, WithValidation)
     void ExplosionProjectileServerScoreRequest(           //
         const TArray<ABlasterCharacter*>& HitCharacters,  //
         const FVector_NetQuantize& TraceStart,            //
@@ -132,7 +132,7 @@ public:
     /**
      * Shotgun
      */
-    UFUNCTION(Server, Reliable)
+    UFUNCTION(Server, Reliable, WithValidation)
     void ShotgunServerScoreRequest(                          //
         const TArray<ABlasterCharacter*>& HitCharacters,     //
         const FVector_NetQuantize& TraceStart,               //
@@ -235,7 +235,6 @@ private:
 
     UPROPERTY(EditAnywhere)
     float MaxRecordTime = 4.f;
-
 
     FCriticalSection CriticalSection;
 };

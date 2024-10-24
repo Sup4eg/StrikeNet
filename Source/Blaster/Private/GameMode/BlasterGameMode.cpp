@@ -116,7 +116,7 @@ void ABlasterGameMode::PlayerElimmed(            //
 
     VictimPlayerState->AddToDefeats(1);
     VictimPlayerState->AddKilledBy(FName(*AttackerPlayerState->GetPlayerName()));
-    ElimmedCharacter->Elim();
+    ElimmedCharacter->Elim(false);
 }
 
 void ABlasterGameMode::RequestRespawn(ACharacter* ElimmedCharacter, AController* ElimmedController)
@@ -138,6 +138,20 @@ void ABlasterGameMode::RequestRespawn(ACharacter* ElimmedCharacter, AController*
 
             RestartPlayerAtPlayerStart(ElimmedController, BestPlayerStart);
         }
+    }
+}
+
+void ABlasterGameMode::PlayerLeftGame(ABlasterPlayerState* PlayerLeaving)
+{
+    if (!PlayerLeaving) return;
+    ABlasterGameState* BlasterGameState = GetGameState<ABlasterGameState>();
+    if (BlasterGameState && BlasterGameState->TopScoringPlayers.Contains(PlayerLeaving))
+    {
+        BlasterGameState->TopScoringPlayers.Remove(PlayerLeaving);
+    }
+    if (ABlasterCharacter* CharacterLeaving = Cast<ABlasterCharacter>(PlayerLeaving->GetPawn()))
+    {
+        CharacterLeaving->Elim(true);
     }
 }
 

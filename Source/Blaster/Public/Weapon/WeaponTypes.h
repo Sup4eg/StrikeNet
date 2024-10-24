@@ -21,6 +21,16 @@ enum class EWeaponType : uint8
 };
 
 UENUM(BlueprintType)
+enum class EProjectileType : uint8
+{
+    EPT_ProjectileBullet UMETA(DisplayName = "Projectile Bullet"),
+    EPT_ProjectileRocket UMETA(DisplayName = "Projectile Rocket"),
+    EPT_ProjectileGrenade UMETA(DisplayName = "Projectile Grenade"),
+    EPT_ProjectileThrowGrenade UMETA(DisplayName = "Projectile Throw Grenade"),
+    EPT_MAX UMETA(DisplayName = "DefaultMAX")
+};
+
+UENUM(BlueprintType)
 enum class EFireType : uint8
 {
     EFT_HitScan UMETA(DisplayName = "Hit Scan Weapon"),

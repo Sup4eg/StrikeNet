@@ -58,6 +58,11 @@ void AProjectileBullet::OnHit(
                     // TODO, Potantial LEAK HERE, Damage and damage causer must be validated
                     if (bUseServerSideRewind && OwnerCharacter->GetLagCompensationComponent() && OwnerCharacter->IsLocallyControlled())
                     {
+
+                        // Hacked client
+                        // Damage = 10000;
+                        // InitialVelocity *= 100000;
+
                         float HitTime = OwnerController->GetServerTime() - OwnerController->SingleTripTime;
                         OwnerCharacter->GetLagCompensationComponent()->ProjectileServerScoreRequest(  //
                             HitCharacter,                                                             //

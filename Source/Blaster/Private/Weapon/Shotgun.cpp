@@ -87,8 +87,10 @@ void AShotgun::ApplyMultipleDamage(            //
 
     if (bServerSideRewindDamage)
     {
-        float HitTime = BlasterOwnerController->GetServerTime() - BlasterOwnerController->SingleTripTime;
+        // Hacked client
+        //Damage = 10000;
 
+        float HitTime = BlasterOwnerController->GetServerTime() - BlasterOwnerController->SingleTripTime;
         BlasterOwnerCharacter->GetLagCompensationComponent()->ShotgunServerScoreRequest(  //
             HitCharacters,                                                                //
             Start,                                                                        //

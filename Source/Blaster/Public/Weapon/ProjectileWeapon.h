@@ -17,8 +17,11 @@ public:
     virtual void Fire(const FVector_NetQuantize100& HitTarget, const FVector_NetQuantize100& SocketLocation) override;
 
 private:
+    void SetProjectileSSR(AProjectile* SpawnedProjectile, APawn* InstigatorPawn, FVector_NetQuantize TraceStart);
+
     UPROPERTY(EditAnywhere)
     TSubclassOf<AProjectile> ProjectileClass;
 
-    void SetProjectileSSR(AProjectile* SpawnedProjectile, APawn* InstigatorPawn, FVector_NetQuantize TraceStart);
+public:
+    FORCEINLINE TSubclassOf<AProjectile> GetProjectileClass() const { return ProjectileClass; };
 };

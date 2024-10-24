@@ -12,6 +12,9 @@
 #include "Weapon.h"
 #include "Blaster.h"
 #include "BlasterGameplayStatics.h"
+#include "HitScanWeapon.h"
+#include "ProjectileWeapon.h"
+#include "Projectile.h"
 #include "LagCompensationComponent.h"
 
 ULagCompensationComponent::ULagCompensationComponent()
@@ -182,13 +185,8 @@ void ULagCompensationComponent::ServerScoreRequest_Implementation(ABlasterCharac
 {
     if (!BlasterCharacter || !HitCharacter || !DamageCauser) return;
     FServerSideRewindResult Confirm = ServerSideRewind(HitCharacter, TraceStart, HitLocation, HitTime);
-    UE_LOG(LogTemp, Warning, TEXT("-------AFTER CONFIRM HIT-----"));
-
     if (Confirm.bHitConfirmed)
     {
-
-        UE_LOG(LogTemp, Warning, TEXT("-------Try to apply DAMAGE-----"));
-
         UGameplayStatics::ApplyDamage(          //
             HitCharacter,                       //
             Damage,                             //
@@ -197,6 +195,30 @@ void ULagCompensationComponent::ServerScoreRequest_Implementation(ABlasterCharac
             UDamageType::StaticClass()          //
         );
     }
+}
+
+bool ULagCompensationComponent::ServerScoreRequest_Validate(ABlasterCharacter* HitCharacter,  //
+    const FVector_NetQuantize& TraceStart,                                                    //
+    const FVector_NetQuantize100& HitLocation,                                                //
+    float HitTime,                                                                            //
+    float Damage,                                                                             //
+    AWeapon* DamageCauser)
+{
+    bool bIsValid = false;
+    if (AHitScanWeapon* HitScanWeapon = Cast<AHitScanWeapon>(DamageCauser))
+    {
+        bool bIsRightWeapon = HitScanWeapon->GetWeaponType() == EWeaponType::EWT_Pistol ||  //
+                              HitScanWeapon->GetWeaponType() == EWeaponType::EWT_SMG ||     //
+                              HitScanWeapon->GetWeaponType() == EWeaponType::EWT_SniperRifle;
+
+        if (bIsRightWeapon)
+        {
+            // Validate
+            bIsValid = FMath::IsNearlyEqual(Damage, HitScanWeapon->GetDamage(), 0.0001f);
+        }
+    }
+
+    return bIsValid;
 }
 
 void ULagCompensationComponent::ProjectileServerScoreRequest_Implementation(ABlasterCharacter* HitCharacter,  //
@@ -220,6 +242,38 @@ void ULagCompensationComponent::ProjectileServerScoreRequest_Implementation(ABla
             UDamageType::StaticClass()          //
         );
     }
+}
+
+bool ULagCompensationComponent::ProjectileServerScoreRequest_Validate(ABlasterCharacter* HitCharacter,  //
+    const FVector_NetQuantize& TraceStart,                                                              //
+    const FVector_NetQuantize100& InitialVelocity,                                                      //
+    float GravityScale,                                                                                 //
+    float HitTime,                                                                                      //
+    float Damage,                                                                                       //
+    AWeapon* DamageCauser                                                                               //
+)
+{
+    bool bIsValid = false;
+    if (AProjectileWeapon* ProjectileWeapon = Cast<AProjectileWeapon>(DamageCauser))
+    {
+        bool bIsRightWeapon = ProjectileWeapon->GetWeaponType() == EWeaponType::EWT_AssaultRifle;
+        if (bIsRightWeapon && ProjectileWeapon->GetProjectileClass())
+        {
+            float Epsilon = 0.0001f;
+            UClass* ProjectileClass = ProjectileWeapon->GetProjectileClass().Get();
+            AProjectile* DefaultProjectile = ProjectileClass->GetDefaultObject<AProjectile>();
+            bool bIsRightProjectile = DefaultProjectile->GetProjectileType() == EProjectileType::EPT_ProjectileBullet;
+            if (bIsRightProjectile)
+            {
+                // Validate
+                bIsValid = FMath::IsNearlyEqual(Damage, DefaultProjectile->GetDamage(), Epsilon) &&         //
+                           FMath::IsNearlyEqual(GravityScale, DefaultProjectile->GravityScale, Epsilon) &&  //
+                           FMath::IsNearlyEqual(InitialVelocity.Size(), DefaultProjectile->InitialSpeed, 5.f);
+            }
+        }
+    }
+
+    return bIsValid;
 }
 
 void ULagCompensationComponent::ExplosionProjectileServerScoreRequest_Implementation(  //
@@ -250,6 +304,44 @@ void ULagCompensationComponent::ExplosionProjectileServerScoreRequest_Implementa
         DamageCauser);
 }
 
+bool ULagCompensationComponent::ExplosionProjectileServerScoreRequest_Validate(  //
+    const TArray<ABlasterCharacter*>& HitCharacters,                             //
+    const FVector_NetQuantize& TraceStart,
+    const FVector_NetQuantize100& InitialVelocity,  //
+    float GravityScale,                             //
+    float Damage,                                   //
+    float DamageInnerRadius,                        //
+    float DamageOuterRadius,                        //
+    AWeapon* DamageCauser,
+    float HitTime  //
+)
+{
+    bool bIsValid = false;
+    if (AProjectileWeapon* ProjectileWeapon = Cast<AProjectileWeapon>(DamageCauser))
+    {
+        bool bIsRightWeapon = ProjectileWeapon->GetWeaponType() == EWeaponType::EWT_RocketLauncher;
+        if (bIsRightWeapon && ProjectileWeapon->GetProjectileClass())
+        {
+            float Epsilon = 0.0001f;
+            UClass* ProjectileClass = ProjectileWeapon->GetProjectileClass().Get();
+            AProjectile* DefaultProjectile = ProjectileClass->GetDefaultObject<AProjectile>();
+            bool bIsRightProjectile = DefaultProjectile->GetProjectileType() == EProjectileType::EPT_ProjectileRocket;
+
+            if (bIsRightProjectile)
+            {
+                // Validate
+                bIsValid = FMath::IsNearlyEqual(Damage, DefaultProjectile->GetDamage(), Epsilon) &&                        //
+                           FMath::IsNearlyEqual(DamageInnerRadius, DefaultProjectile->GetDamageInnerRadius(), Epsilon) &&  //
+                           FMath::IsNearlyEqual(DamageOuterRadius, DefaultProjectile->GetDamageOuterRadius(), Epsilon) &&  //
+                           FMath::IsNearlyEqual(GravityScale, DefaultProjectile->GravityScale, Epsilon) &&                 //
+                           FMath::IsNearlyEqual(InitialVelocity.Size(), DefaultProjectile->InitialSpeed, 5.f);             //
+            }
+        }
+    }
+
+    return bIsValid;
+}
+
 void ULagCompensationComponent::ShotgunServerScoreRequest_Implementation(const TArray<ABlasterCharacter*>& HitCharacters,  //
     const FVector_NetQuantize& TraceStart,                                                                                 //
     const TArray<FVector_NetQuantize100>& HitLocations,                                                                    //
@@ -278,6 +370,27 @@ void ULagCompensationComponent::ShotgunServerScoreRequest_Implementation(const T
     }
 }
 
+bool ULagCompensationComponent::ShotgunServerScoreRequest_Validate(const TArray<ABlasterCharacter*>& HitCharacters,  //
+    const FVector_NetQuantize& TraceStart,                                                                           //
+    const TArray<FVector_NetQuantize100>& HitLocations,                                                              //
+    float HitTime,                                                                                                   //
+    float Damage,                                                                                                    //
+    AWeapon* DamageCauser)
+{
+    bool bIsValid = false;
+    if (AHitScanWeapon* HitScanWeapon = Cast<AHitScanWeapon>(DamageCauser))
+    {
+        bool bIsRightWeapon = HitScanWeapon->GetWeaponType() == EWeaponType::EWT_Shotgun;
+        if (bIsRightWeapon)
+        {
+            // Validate
+            bIsValid = FMath::IsNearlyEqual(Damage, HitScanWeapon->GetDamage(), 0.0001f);
+        }
+    }
+
+    return bIsValid;
+}
+
 FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackage& Package, ABlasterCharacter* HitCharacter,
     const FVector_NetQuantize& TraceStart, const FVector_NetQuantize100& HitLocation)
 {
@@ -304,9 +417,8 @@ FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackag
             // UE_LOG(LogTemp, Warning, TEXT("Component Location: %s"), *HitBoxPair.Value->GetComponentLocation().ToString());
             // UE_LOG(LogTemp, Warning, TEXT("Scaled Box Extent: %s"), *HitBoxPair.Value->GetScaledBoxExtent().ToString());
             // UE_LOG(LogTemp, Warning, TEXT("Component rotation: %s"), *HitBoxPair.Value->GetComponentRotation().ToString());
-
-            DrawDebugBox(GetWorld(), HitBoxPair.Value->GetComponentLocation(), HitBoxPair.Value->GetUnscaledBoxExtent(),
-                FQuat(HitBoxPair.Value->GetComponentRotation()), FColor::Red, false, 4.f);
+            // DrawDebugBox(GetWorld(), HitBoxPair.Value->GetComponentLocation(), HitBoxPair.Value->GetUnscaledBoxExtent(),
+            //  FQuat(HitBoxPair.Value->GetComponentRotation()), FColor::Red, false, 4.f);
         }
     }
 
@@ -314,20 +426,10 @@ FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackag
     const FVector TraceEnd = TraceStart + (HitLocation - TraceStart) * 1.25f;
     UWorld* World = GetWorld();
 
-    UE_LOG(LogTemp, Warning, TEXT("We are here!!!"));
     if (World)
     {
         World->LineTraceSingleByChannel(ConfirmHitResult, TraceStart, TraceEnd, ECC_HitBox);
         ServerSideRewindResult.bHitConfirmed = ConfirmHitResult.bBlockingHit;
-
-        if (ConfirmHitResult.bBlockingHit)
-        {
-            UE_LOG(LogTemp, Warning, TEXT("BLOCK HIT!!!"));
-        }
-        else
-        {
-            UE_LOG(LogTemp, Warning, TEXT(" NOT BLOCK HIT!!!"));
-        }
     }
     ResetHitBoxes(HitCharacter, CurrentFrame);
     EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryAndPhysics);

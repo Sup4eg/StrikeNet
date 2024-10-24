@@ -32,6 +32,7 @@ void ABlasterPlayerController::BeginPlay()
     Super::BeginPlay();
     BlasterHUD = Cast<ABlasterHUD>(GetHUD());
     ServerCheckMatchState();
+    Tags.Add("BlasterPlayerController");
 }
 
 void ABlasterPlayerController::Tick(float DeltaTime)

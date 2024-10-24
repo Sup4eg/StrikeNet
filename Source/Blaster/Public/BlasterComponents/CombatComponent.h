@@ -157,7 +157,7 @@ private:
      * Rep notifies
      */
 
-    UFUNCTION() void OnRep_CombatState();
+    UFUNCTION() void OnRep_CombatState(ECombatState LastCombatState);
 
     UFUNCTION()
     void OnRep_CarriedAmmo();

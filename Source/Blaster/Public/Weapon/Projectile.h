@@ -111,7 +111,14 @@ private:
     UPROPERTY(EditDefaultsOnly)
     float LifeSpan = 15.f;
 
+    UPROPERTY(EditDefaultsOnly)
+    EProjectileType ProjectileType;
+
 public:
     FORCEINLINE UBoxComponent* GetCollisionBox() const { return CollisionBox; };
     FORCEINLINE void SetOwningWeapon(AWeapon* NewWeapon) { OwningWeapon = NewWeapon; }
+    FORCEINLINE float GetDamage() const { return Damage; };
+    FORCEINLINE float GetDamageInnerRadius() const { return DamageInnerRadius; };
+    FORCEINLINE float GetDamageOuterRadius() const { return DamageOuterRadius; };
+    FORCEINLINE EProjectileType GetProjectileType() const { return ProjectileType; };
 };

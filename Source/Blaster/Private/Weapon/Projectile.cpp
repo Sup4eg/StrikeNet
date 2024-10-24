@@ -100,8 +100,14 @@ void AProjectile::ExplodeDamage(const FVector& ImpactPoint)
             TArray<ABlasterCharacter*> HitCharacters;
             UBlasterGameplayStatics::GetOverlapCharactersBySphereTrace(
                 this, HitCharacters, GetActorLocation(), ECC_SkeletalMesh, DamageOuterRadius);
+
             if (!HitCharacters.IsEmpty())
             {
+                // Hacked client
+                // Damage = 100000;
+                // DamageInnerRadius = 100000;
+                // DamageOuterRadius = 100000000;
+
                 ABlasterPlayerController* OwnerController = Cast<ABlasterPlayerController>(OwnerCharacter->GetController());
                 float HitTime = OwnerController->GetServerTime() - OwnerController->SingleTripTime;
                 OwnerCharacter->GetLagCompensationComponent()->ExplosionProjectileServerScoreRequest(  //

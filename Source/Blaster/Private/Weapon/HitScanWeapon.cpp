@@ -56,6 +56,9 @@ void AHitScanWeapon::Fire(const FVector_NetQuantize100& HitTarget, const FVector
 
                         float HitTime = BlasterOwnerController->GetServerTime() - BlasterOwnerController->SingleTripTime;
 
+                        // Hacked, check validation
+                        // Damage = 10000;
+
                         BlasterOwnerCharacter->GetLagCompensationComponent()->ServerScoreRequest(  //
                             BlasterCharacter,                                                      //
                             SocketLocation,                                                        //

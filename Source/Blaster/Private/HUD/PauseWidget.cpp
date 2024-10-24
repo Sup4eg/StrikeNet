@@ -112,6 +112,24 @@ bool UPauseWidget::Initialize()
 void UPauseWidget::ReturnButtonClicked()
 {
     ReturnButton->SetIsEnabled(false);
+
+    if (IsBlasterPlayerControllerValid())
+    {
+        if (ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(BlasterPlayerController->GetCharacter()))
+        {
+            BlasterCharacter->ServerLeaveGame();
+            BlasterCharacter->OnLeftGame.AddDynamic(this, &ThisClass::OnPlayerLeftGame);
+        }
+        else
+        {
+            ReturnButton->SetIsEnabled(true);
+        }
+    }
+}
+
+void UPauseWidget::OnPlayerLeftGame()
+{
+
     if (MultiplayerSessionsSubsystem)
     {
         MultiplayerSessionsSubsystem->DestroySession();

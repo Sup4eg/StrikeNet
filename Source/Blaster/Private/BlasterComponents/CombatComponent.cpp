@@ -112,6 +112,11 @@ void UCombatComponent::FinishSwapWeapons()
     if (BlasterCharacter && BlasterCharacter->HasAuthority())
     {
         CombatState = ECombatState::ECS_Unoccupied;
+
+        if (BlasterCharacter->IsLocallyControlled())
+        {
+            ReloadEmptyWeapon();
+        }
     }
     if (BlasterCharacter)
     {
@@ -273,7 +278,7 @@ void UCombatComponent::AttachWeaponToBackpack(AWeapon* WeaponToAttach)
 
 void UCombatComponent::ReloadEmptyWeapon()
 {
-    if (EquippedWeapon && EquippedWeapon->IsEmpty())
+    if (BlasterCharacter && !BlasterCharacter->GetIsElimmed() && EquippedWeapon && EquippedWeapon->IsEmpty())
     {
         Reload();
     }
@@ -390,15 +395,15 @@ bool UCombatComponent::CanReload()
 {
     // Debug purpose
 
-    if (!BlasterCharacter->HasAuthority() && BlasterCharacter->IsLocallyControlled())
-    {
-        // UE_LOG(LogTemp, Warning, TEXT("EQUIPPED weapon : %s"), EquippedWeapon == nullptr ? TEXT("NO") : TEXT("YES"));
-        // UE_LOG(LogTemp, Warning, TEXT("EquippedWeapon->GetAmmo() : %d"), EquippedWeapon->GetAmmo());
-        // UE_LOG(LogTemp, Warning, TEXT("EquippedWeapon->GetMagCapacity() : %d"), EquippedWeapon->GetMagCapacity());
-        // UE_LOG(LogTemp, Warning, TEXT("Carried ammo : %d"), CarriedAmmo);
-        // UE_LOG(LogTemp, Warning, TEXT("CombatState : %s"), *UEnum::GetValueAsString(CombatState));
-        // UE_LOG(LogTemp, Warning, TEXT("locally reloading: %s"), bLocallyReloading == true ? TEXT("YES") : TEXT("NO"));
-    }
+    // if (!BlasterCharacter->HasAuthority() && BlasterCharacter->IsLocallyControlled())
+    // {
+    //     UE_LOG(LogTemp, Warning, TEXT("EQUIPPED weapon : %s"), EquippedWeapon == nullptr ? TEXT("NO") : TEXT("YES"));
+    //     UE_LOG(LogTemp, Warning, TEXT("EquippedWeapon->GetAmmo() : %d"), EquippedWeapon->GetAmmo());
+    //     UE_LOG(LogTemp, Warning, TEXT("EquippedWeapon->GetMagCapacity() : %d"), EquippedWeapon->GetMagCapacity());
+    //     UE_LOG(LogTemp, Warning, TEXT("Carried ammo : %d"), CarriedAmmo);
+    //     UE_LOG(LogTemp, Warning, TEXT("CombatState : %s"), *UEnum::GetValueAsString(CombatState));
+    //     UE_LOG(LogTemp, Warning, TEXT("locally reloading: %s"), bLocallyReloading == true ? TEXT("YES") : TEXT("NO"));
+    // }
 
     return EquippedWeapon &&                                                //
            EquippedWeapon->GetAmmo() < EquippedWeapon->GetMagCapacity() &&  //
@@ -407,7 +412,7 @@ bool UCombatComponent::CanReload()
            !bLocallyReloading;                                              //
 }
 
-void UCombatComponent::OnRep_CombatState()
+void UCombatComponent::OnRep_CombatState(ECombatState LastCombatState)
 {
     switch (CombatState)
     {
@@ -425,6 +430,10 @@ void UCombatComponent::OnRep_CombatState()
             if (bFireButtonPressed)
             {
                 Fire();
+            }
+            if (LastCombatState == ECombatState::ECS_SwappingWeapons && BlasterCharacter && BlasterCharacter->IsLocallyControlled())
+            {
+                ReloadEmptyWeapon();
             }
             break;
         case ECombatState::ECS_ThrowingGrenade:

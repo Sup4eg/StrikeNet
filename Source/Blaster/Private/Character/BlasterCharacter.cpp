@@ -277,14 +277,21 @@ void ABlasterCharacter::PossessedBy(AController* NewController)
 void ABlasterCharacter::SetUpInputMappingContext(UInputMappingContext* MappingContext)
 {
     if (!MappingContext) return;
-    if (IsControllerValid())
+    if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
     {
         if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
-                ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(BlasterPlayerController->GetLocalPlayer()))
+                ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
         {
             LastMappingContext = MappingContext;
-
-            if (!BlasterPlayerController->GetLastMappingContext())
+            if (PlayerController->ActorHasTag("BlasterPlayerController") && IsControllerValid())
+            {
+                if (!BlasterPlayerController->GetLastMappingContext())
+                {
+                    Subsystem->ClearAllMappings();
+                    Subsystem->AddMappingContext(MappingContext, 0);
+                }
+            }
+            else
             {
                 Subsystem->ClearAllMappings();
                 Subsystem->AddMappingContext(MappingContext, 0);
@@ -517,6 +524,8 @@ void ABlasterCharacter::ReceiveDamage(
     {
         MulticastHitReactMontage(DamageCauser);
     }
+
+    if (!GetMesh()->GetAnimInstance()) return;
     CheckIfEliminated(InstigatedBy);
 }
 
@@ -568,7 +577,7 @@ void ABlasterCharacter::DropOrDestroyWeapon(AWeapon* Weapon)
     }
 }
 
-void ABlasterCharacter::Elim()
+void ABlasterCharacter::Elim(bool bPlayerLeftGame)
 {
     SetCombatState(ECombatState::ECS_Unoccupied);
 
@@ -577,14 +586,12 @@ void ABlasterCharacter::Elim()
         DropOrDestroyWeapon(CombatComp->EquippedWeapon);
         DropOrDestroyWeapon(CombatComp->SecondaryWeapon);
     }
-
-    MulticastElim();
-    GetWorldTimerManager().SetTimer(ElimTimer, this, &ABlasterCharacter::ElimTimerFinished, ElimDelay);
+    MulticastElim(bPlayerLeftGame);
 }
 
-void ABlasterCharacter::MulticastElim_Implementation()
+void ABlasterCharacter::MulticastElim_Implementation(bool bPlayerLeftGame)
 {
-
+    bLeftGame = bPlayerLeftGame;
     StopAllMontages();
     bElimmed = true;
 
@@ -649,6 +656,8 @@ void ABlasterCharacter::MulticastElim_Implementation()
     {
         PickupEffect->DeactivateImmediate();
     }
+
+    GetWorldTimerManager().SetTimer(ElimTimer, this, &ABlasterCharacter::ElimTimerFinished, ElimDelay);
 }
 
 void ABlasterCharacter::SetDynamicDissolveMaterialInstance(float Dissolve, float Glow)
@@ -706,9 +715,24 @@ FName ABlasterCharacter::GetDirectionalHitReactSection(double Theta) const
 void ABlasterCharacter::ElimTimerFinished()
 {
     ABlasterGameMode* BlasterGameMode = GetWorld()->GetAuthGameMode<ABlasterGameMode>();
-    if (BlasterGameMode)
+    if (BlasterGameMode && !bLeftGame)
     {
         BlasterGameMode->RequestRespawn(this, Controller);
+    }
+    if (bLeftGame && IsLocallyControlled())
+    {
+        OnLeftGame.Broadcast();
+    }
+}
+
+void ABlasterCharacter::ServerLeaveGame_Implementation()
+{
+    if (!GetWorld()) return;
+    ABlasterGameMode* BlasterGameMode = GetWorld()->GetAuthGameMode<ABlasterGameMode>();
+    BlasterPlayerState = BlasterPlayerState == nullptr ? GetPlayerState<ABlasterPlayerState>() : BlasterPlayerState;
+    if (BlasterGameMode && BlasterPlayerState)
+    {
+        BlasterGameMode->PlayerLeftGame(BlasterPlayerState);
     }
 }
 

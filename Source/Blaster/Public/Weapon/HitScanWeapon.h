@@ -48,4 +48,7 @@ private:
 
     UPROPERTY(EditAnywhere)
     USoundBase* FireSound;
+
+public:
+    FORCEINLINE float GetDamage() const { return Damage; };
 };
