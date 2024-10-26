@@ -48,6 +48,9 @@ struct FServerSideRewindResult
 
     UPROPERTY()
     bool bHitConfirmed;
+
+    UPROPERTY()
+    float DamageModifier;
 };
 
 USTRUCT(BlueprintType)
@@ -56,7 +59,7 @@ struct FShotgunServerSideRewindResult
     GENERATED_USTRUCT_BODY()
 
     UPROPERTY()
-    TMap<ABlasterCharacter*, uint32> Shots;
+    TMap<ABlasterCharacter*, float> Shots;
 };
 
 USTRUCT(BlueprintType)

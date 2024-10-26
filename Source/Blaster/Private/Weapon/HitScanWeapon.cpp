@@ -38,13 +38,18 @@ void AHitScanWeapon::Fire(const FVector_NetQuantize100& HitTarget, const FVector
                 {
                     bool bCauseAuthDamage = !bUseServerSideRewind || OwnerPawn->IsLocallyControlled();
                     // Apply Damage on server
-                    if (HasAuthority() && bCauseAuthDamage)
+                    if (HasAuthority() && bCauseAuthDamage && FireHit.PhysMaterial.IsValid())
                     {
-                        UGameplayStatics::ApplyDamage(BlasterCharacter,  //
-                            Damage,                                      //
-                            InstigatorController,                        //
-                            this,                                        //
-                            UDamageType::StaticClass());
+
+                        UPhysicalMaterial* PhysMat = FireHit.PhysMaterial.Get();
+                        if (BlasterCharacter->DamageModifiers.Contains(PhysMat))
+                        {
+                            UGameplayStatics::ApplyDamage(BlasterCharacter,           //
+                                Damage * BlasterCharacter->DamageModifiers[PhysMat],  //                                      //
+                                InstigatorController,                                 //
+                                this,                                                 //
+                                UDamageType::StaticClass());
+                        }
                     }
                     // Apply Damage on client, use SSR
                     else if (!HasAuthority() &&                                     //

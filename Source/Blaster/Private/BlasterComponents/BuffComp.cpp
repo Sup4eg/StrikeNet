@@ -8,6 +8,7 @@
 #include "Sound/SoundBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Weapon.h"
+#include "NiagaraComponent.h"
 #include "BuffComp.h"
 
 UBuffComp::UBuffComp()
@@ -123,8 +124,25 @@ void UBuffComp::MulticastStartInvisibilityBuff_Implementation(double Opacity)
     TargetOpacity = Opacity;
     bIsInvisibility = true;
     SetDynamicInvisibilityMaterialInstance(-0.55f, 200.f);
+    DeactivateCrownComponent();
     PlayInvisibilitySound();
     StartInvisibilityEffect();
+}
+
+void UBuffComp::DeactivateCrownComponent()
+{
+    if (BlasterCharacter && BlasterCharacter->GetCrownComponent())
+    {
+        BlasterCharacter->GetCrownComponent()->Deactivate();
+    }
+}
+
+void UBuffComp::ActivateCrownComponent()
+{
+    if (BlasterCharacter && BlasterCharacter->GetCrownComponent() && BlasterCharacter->IsCharacterGainedTheLead())
+    {
+        BlasterCharacter->GetCrownComponent()->Activate();
+    }
 }
 
 void UBuffComp::MulticastFinishInvisibilityBuff_Implementation()
@@ -177,6 +195,7 @@ void UBuffComp::OnTimelineFinishInvisibilityEffect()
         ResetEquippedWeaponInitializedMaterial();
         ResetSecondaryWeaponInitializedMaterial();
     }
+    ActivateCrownComponent();
 }
 
 void UBuffComp::ResetEquippedWeaponInitializedMaterial()

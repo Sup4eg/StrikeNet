@@ -15,6 +15,7 @@
 #include "HitScanWeapon.h"
 #include "ProjectileWeapon.h"
 #include "Projectile.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
 #include "LagCompensationComponent.h"
 
 ULagCompensationComponent::ULagCompensationComponent()
@@ -189,7 +190,7 @@ void ULagCompensationComponent::ServerScoreRequest_Implementation(ABlasterCharac
     {
         UGameplayStatics::ApplyDamage(          //
             HitCharacter,                       //
-            Damage,                             //
+            Damage * Confirm.DamageModifier,    //
             BlasterCharacter->GetController(),  //
             DamageCauser,                       //
             UDamageType::StaticClass()          //
@@ -236,7 +237,7 @@ void ULagCompensationComponent::ProjectileServerScoreRequest_Implementation(ABla
     {
         UGameplayStatics::ApplyDamage(          //
             HitCharacter,                       //
-            Damage,                             //
+            Damage * Confirm.DamageModifier,    //
             BlasterCharacter->GetController(),  //
             DamageCauser,                       //
             UDamageType::StaticClass()          //
@@ -358,7 +359,6 @@ void ULagCompensationComponent::ShotgunServerScoreRequest_Implementation(const T
         if (HitCharacter && Confirm.Shots.Contains(HitCharacter))
         {
             float MultipleDamage = Confirm.Shots[HitCharacter] * Damage;
-
             UGameplayStatics::ApplyDamage(          //
                 HitCharacter,                       //
                 MultipleDamage,                     //
@@ -428,8 +428,19 @@ FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackag
 
     if (World)
     {
-        World->LineTraceSingleByChannel(ConfirmHitResult, TraceStart, TraceEnd, ECC_HitBox);
-        ServerSideRewindResult.bHitConfirmed = ConfirmHitResult.bBlockingHit;
+        FCollisionQueryParams Params;
+        Params.bReturnPhysicalMaterial = true;
+
+        World->LineTraceSingleByChannel(ConfirmHitResult, TraceStart, TraceEnd, ECC_HitBox, Params);
+        if (ConfirmHitResult.bBlockingHit && ConfirmHitResult.PhysMaterial.IsValid())
+        {
+            UPhysicalMaterial* PhysMat = ConfirmHitResult.PhysMaterial.Get();
+            if (HitCharacter->DamageModifiers.Contains(PhysMat))
+            {
+                ServerSideRewindResult.bHitConfirmed = true;
+                ServerSideRewindResult.DamageModifier = HitCharacter->DamageModifiers[PhysMat];
+            }
+        }
     }
     ResetHitBoxes(HitCharacter, CurrentFrame);
     EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryAndPhysics);
@@ -481,7 +492,20 @@ FServerSideRewindResult ULagCompensationComponent::ProjectileConfirmHit(const FF
 
     FPredictProjectilePathResult PathResult;
     UGameplayStatics::PredictProjectilePath(this, PathParams, PathResult);
-    ServerSideRewindResult.bHitConfirmed = PathResult.HitResult.bBlockingHit;
+
+    if (PathResult.HitResult.bBlockingHit)
+    {
+        UPrimitiveComponent* HitBoxComponent = PathResult.HitResult.GetComponent();
+        if (HitBoxComponent && HitBoxComponent->GetBodyInstance() && HitBoxComponent->GetBodyInstance()->GetSimplePhysicalMaterial())
+        {
+            UPhysicalMaterial* PhysMat = HitBoxComponent->GetBodyInstance()->GetSimplePhysicalMaterial();
+            if (HitCharacter->DamageModifiers.Contains(PhysMat))
+            {
+                ServerSideRewindResult.bHitConfirmed = true;
+                ServerSideRewindResult.DamageModifier = HitCharacter->DamageModifiers[PhysMat];
+            }
+        }
+    }
 
     ResetHitBoxes(HitCharacter, CurrentFrame);
     EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryAndPhysics);
@@ -607,22 +631,28 @@ FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunConfirmHit(  //
     for (auto& HitLocation : HitLocations)
     {
         FHitResult ConfirmHitResult;
+        FCollisionQueryParams Params;
+        Params.bReturnPhysicalMaterial = true;
         const FVector TraceEnd = TraceStart + (HitLocation - TraceStart) * 1.25f;
-        GetWorld()->LineTraceSingleByChannel(ConfirmHitResult, TraceStart, TraceEnd, ECC_HitBox);
+        GetWorld()->LineTraceSingleByChannel(ConfirmHitResult, TraceStart, TraceEnd, ECC_HitBox, Params);
         bool bHitCharacter = ConfirmHitResult.bBlockingHit &&  //
                              ConfirmHitResult.GetActor() &&    //
                              ConfirmHitResult.GetActor()->ActorHasTag("BlasterCharacter");
-        if (bHitCharacter)
+        if (bHitCharacter && ConfirmHitResult.PhysMaterial.IsValid())
         {
             if (ABlasterCharacter* HitCharacter = Cast<ABlasterCharacter>(ConfirmHitResult.GetActor()))
             {
-                if (ShotgunResult.Shots.Contains(HitCharacter))
+                UPhysicalMaterial* PhysMat = ConfirmHitResult.PhysMaterial.Get();
+                if (HitCharacter->DamageModifiers.Contains(PhysMat))
                 {
-                    ++ShotgunResult.Shots[HitCharacter];
-                }
-                else
-                {
-                    ShotgunResult.Shots.Emplace(HitCharacter, 1);
+                    if (ShotgunResult.Shots.Contains(HitCharacter))
+                    {
+                        ShotgunResult.Shots[HitCharacter] += HitCharacter->DamageModifiers[PhysMat];
+                    }
+                    else
+                    {
+                        ShotgunResult.Shots.Emplace(HitCharacter, HitCharacter->DamageModifiers[PhysMat]);
+                    }
                 }
             }
         }

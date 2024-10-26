@@ -28,9 +28,11 @@ class USoundBase;
 class ABlasterPlayerState;
 class UStaticMeshComponent;
 class UNiagaraComponent;
+class UNiagaraSystem;
 class UMaterialInterface;
 class UBoxComponent;
 class UBlasterAnimInstance;
+class UPhysicalMaterial;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLeftGame);
 
@@ -127,6 +129,17 @@ public:
     void ServerLeaveGame();
 
     FOnLeftGame OnLeftGame;
+
+    UFUNCTION(NetMulticast, Reliable)
+    void MulticastGainedTheLead();
+
+    UFUNCTION(NetMulticast, Reliable)
+    void MulticastLostTheLead();
+
+    bool IsCharacterGainedTheLead();
+
+    UPROPERTY(EditAnywhere, Category = "Player Stats")
+    TMap<UPhysicalMaterial*, float> DamageModifiers;
 
 protected:
     virtual void BeginPlay() override;
@@ -422,7 +435,7 @@ private:
     UMaterialInstance* DissolveMaterialInstance;
 
     /**
-     * Elim bot
+     * Elim effects
      */
 
     UPROPERTY(EditAnywhere)
@@ -436,6 +449,12 @@ private:
 
     UPROPERTY()
     ABlasterPlayerState* BlasterPlayerState;
+
+    UPROPERTY(EditAnywhere)
+    UNiagaraSystem* CrownSystem;
+
+    UPROPERTY()
+    UNiagaraComponent* CrownComponent;
 
     /**
      * Grenade
@@ -515,4 +534,5 @@ public:
     FORCEINLINE ABlasterPlayerController* GetBlasterPlayerController() const { return BlasterPlayerController; };
     FORCEINLINE void SetRightHandRotation(const FRotator& NewRightHandRotation) { RightHandRotation = NewRightHandRotation; };
     FORCEINLINE UInputMappingContext* GetLastMappingContext() const { return LastMappingContext; };
+    FORCEINLINE UNiagaraComponent* GetCrownComponent() const { return CrownComponent; };
 };

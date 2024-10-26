@@ -35,7 +35,9 @@
 #include "Weapontypes.h"
 #include "GameFramework/Pawn.h"
 #include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 #include "BlasterGameplayStatics.h"
+#include "BlasterGameState.h"
 #include "BlasterCharacter.h"
 
 ABlasterCharacter::ABlasterCharacter()
@@ -180,6 +182,7 @@ void ABlasterCharacter::SetUpHitShapesSSR()
             Box.Value->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
             Box.Value->SetCollisionResponseToChannel(ECC_HitBox, ECollisionResponse::ECR_Block);
             Box.Value->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+            Box.Value->bReturnMaterialOnMove = true;
         }
     }
 }
@@ -352,6 +355,40 @@ void ABlasterCharacter::PostInitializeComponents()
         {
             LagCompensationComp->BlasterPlayerController = BlasterPlayerController;
         }
+    }
+}
+
+void ABlasterCharacter::MulticastGainedTheLead_Implementation()
+{
+    if (!CrownSystem) return;
+    if (!CrownComponent)
+    {
+        if (GetCapsuleComponent() && GetMesh())
+        {
+            CrownComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(CrownSystem,  //
+                GetCapsuleComponent(),                                                  //
+                NAME_None,                                                              //
+                GetMesh()->GetBoneLocation(FName("head")) + FVector(0.f, 0.f, 40.f),    //
+                GetActorRotation(),                                                     //
+                EAttachLocation::KeepWorldPosition,                                     //
+                false,                                                                  //
+                false);
+        }
+    }
+    if (CrownComponent)
+    {
+        if ((!BuffComp || !BuffComp->IsInvisibilityActive()) && !GetIsElimmed())
+        {
+            CrownComponent->Activate();
+        }
+    }
+}
+
+void ABlasterCharacter::MulticastLostTheLead_Implementation()
+{
+    if (CrownComponent)
+    {
+        CrownComponent->DestroyComponent();
     }
 }
 
@@ -657,6 +694,11 @@ void ABlasterCharacter::MulticastElim_Implementation(bool bPlayerLeftGame)
         PickupEffect->DeactivateImmediate();
     }
 
+    if (CrownComponent)
+    {
+        CrownComponent->DestroyComponent();
+    }
+
     GetWorldTimerManager().SetTimer(ElimTimer, this, &ABlasterCharacter::ElimTimerFinished, ElimDelay);
 }
 
@@ -925,8 +967,25 @@ void ABlasterCharacter::PollInit()
             BlasterPlayerState->AddToScore(0.f);
             BlasterPlayerState->AddToDefeats(0);
             BlasterPlayerState->SetKilledBy(FName());
+
+            if (IsCharacterGainedTheLead())
+            {
+                MulticastGainedTheLead();
+            }
         }
     }
+}
+
+bool ABlasterCharacter::IsCharacterGainedTheLead()
+{
+    if (ABlasterGameState* BlasterGameState = Cast<ABlasterGameState>(UGameplayStatics::GetGameState(this)))
+    {
+        if (BlasterGameState->TopScoringPlayers.Contains(BlasterPlayerState))
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 void ABlasterCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)

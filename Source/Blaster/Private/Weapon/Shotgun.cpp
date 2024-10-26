@@ -25,7 +25,7 @@ void AShotgun::FireShotgun(const TArray<FVector_NetQuantize100>& HitTargets, con
         uint32 Hits = 0;
 
         // Maps hit character to number of times hit
-        TMap<ABlasterCharacter*, uint32> HitMap;
+        TMap<ABlasterCharacter*, float> HitMap;
         for (const FVector_NetQuantize100& HitTarget : HitTargets)
         {
             FHitResult FireHit;
@@ -52,7 +52,7 @@ void AShotgun::ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVect
 }
 
 void AShotgun::ApplyMultipleDamage(            //
-    TMap<ABlasterCharacter*, uint32>& HitMap,  //
+    TMap<ABlasterCharacter*, float>& HitMap,  //
     APawn* OwnerPawn,                          //
     AController* InstigatorController,         //
     const FVector& Start,                      //
@@ -88,7 +88,7 @@ void AShotgun::ApplyMultipleDamage(            //
     if (bServerSideRewindDamage)
     {
         // Hacked client
-        //Damage = 10000;
+        // Damage = 10000;
 
         float HitTime = BlasterOwnerController->GetServerTime() - BlasterOwnerController->SingleTripTime;
         BlasterOwnerCharacter->GetLagCompensationComponent()->ShotgunServerScoreRequest(  //
@@ -101,19 +101,23 @@ void AShotgun::ApplyMultipleDamage(            //
     }
 }
 
-void AShotgun::AddToHitMap(FHitResult& FireHit, TMap<ABlasterCharacter*, uint32>& OutHitMap)
+void AShotgun::AddToHitMap(FHitResult& FireHit, TMap<ABlasterCharacter*, float>& OutHitMap)
 {
-    if (FireHit.GetActor() && FireHit.GetActor()->ActorHasTag("BlasterCharacter"))
+    if (FireHit.GetActor() && FireHit.GetActor()->ActorHasTag("BlasterCharacter") && FireHit.PhysMaterial.IsValid())
     {
         if (ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(FireHit.GetActor()))
         {
-            if (OutHitMap.Contains(BlasterCharacter))
+            UPhysicalMaterial* PhysMat = FireHit.PhysMaterial.Get();
+            if (BlasterCharacter->DamageModifiers.Contains(PhysMat))
             {
-                ++OutHitMap[BlasterCharacter];
-            }
-            else
-            {
-                OutHitMap.Emplace(BlasterCharacter, 1);
+                if (OutHitMap.Contains(BlasterCharacter))
+                {
+                    OutHitMap[BlasterCharacter] += BlasterCharacter->DamageModifiers[PhysMat];
+                }
+                else
+                {
+                    OutHitMap.Emplace(BlasterCharacter, BlasterCharacter->DamageModifiers[PhysMat]);
+                }
             }
         }
     }

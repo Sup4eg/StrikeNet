@@ -119,6 +119,10 @@ private:
 
     void PlayInvisibilitySound();
 
+    void DeactivateCrownComponent();
+
+    void ActivateCrownComponent();
+
     FOnTimelineFloat InvisibilityTrack;
 
     UPROPERTY(EditAnywhere, Category = "Invisibility Buff")

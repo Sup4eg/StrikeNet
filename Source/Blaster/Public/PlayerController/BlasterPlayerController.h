@@ -63,6 +63,8 @@ public:
 
     bool bPauseWidgetOpen = false;
 
+    void BroadcastElim(APlayerState* Attacker, APlayerState* Victim);
+
 protected:
     virtual void BeginPlay() override;
 
@@ -85,6 +87,9 @@ protected:
     // Reports the current server time to the client in response to ServerRequestServerTime
     UFUNCTION(Client, Reliable)
     void ClientReportServerTime(float TimeOfClientRequest, float TimeServerReceivedClientRequest);
+
+    UFUNCTION(Client, Reliable)
+    void ClientElimAnnouncement(APlayerState* Attacker, APlayerState* Victim);
 
     float ClientServerDelta = 0.f;  // difference between client and server time
 

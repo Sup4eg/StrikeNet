@@ -9,6 +9,7 @@
 #include "BlasterCharacter.h"
 #include "BlasterUtils.h"
 #include "BlasterPlayerController.h"
+#include "Engine/Engine.h"
 #include "PauseWidget.h"
 
 void UPauseWidget::MenuSetup()
@@ -42,7 +43,15 @@ void UPauseWidget::MenuSetup()
     {
         SelfDestructionButton->OnClicked.AddDynamic(this, &ThisClass::SelfDestructionButtonClicked);
     }
+}
 
+bool UPauseWidget::Initialize()
+{
+    if (!Super::Initialize()) return false;
+    if (IsBlasterPlayerControllerValid())
+    {
+        BlasterPlayerController->OnPlayerCharacterBeginPlay.AddUObject(this, &ThisClass::PlayerCharacterBeginPlay);
+    }
     if (GetGameInstance())
     {
         MultiplayerSessionsSubsystem = GetGameInstance()->GetSubsystem<UMultiplayerSessionsSubsystem>();
@@ -51,6 +60,7 @@ void UPauseWidget::MenuSetup()
             MultiplayerSessionsSubsystem->MultiplayerOnDestroySessionComplete.AddDynamic(this, &ThisClass::OnDestroySession);
         }
     }
+    return true;
 }
 
 void UPauseWidget::OnDestroySession(bool bWasSuccessful)
@@ -61,8 +71,13 @@ void UPauseWidget::OnDestroySession(bool bWasSuccessful)
         return;
     }
 
-    if (GetWorld()) return;
+    if (!GetWorld()) return;
     AGameModeBase* GameMode = GetWorld()->GetAuthGameMode<AGameModeBase>();
+    //Debug
+    // if (GEngine)
+    // {
+    //     GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Try to shutdown session!!!"));
+    // }
     if (GameMode)
     {
         GameMode->ReturnToMainMenuHost();
@@ -93,20 +108,6 @@ void UPauseWidget::MenuTearDown()
     {
         SelfDestructionButton->OnClicked.RemoveDynamic(this, &ThisClass::SelfDestructionButtonClicked);
     }
-    if (MultiplayerSessionsSubsystem && MultiplayerSessionsSubsystem->MultiplayerOnDestroySessionComplete.IsBound())
-    {
-        MultiplayerSessionsSubsystem->MultiplayerOnDestroySessionComplete.RemoveDynamic(this, &ThisClass::OnDestroySession);
-    }
-}
-
-bool UPauseWidget::Initialize()
-{
-    if (!Super::Initialize()) return false;
-    if (IsBlasterPlayerControllerValid())
-    {
-        BlasterPlayerController->OnPlayerCharacterBeginPlay.AddUObject(this, &ThisClass::PlayerCharacterBeginPlay);
-    }
-    return true;
 }
 
 void UPauseWidget::ReturnButtonClicked()

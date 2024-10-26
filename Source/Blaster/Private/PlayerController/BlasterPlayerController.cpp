@@ -752,3 +752,37 @@ bool ABlasterPlayerController::IsBlasterCharacterValid()
     BlasterCharacter = !BlasterCharacter.IsValid() ? Cast<ABlasterCharacter>(GetCharacter()) : BlasterCharacter;
     return BlasterCharacter.IsValid();
 }
+
+void ABlasterPlayerController::BroadcastElim(APlayerState* Attacker, APlayerState* Victim)
+{
+    ClientElimAnnouncement(Attacker, Victim);
+}
+
+void ABlasterPlayerController::ClientElimAnnouncement_Implementation(APlayerState* Attacker, APlayerState* Victim)
+{
+    APlayerState* Self = GetPlayerState<APlayerState>();
+    if (!Self || !Attacker || !Victim || !IsHUDValid()) return;
+    if (Attacker == Self && Victim != Self)
+    {
+        BlasterHUD->AddElimAnnouncementWidget("You", Victim->GetPlayerName());
+        return;
+    }
+    if (Victim == Self && Attacker != Self)
+    {
+        BlasterHUD->AddElimAnnouncementWidget(Attacker->GetPlayerName(), "you");
+        return;
+    }
+    // Suicide
+    if (Attacker == Victim && Attacker == Self)
+    {
+        BlasterHUD->AddElimAnnouncementWidget("You", "yourself");
+        return;
+    }
+    // Someone else killed himself
+    if (Attacker == Victim && Attacker != Self)
+    {
+        BlasterHUD->AddElimAnnouncementWidget(Attacker->GetPlayerName(), "themselves");
+        return;
+    }
+    BlasterHUD->AddElimAnnouncementWidget(Attacker->GetPlayerName(), Victim->GetPlayerName());
+}

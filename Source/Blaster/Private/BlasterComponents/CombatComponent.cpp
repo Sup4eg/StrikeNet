@@ -171,7 +171,7 @@ void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
 void UCombatComponent::OnRep_EquippedWeapon(AWeapon* LastEquippedWeapon)
 {
     if (!EquippedWeapon || !BlasterCharacter) return;
-
+    BlasterCharacter->StopAllMontages();
     EquippedWeapon->SetIsHovering(false);
     HandleWeaponSpecificLogic(LastEquippedWeapon, EquippedWeapon);
     EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
@@ -387,6 +387,7 @@ void UCombatComponent::UpdateShotgunAmmoValues()
     bCanFire = true;
     if (EquippedWeapon->IsFull() || CarriedAmmo == 0)
     {
+
         BlasterCharacter->PlayMontage(BlasterCharacter->GetReloadMontage(), FName("ShotgunEnd"));
     }
 }
@@ -423,10 +424,6 @@ void UCombatComponent::OnRep_CombatState(ECombatState LastCombatState)
             }
             break;
         case ECombatState::ECS_Unoccupied:
-            if (BlasterCharacter)
-            {
-                BlasterCharacter->StopAllMontages();
-            }
             if (bFireButtonPressed)
             {
                 Fire();
@@ -522,6 +519,25 @@ void UCombatComponent::ShotgunShellReload()
     {
         UpdateShotgunAmmoValues();
     }
+    if (BlasterCharacter && !BlasterCharacter->HasAuthority() && BlasterCharacter->IsLocallyControlled())
+    {
+        // EquippedWeapon->AddAmmo(1);
+        // bCanFire = true;
+        // if (EquippedWeapon->IsFull() || CarriedAmmo == 0)
+        // {
+
+        //     BlasterCharacter->PlayMontage(BlasterCharacter->GetReloadMontage(), FName("ShotgunEnd"));
+        // }
+    }
+
+    // if (BlasterCharacter &&                             //
+    //     !BlasterCharacter->HasAuthority() &&            //
+    //     BlasterCharacter->IsLocallyControlled() &&      //
+    //     (EquippedWeapon->IsFull() || CarriedAmmo == 0)  //
+    // )
+    // {
+    //     bLocallyReloading = false;
+    // }
 }
 
 void UCombatComponent::ThrowGrenadeFinished()
@@ -940,7 +956,7 @@ void UCombatComponent::FireTimerFinished()
 
 bool UCombatComponent::CanFire()
 {
-    // Debug purpose
+    //    Debug purpose
 
     // if (BlasterCharacter && !BlasterCharacter->HasAuthority() && BlasterCharacter->IsLocallyControlled())
     // {
@@ -984,7 +1000,8 @@ void UCombatComponent::OnRep_CarriedAmmo()
                              EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Shotgun &&  //
                              CombatState == ECombatState::ECS_Reloading &&                   //
                              BlasterCharacter &&                                             //
-                             CarriedAmmo == 0;
+                             (CarriedAmmo == 0 || EquippedWeapon->IsFull());                 //
+
     if (bJumpToShotgunEnd)
     {
         BlasterCharacter->PlayMontage(BlasterCharacter->GetReloadMontage(), FName("ShotgunEnd"));

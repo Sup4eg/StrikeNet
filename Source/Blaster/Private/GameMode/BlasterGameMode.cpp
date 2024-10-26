@@ -106,17 +106,47 @@ void ABlasterGameMode::PlayerElimmed(            //
     ABlasterPlayerState* VictimPlayerState = VictimController ? Cast<ABlasterPlayerState>(VictimController->PlayerState) : nullptr;
     ABlasterGameState* BlasterGameState = GetGameState<ABlasterGameState>();
 
-    if (!ElimmedCharacter || !AttackerPlayerState || !VictimPlayerState || !BlasterGameState) return;
+    if (!ElimmedCharacter || !AttackerPlayerState || !VictimPlayerState || !BlasterGameState || !GetWorld()) return;
     if (AttackerPlayerState != VictimPlayerState)
     {
+        TArray<ABlasterPlayerState*> PlayersCurrentlyInTheLead;
+        for (auto& LeadPlayer : BlasterGameState->TopScoringPlayers)
+        {
+            PlayersCurrentlyInTheLead.Add(LeadPlayer);
+        }
+
         // killed by other player, not suicide
         AttackerPlayerState->AddToScore(1.f);
         BlasterGameState->UpdateTopScore(AttackerPlayerState);
+        if (BlasterGameState->TopScoringPlayers.Contains(AttackerPlayerState))
+        {
+            if (ABlasterCharacter* Leader = Cast<ABlasterCharacter>(AttackerPlayerState->GetPawn()))
+            {
+                Leader->MulticastGainedTheLead();
+            }
+        }
+
+        for (int32 i = 0; i < PlayersCurrentlyInTheLead.Num(); ++i)
+        {
+            if (!BlasterGameState->TopScoringPlayers.Contains(PlayersCurrentlyInTheLead[i]))
+            {
+                if (ABlasterCharacter* Loser = Cast<ABlasterCharacter>(PlayersCurrentlyInTheLead[i]->GetPawn()))
+                {
+                    Loser->MulticastLostTheLead();
+                }
+            }
+        }
     }
 
     VictimPlayerState->AddToDefeats(1);
     VictimPlayerState->AddKilledBy(FName(*AttackerPlayerState->GetPlayerName()));
     ElimmedCharacter->Elim(false);
+
+    for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It) {
+        if (ABlasterPlayerController* BlasterPlayerController = Cast<ABlasterPlayerController>(*It)) {
+            BlasterPlayerController->BroadcastElim(AttackerPlayerState, VictimPlayerState);
+        }
+    }
 }
 
 void ABlasterGameMode::RequestRespawn(ACharacter* ElimmedCharacter, AController* ElimmedController)

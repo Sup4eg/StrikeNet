@@ -226,10 +226,10 @@ private:
     float AimSensitivity = 0.5f;
 
     UPROPERTY(EditAnywhere, Category = "Sine Parameters")
-    float Amplitude = 0.5f;
+    float Amplitude = 0.2f;
 
     UPROPERTY(EditAnywhere, Category = "Sine Parameters")
-    float TimeConstant = 5.f;
+    float TimeConstant = 3.5f;
 
     float RunningTime;
 

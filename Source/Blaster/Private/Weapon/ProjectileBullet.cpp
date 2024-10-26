@@ -44,16 +44,20 @@ void AProjectileBullet::OnHit(
     {
         if (ABlasterPlayerController* OwnerController = Cast<ABlasterPlayerController>(OwnerCharacter->GetController()))
         {
-            if (OwnerCharacter->HasAuthority() && !bUseServerSideRewind)
+            if (ABlasterCharacter* HitCharacter = Cast<ABlasterCharacter>(OtherActor))
             {
-                UGameplayStatics::ApplyDamage(OtherActor, Damage, OwnerController, OwningWeapon, UDamageType::StaticClass());
-                Super::OnHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
-                return;
-            }
+                if (OwnerCharacter->HasAuthority() && !bUseServerSideRewind && Hit.PhysMaterial.IsValid())
+                {
+                    UPhysicalMaterial* PhysMat = Hit.PhysMaterial.Get();
+                    if (HitCharacter->DamageModifiers.Contains(PhysMat))
+                    {
+                        UGameplayStatics::ApplyDamage(OtherActor, Damage * HitCharacter->DamageModifiers[PhysMat], OwnerController, OwningWeapon, UDamageType::StaticClass());
+                        Super::OnHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
+                        return;
+                    }
+                }
 
-            if (OtherActor && OtherActor->ActorHasTag("BlasterCharacter"))
-            {
-                if (ABlasterCharacter* HitCharacter = Cast<ABlasterCharacter>(OtherActor))
+                if (OtherActor && OtherActor->ActorHasTag("BlasterCharacter"))
                 {
                     // TODO, Potantial LEAK HERE, Damage and damage causer must be validated
                     if (bUseServerSideRewind && OwnerCharacter->GetLagCompensationComponent() && OwnerCharacter->IsLocallyControlled())

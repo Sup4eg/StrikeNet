@@ -20,14 +20,14 @@ protected:
 
 private:
     void ApplyMultipleDamage(                          //
-        TMap<ABlasterCharacter*, uint32>& HitMap,      //
+        TMap<ABlasterCharacter*, float>& HitMap,      //
         APawn* OwnerPawn,                              //
         AController* InstigatorController,             //
         const FVector& Start,                          //
         const TArray<FVector_NetQuantize100>& HitTargets  //
     );
 
-    void AddToHitMap(FHitResult& FireHit, TMap<ABlasterCharacter*, uint32>& OutHitMap);
+    void AddToHitMap(FHitResult& FireHit, TMap<ABlasterCharacter*, float>& OutHitMap);
 
     UPROPERTY(EditAnywhere, Category = "Weapon Scatter")
     uint32 NumberOfPellets = 10;

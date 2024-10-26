@@ -10,6 +10,7 @@ class UTexture2D;
 class UCharacterOverlay;
 class UAnnouncementWidget;
 class UUserWidget;
+class UElimAnnouncementWidget;
 
 USTRUCT(BlueprintType)
 struct FHUDPackage
@@ -44,12 +45,7 @@ public:
     virtual void DrawHUD() override;
 
     void AddAnnouncementWidget();
-
-    UPROPERTY(EditAnywhere, Category = "Player Stats")
-    TSubclassOf<UUserWidget> CharacterOverlayClass;
-
-    UPROPERTY(EditAnywhere, Category = "Announcements")
-    TSubclassOf<UUserWidget> AnnouncementWidgetClass;
+    void AddElimAnnouncementWidget(FString Attacker, FString Victim);
 
     UPROPERTY()
     UCharacterOverlay* CharacterOverlay;
@@ -71,6 +67,24 @@ private:
     float CrosshairSpreadMax = 16.f;
 
     bool bIsDrawCrosshair = false;
+
+    UPROPERTY(EditAnywhere, Category = "Player Stats")
+    TSubclassOf<UUserWidget> CharacterOverlayClass;
+
+    UPROPERTY(EditAnywhere, Category = "Announcements")
+    TSubclassOf<UUserWidget> AnnouncementWidgetClass;
+
+    UPROPERTY(EditAnywhere, Category = "Announcements")
+    TSubclassOf<UElimAnnouncementWidget> ElimAnnouncementWidgetClass;
+
+    UPROPERTY(EditAnywhere)
+    float ElimAnnouncementTime = 2.5f;
+
+    UFUNCTION()
+    void ElimAnnouncementTimerFinished(UElimAnnouncementWidget* MsgToRemove);
+
+    UPROPERTY()
+    TArray<UElimAnnouncementWidget*> ElimMessages;
 
 public:
     FORCEINLINE void SetHUDPackage(const FHUDPackage& Package) { HUDPackage = Package; }
