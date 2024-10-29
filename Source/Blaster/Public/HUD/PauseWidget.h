@@ -9,6 +9,7 @@
 class UButton;
 class UMultiplayerSessionsSubsystem;
 class APlayerController;
+class USoundBase;
 
 UCLASS()
 class BLASTER_API UPauseWidget : public UUserWidget
@@ -51,4 +52,7 @@ private:
 
     UPROPERTY()
     ABlasterPlayerController* BlasterPlayerController;
+
+    UPROPERTY(EditDefaultsOnly)
+    USoundBase* OpenSound;
 };

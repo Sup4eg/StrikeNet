@@ -10,6 +10,7 @@
 #include "BlasterUtils.h"
 #include "BlasterPlayerController.h"
 #include "Engine/Engine.h"
+#include "Kismet/GameplayStatics.h"
 #include "PauseWidget.h"
 
 void UPauseWidget::MenuSetup()
@@ -43,6 +44,11 @@ void UPauseWidget::MenuSetup()
     {
         SelfDestructionButton->OnClicked.AddDynamic(this, &ThisClass::SelfDestructionButtonClicked);
     }
+
+    if (OpenSound && GetWorld())
+    {
+        UGameplayStatics::PlaySound2D(GetWorld(), OpenSound);
+    }
 }
 
 bool UPauseWidget::Initialize()
@@ -73,7 +79,7 @@ void UPauseWidget::OnDestroySession(bool bWasSuccessful)
 
     if (!GetWorld()) return;
     AGameModeBase* GameMode = GetWorld()->GetAuthGameMode<AGameModeBase>();
-    //Debug
+    // Debug
     // if (GEngine)
     // {
     //     GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Try to shutdown session!!!"));
