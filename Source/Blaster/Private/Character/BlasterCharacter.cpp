@@ -205,6 +205,20 @@ void ABlasterCharacter::PostEditChangeProperty(FPropertyChangedEvent& Event)
 }
 #endif
 
+void ABlasterCharacter::SetTeamColor(ETeam Team)
+{
+    if (!GetMesh() || !CharacterMaterialsMap.Contains(Team) || !DissolveMaterialInstanceMap.Contains(Team)) return;
+    GetMesh()->SetMaterial(0, CharacterMaterialsMap[Team]);
+    DissolveMaterialInstance = DissolveMaterialInstanceMap[Team];
+    InitializedMaterial = CharacterMaterialsMap[Team];
+
+    // Set invis material
+    if (BuffComp && BuffComp->InvisibilityCharacterMaterialInstanceMap.Contains(Team))
+    {
+        BuffComp->InvisibilityCharacterMaterialInstance = BuffComp->InvisibilityCharacterMaterialInstanceMap[Team];
+    }
+}
+
 void ABlasterCharacter::BeginPlay()
 {
     Super::BeginPlay();
@@ -229,8 +243,6 @@ void ABlasterCharacter::BeginPlay()
         AttachedGrenade->SetVisibility(false);
     }
 
-    InitializedMaterial = GetMesh()->GetMaterial(0);
-
     if (IsControllerValid())
     {
         BlasterPlayerController->OnPlayerCharacterBeginPlay.Broadcast();
@@ -241,8 +253,7 @@ void ABlasterCharacter::SpawnDefaultWeapon()
 {
     if (!HasAuthority()) return;
 
-    // cheat leak here, weapon spawn must be on server
-    if (ABlasterGameMode* BlasterGameMode = Cast<ABlasterGameMode>(UGameplayStatics::GetGameMode(this)))
+    if (IsBlasterGameModeValid())
     {
         if (GetWorld() && !bElimmed && DefaultWeaponClass)
         {
@@ -263,7 +274,7 @@ void ABlasterCharacter::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
     RotateInPlace(DeltaTime);
-    HideCameraIfCharacterClose();
+    HideCharacterIfCameraClose();
     PollInit();
 }
 
@@ -366,7 +377,7 @@ void ABlasterCharacter::MulticastGainedTheLead_Implementation()
         if (GetCapsuleComponent() && GetMesh())
         {
             CrownComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(CrownSystem,  //
-                GetCapsuleComponent(),                                                  //
+                GetMesh(),                                                              //
                 NAME_None,                                                              //
                 GetMesh()->GetBoneLocation(FName("head")) + FVector(0.f, 0.f, 40.f),    //
                 GetActorRotation(),                                                     //
@@ -536,7 +547,8 @@ void ABlasterCharacter::StopAllMontages()
 void ABlasterCharacter::ReceiveDamage(
     AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
 {
-    if (bElimmed) return;
+    if (bElimmed || !IsBlasterGameModeValid()) return;
+    Damage = BlasterGameMode->CalculateDamage(InstigatedBy, GetController(), Damage);
 
     float DamageToHealth = Damage;
     if (Shield > 0.f)
@@ -665,9 +677,19 @@ void ABlasterCharacter::MulticastElim_Implementation(bool bPlayerLeftGame)
     SetUpInputMappingContext(ElimmedMappingContext);
 
     // Disable Collision
-    GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    GetMesh()->SetCollisionResponseToChannels(ECollisionResponse::ECR_Ignore);
-    GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Block);
+    if (GetCapsuleComponent())
+    {
+        GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
+    if (GetMesh())
+    {
+        GetMesh()->SetCollisionResponseToChannels(ECollisionResponse::ECR_Ignore);
+        GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Block);
+    }
+    if (AttachedGrenade)
+    {
+        AttachedGrenade->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
 
     // Spawn Elim bot
     if (ElimBotEffect && ElimBotSound)
@@ -756,8 +778,7 @@ FName ABlasterCharacter::GetDirectionalHitReactSection(double Theta) const
 
 void ABlasterCharacter::ElimTimerFinished()
 {
-    ABlasterGameMode* BlasterGameMode = GetWorld()->GetAuthGameMode<ABlasterGameMode>();
-    if (BlasterGameMode && !bLeftGame)
+    if (IsBlasterGameModeValid() && !bLeftGame)
     {
         BlasterGameMode->RequestRespawn(this, Controller);
     }
@@ -770,9 +791,8 @@ void ABlasterCharacter::ElimTimerFinished()
 void ABlasterCharacter::ServerLeaveGame_Implementation()
 {
     if (!GetWorld()) return;
-    ABlasterGameMode* BlasterGameMode = GetWorld()->GetAuthGameMode<ABlasterGameMode>();
     BlasterPlayerState = BlasterPlayerState == nullptr ? GetPlayerState<ABlasterPlayerState>() : BlasterPlayerState;
-    if (BlasterGameMode && BlasterPlayerState)
+    if (IsBlasterGameModeValid() && BlasterPlayerState)
     {
         BlasterGameMode->PlayerLeftGame(BlasterPlayerState);
     }
@@ -787,9 +807,7 @@ void ABlasterCharacter::Destroyed()
         ElimBotComponent->DestroyComponent();
     }
 
-    ABlasterGameMode* BlasterGameMode = Cast<ABlasterGameMode>(UGameplayStatics::GetGameMode(this));
-    bool bMatchNotInProgress = BlasterGameMode && BlasterGameMode->GetMatchState() != MatchState::InProgress;
-
+    bool bMatchNotInProgress = IsBlasterGameModeValid() && BlasterGameMode->GetMatchState() != MatchState::InProgress;
     if (IsWeaponEquipped() && bMatchNotInProgress)
     {
         CombatComp->EquippedWeapon->Destroy();
@@ -967,7 +985,7 @@ void ABlasterCharacter::PollInit()
             BlasterPlayerState->AddToScore(0.f);
             BlasterPlayerState->AddToDefeats(0);
             BlasterPlayerState->SetKilledBy(FName());
-
+            SetTeamColor(BlasterPlayerState->GetTeam());
             if (IsCharacterGainedTheLead())
             {
                 MulticastGainedTheLead();
@@ -1010,7 +1028,7 @@ void ABlasterCharacter::OnRep_Shield()
     UpdateHUDShield();
 }
 
-void ABlasterCharacter::HideCameraIfCharacterClose()
+void ABlasterCharacter::HideCharacterIfCameraClose()
 {
     if (!IsLocallyControlled()) return;
     if ((FollowCamera->GetComponentLocation() - GetActorLocation()).Size() < CameraThreshold)
@@ -1052,8 +1070,7 @@ void ABlasterCharacter::CheckIfEliminated(AController* InstigatorController)
 {
     if (FMath::IsNearlyZero(Health))
     {
-        ABlasterGameMode* BlasterGameMode = GetWorld()->GetAuthGameMode<ABlasterGameMode>();
-        if (BlasterGameMode)
+        if (IsBlasterGameModeValid())
         {
             BlasterUtils::CastOrUseExistsActor<ABlasterPlayerController>(BlasterPlayerController, GetController());
             ABlasterPlayerController* AttackerController = Cast<ABlasterPlayerController>(InstigatorController);
@@ -1190,6 +1207,13 @@ bool ABlasterCharacter::IsLocallyReloading()
 bool ABlasterCharacter::IsControllerValid()
 {
     return BlasterUtils::CastOrUseExistsActor<ABlasterPlayerController>(BlasterPlayerController, GetController());
+}
+
+bool ABlasterCharacter::IsBlasterGameModeValid()
+{
+    if (!GetWorld()) return false;
+    BlasterGameMode = BlasterGameMode == nullptr ? GetWorld()->GetAuthGameMode<ABlasterGameMode>() : BlasterGameMode;
+    return BlasterGameMode != nullptr;
 }
 
 bool ABlasterCharacter::IsBlasterAnimInstanceValid()

@@ -72,7 +72,7 @@ void ABlasterGameMode::OnMatchStateSet()
         ABlasterPlayerController* BlasterPlayerController = Cast<ABlasterPlayerController>(*It);
         if (BlasterPlayerController)
         {
-            BlasterPlayerController->OnMatchStateSet(MatchState);
+            BlasterPlayerController->OnMatchStateSet(MatchState, bTeamsMatch);
         }
     }
 }
@@ -142,8 +142,10 @@ void ABlasterGameMode::PlayerElimmed(            //
     VictimPlayerState->AddKilledBy(FName(*AttackerPlayerState->GetPlayerName()));
     ElimmedCharacter->Elim(false);
 
-    for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It) {
-        if (ABlasterPlayerController* BlasterPlayerController = Cast<ABlasterPlayerController>(*It)) {
+    for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+    {
+        if (ABlasterPlayerController* BlasterPlayerController = Cast<ABlasterPlayerController>(*It))
+        {
             BlasterPlayerController->BroadcastElim(AttackerPlayerState, VictimPlayerState);
         }
     }
@@ -183,6 +185,11 @@ void ABlasterGameMode::PlayerLeftGame(ABlasterPlayerState* PlayerLeaving)
     {
         CharacterLeaving->Elim(true);
     }
+}
+
+float ABlasterGameMode::CalculateDamage(AController* Attacker, AController* Victim, float BaseDamage)
+{
+    return BaseDamage;
 }
 
 AActor* ABlasterGameMode::GetBestPlayerStart(TArray<AActor*>& PlayerStarts, TArray<AActor*>& BlasterCharacters)

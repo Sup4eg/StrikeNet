@@ -8,6 +8,7 @@
 #include "InteractWithCrosshairsInterface.h"
 #include "Components/TimelineComponent.h"
 #include "CombatState.h"
+#include "Team.h"
 #include "BlasterCharacter.generated.h"
 
 struct FInputActionValue;
@@ -33,6 +34,7 @@ class UMaterialInterface;
 class UBoxComponent;
 class UBlasterAnimInstance;
 class UPhysicalMaterial;
+class ABlasterGameMode;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLeftGame);
 
@@ -96,6 +98,8 @@ public:
 
     bool IsControllerValid();
 
+    bool IsBlasterGameModeValid();
+
     bool IsBlasterAnimInstanceValid();
 
     UFUNCTION(Server, Unreliable)
@@ -140,6 +144,8 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Player Stats")
     TMap<UPhysicalMaterial*, float> DamageModifiers;
+
+    void SetTeamColor(ETeam Team);
 
 protected:
     virtual void BeginPlay() override;
@@ -285,7 +291,7 @@ private:
     UFUNCTION(NetMulticast, Reliable)
     void MulticastHitReactMontage(AActor* DamageCauser);
 
-    void HideCameraIfCharacterClose();
+    void HideCharacterIfCameraClose();
 
     void HideCamera(bool bIsHidden);
 
@@ -402,7 +408,13 @@ private:
     ABlasterPlayerController* BlasterPlayerController;
 
     UPROPERTY()
+    ABlasterPlayerState* BlasterPlayerState;
+
+    UPROPERTY()
     UBlasterAnimInstance* BlasterAnimInstance;
+
+    UPROPERTY()
+    ABlasterGameMode* BlasterGameMode;
 
     bool bElimmed = false;
 
@@ -430,9 +442,15 @@ private:
     UPROPERTY(VisibleAnywhere, Category = "Elim")
     UMaterialInstanceDynamic* DynamicDissolveMaterialInstance;
 
-    // Material instance set on the Blueprint, used with the dynamic material instance
-    UPROPERTY(EditAnywhere, Category = "Elim")
+    UPROPERTY(VisibleAnywhere, Category = "Elim")
     UMaterialInstance* DissolveMaterialInstance;
+
+    // Material instance set on the Blueprint, used with the dynamic material instance
+    UPROPERTY(EditDefaultsOnly, Category = "Elim")
+    TMap<ETeam, UMaterialInstance*> DissolveMaterialInstanceMap;
+
+    UPROPERTY(EditDefaultsOnly)
+    TMap<ETeam, UMaterialInstance*> CharacterMaterialsMap;
 
     /**
      * Elim effects
@@ -446,9 +464,6 @@ private:
 
     UPROPERTY(EditAnywhere)
     USoundBase* ElimBotSound;
-
-    UPROPERTY()
-    ABlasterPlayerState* BlasterPlayerState;
 
     UPROPERTY(EditAnywhere)
     UNiagaraSystem* CrownSystem;

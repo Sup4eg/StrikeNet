@@ -16,6 +16,8 @@ class UInputAction;
 class UTextBlock;
 class ABlasterCharacter;
 class UPauseWidget;
+class ABlasterPlayerState;
+class ABlasterGameState;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FHighPingDelegate, bool, bPingTooHigh);
 DECLARE_MULTICAST_DELEGATE(FPlayerCharacterBeginPlay);
@@ -46,6 +48,10 @@ public:
     void SetHUDMatchCountdown(float CountdownTime);
     void SetHUDAnnouncementCountdown(float CountdownTime);
     void ShowPauseWidget(ABlasterCharacter* PlayerCharacter);
+    void HideTeamScores();
+    void InitTeamScores();
+    void SetHUDRedTeamScore(int32 RedTeamScore);
+    void SetHUDBlueTeamScore(int32 BlueTeamScore);
 
     virtual void Tick(float DeltaTime) override;
 
@@ -53,7 +59,7 @@ public:
 
     virtual float GetServerTime();           // Sync with server world clock
     virtual void ReceivedPlayer() override;  // Sync with server clock as soon as possible
-    void OnMatchStateSet(FName State);
+    void OnMatchStateSet(FName State, bool bTeamsMatch = false);
 
     float SingleTripTime = 0.f;
 
@@ -91,6 +97,9 @@ protected:
     UFUNCTION(Client, Reliable)
     void ClientElimAnnouncement(APlayerState* Attacker, APlayerState* Victim);
 
+    UFUNCTION()
+    void OnRep_ShowTeamScores();
+
     float ClientServerDelta = 0.f;  // difference between client and server time
 
     UPROPERTY(EditAnywhere, Category = "Time")
@@ -110,6 +119,12 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Input")
     UInputAction* QuitAction;
 
+    UPROPERTY(ReplicatedUsing = OnRep_ShowTeamScores)
+    bool bShowTeamScores = false;
+
+    FString GetInfoText(const TArray<ABlasterPlayerState*>& Players);
+    FString GetTeamsInfoText(ABlasterGameState* BlasterGameState);
+
 private:
     bool IsHUDValid();
     bool IsCharacterOverlayValid();
@@ -125,8 +140,8 @@ private:
     UFUNCTION()
     void OnRep_MatchState();
 
-    void HandleMatchState();
-    void HandleMatchHasStarted();
+    void HandleMatchState(bool bTeamsMatch = false);
+    void HandleMatchHasStarted(bool bTeamsMatch = false);
     void HandleMatchCooldown();
 
     UFUNCTION(Server, Reliable)

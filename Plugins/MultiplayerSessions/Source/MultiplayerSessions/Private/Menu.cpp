@@ -6,6 +6,7 @@
 #include "Engine/GameInstance.h"
 #include "MultiplayerSessionsSubsystem.h"
 #include "OnlineSessionSettings.h"
+#include "SettingsMenu.h"
 #include "Menu.h"
 
 void UMenu::MenuSetup(int32 NumberOfPublicConnections, FString TypeOfMatch, FString LobbyPath)
@@ -33,15 +34,16 @@ void UMenu::MenuSetup(int32 NumberOfPublicConnections, FString TypeOfMatch, FStr
 
 bool UMenu::Initialize()
 {
-    bool result = Super::Initialize();
+    bool Result = Super::Initialize();
     check(GEngine);
     check(GetWorld());
-    if (HostButton && JoinButton)
+    if (HostButton && JoinButton && SettingsButton)
     {
         HostButton->OnClicked.AddDynamic(this, &ThisClass::HostButtonClicked);
         JoinButton->OnClicked.AddDynamic(this, &ThisClass::JoinButtonClicked);
+        SettingsButton->OnClicked.AddDynamic(this, &ThisClass::SettingsButtonClicked);
     }
-    return result;
+    return Result;
 }
 
 void UMenu::NativeDestruct()
@@ -145,6 +147,16 @@ void UMenu::JoinButtonClicked()
     if (!MultiplayerSessionsSubsystem) return;
     JoinButton->SetIsEnabled(false);
     MultiplayerSessionsSubsystem->FindSessions(10000);
+}
+
+void UMenu::SettingsButtonClicked()
+{
+    if (!SettingsMenuClass) return;
+    SetVisibility(ESlateVisibility::Collapsed);
+    if (USettingsMenu* SettingsMenu = CreateWidget<USettingsMenu>(this, SettingsMenuClass))
+    {
+        SettingsMenu->AddToViewport();
+    }
 }
 
 void UMenu::MenuTearDown()

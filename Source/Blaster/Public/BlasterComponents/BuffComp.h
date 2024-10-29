@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Components/TimelineComponent.h"
+#include "Team.h"
 #include "BuffComp.generated.h"
 
 class ABlasterCharacter;
@@ -133,8 +134,11 @@ private:
     UMaterialInstanceDynamic* DynamicInvisibilityCharacterMaterialInstance;
 
     // Material instance set on the Blueprint, used with the dynamic material instance
-    UPROPERTY(EditAnywhere, Category = "Invisibility Buff")
+    UPROPERTY(VisibleAnywhere, Category = "Invisibility Buff")
     UMaterialInstance* InvisibilityCharacterMaterialInstance;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Invisibility Buff")
+    TMap<ETeam, UMaterialInstance*> InvisibilityCharacterMaterialInstanceMap;
 
     // dynamic instance that we can change at runtime
     UPROPERTY(VisibleAnywhere, Category = "Invisibility Buff")

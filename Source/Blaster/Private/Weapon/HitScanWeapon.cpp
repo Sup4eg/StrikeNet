@@ -34,7 +34,7 @@ void AHitScanWeapon::Fire(const FVector_NetQuantize100& HitTarget, const FVector
         {
             if (InstigatorController && FireHit.GetActor()->ActorHasTag("BlasterCharacter"))
             {
-                if (ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(FireHit.GetActor()))
+                if (ABlasterCharacter* HitCharacter = Cast<ABlasterCharacter>(FireHit.GetActor()))
                 {
                     bool bCauseAuthDamage = !bUseServerSideRewind || OwnerPawn->IsLocallyControlled();
                     // Apply Damage on server
@@ -42,12 +42,12 @@ void AHitScanWeapon::Fire(const FVector_NetQuantize100& HitTarget, const FVector
                     {
 
                         UPhysicalMaterial* PhysMat = FireHit.PhysMaterial.Get();
-                        if (BlasterCharacter->DamageModifiers.Contains(PhysMat))
+                        if (HitCharacter->DamageModifiers.Contains(PhysMat))
                         {
-                            UGameplayStatics::ApplyDamage(BlasterCharacter,           //
-                                Damage * BlasterCharacter->DamageModifiers[PhysMat],  //                                      //
-                                InstigatorController,                                 //
-                                this,                                                 //
+                            UGameplayStatics::ApplyDamage(HitCharacter,           //
+                                Damage * HitCharacter->DamageModifiers[PhysMat],  //                                      //
+                                InstigatorController,                             //
+                                this,                                             //
                                 UDamageType::StaticClass());
                         }
                     }
@@ -65,7 +65,7 @@ void AHitScanWeapon::Fire(const FVector_NetQuantize100& HitTarget, const FVector
                         // Damage = 10000;
 
                         BlasterOwnerCharacter->GetLagCompensationComponent()->ServerScoreRequest(  //
-                            BlasterCharacter,                                                      //
+                            HitCharacter,                                                          //
                             SocketLocation,                                                        //
                             HitTarget,                                                             //
                             HitTime,                                                               //

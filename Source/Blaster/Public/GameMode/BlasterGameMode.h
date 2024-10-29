@@ -34,6 +34,8 @@ public:
 
     void PlayerLeftGame(ABlasterPlayerState* PlayerLeaving);
 
+    virtual float CalculateDamage(AController* Attacker, AController* Victim, float BaseDamage);
+
     UPROPERTY(EditDefaultsOnly)
     float WarmupTime = 10.f;
 
@@ -52,6 +54,9 @@ protected:
     virtual void BeginPlay() override;
     virtual void OnMatchStateSet() override;
     virtual bool ShouldSpawnAtStartSpot(AController* Player) override;
+
+    // TODO : use ENUM here??
+    bool bTeamsMatch = false;
 
 private:
     float CountDownTime = 0.f;

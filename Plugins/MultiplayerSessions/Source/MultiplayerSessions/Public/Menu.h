@@ -10,6 +10,7 @@
 class UButton;
 class UMultiplayerSessionsSubsystem;
 class FOnlineSessionSearchResult;
+class USettingsMenu;
 
 UCLASS()
 class MULTIPLAYERSESSIONS_API UMenu : public UUserWidget
@@ -46,11 +47,17 @@ private:
     UPROPERTY(meta = (BindWidget))
     UButton* JoinButton;
 
+    UPROPERTY(meta = (BindWidget))
+    UButton* SettingsButton;
+
     UFUNCTION()
     void HostButtonClicked();
 
     UFUNCTION()
     void JoinButtonClicked();
+
+    UFUNCTION()
+    void SettingsButtonClicked();
 
     void MenuTearDown();
 
@@ -60,4 +67,7 @@ private:
     int32 NumPublicConnections = 4;
     FString MatchType = "FreeForAll";
     FString PathToLobby = "";
+
+    UPROPERTY(EditDefaultsOnly)
+    TSubclassOf<USettingsMenu> SettingsMenuClass;
 };

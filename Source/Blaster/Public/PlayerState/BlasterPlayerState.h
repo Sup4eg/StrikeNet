@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
+#include "Team.h"
 #include "BlasterPlayerState.generated.h"
 
 class ABlasterCharacter;
@@ -50,9 +51,18 @@ private:
     UPROPERTY(ReplicatedUsing = OnRep_KilledBy)
     FName KilledBy = FName();
 
+    UPROPERTY(ReplicatedUsing = OnRep_Team)
+    ETeam Team = ETeam::ET_NoTeam;
+
+    UFUNCTION()
+    void OnRep_Team();
+
 public:
+    void SetTeam(ETeam NewTeam);
+
     FORCEINLINE void SetDefeats(int32 NewDefeats) { Defeats = NewDefeats; };
     FORCEINLINE int32 GetDefeats() const { return Defeats; };
     FORCEINLINE FName GetKilledBy() const { return KilledBy; };
     FORCEINLINE void SetKilledBy(const FName& NewKilledBy) { KilledBy = NewKilledBy; };
+    FORCEINLINE ETeam GetTeam() const { return Team; };
 };
