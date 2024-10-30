@@ -12,9 +12,9 @@ bool UBaseSettingsTab::Initialize()
     {
         for (ESettingType& SettingItemType : SettingsItemOrder)
         {
-            if (SettingItems.Contains(SettingItemType) && SettingItems[SettingItemType].SettingTitle != FString())
+            if (SettingItems.Contains(SettingItemType) && SettingItems[SettingItemType].SettingTitle != FString() && GetWorld())
             {
-                if (USettingItem* SettingItemWidget = CreateWidget<USettingItem>(this, SettingItemClass))
+                if (USettingItem* SettingItemWidget = CreateWidget<USettingItem>(GetWorld(), SettingItemClass))
                 {
                     SettingItemWidget->SetData(SettingItems[SettingItemType].SettingTitle, SettingItemType, this);
                     if (SettingsBox)

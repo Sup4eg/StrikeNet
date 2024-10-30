@@ -4,16 +4,20 @@
 #include "Engine/Engine.h"
 #include "GameFramework/GameUserSettings.h"
 #include "BaseSettingsTab.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
+#include "Menu.h"
 #include "SettingsMenu.h"
 
-bool USettingsMenu::Initialize()
+void USettingsMenu::NativeConstruct()
 {
-    bool result = Super::Initialize();
-    if (GeneralButton && GraphycsButton && ApplyButton)
+    Super::NativeConstruct();
+
+    if (GeneralButton && GraphycsButton && ApplyButton && BackButton)
     {
         GeneralButton->OnClicked.AddDynamic(this, &ThisClass::GeneralButtonClicked);
         GraphycsButton->OnClicked.AddDynamic(this, &ThisClass::GraphycsButtonClicked);
         ApplyButton->OnClicked.AddDynamic(this, &ThisClass::ApplyButtonClicked);
+        BackButton->OnClicked.AddDynamic(this, &ThisClass::BackButtonClicked);
     }
 
     // Click General button when create this widget
@@ -21,7 +25,6 @@ bool USettingsMenu::Initialize()
     {
         GeneralButton->OnClicked.Broadcast();
     }
-    return result;
 }
 
 void USettingsMenu::GeneralButtonClicked()
@@ -40,9 +43,9 @@ void USettingsMenu::GeneralButtonClicked()
         }
 
         GeneralButton->SetIsEnabled(false);
-        if (!GeneralSettingsTab)
+        if (!GeneralSettingsTab && GetWorld())
         {
-            GeneralSettingsTab = CreateWidget<UBaseSettingsTab>(this, GeneralSettingsTabClass);
+            GeneralSettingsTab = CreateWidget<UBaseSettingsTab>(GetWorld(), GeneralSettingsTabClass);
         }
         if (GeneralSettingsTab)
         {
@@ -67,9 +70,9 @@ void USettingsMenu::GraphycsButtonClicked()
         }
 
         GraphycsButton->SetIsEnabled(false);
-        if (!GraphycsSettingsTab)
+        if (!GraphycsSettingsTab && GetWorld())
         {
-            GraphycsSettingsTab = CreateWidget<UBaseSettingsTab>(this, GraphycsSettingsTabClass);
+            GraphycsSettingsTab = CreateWidget<UBaseSettingsTab>(GetWorld(), GraphycsSettingsTabClass);
         }
         if (GraphycsSettingsTab)
         {
@@ -99,13 +102,38 @@ void USettingsMenu::ApplyButtonClicked()
                 UserSettings->SetTextureQuality(GraphycsSettingsTab->TexturesIndex);
                 UserSettings->SetVisualEffectQuality(GraphycsSettingsTab->VisualEffectsIndex);
 
-                // Hardcode shadows here for seeing fog in the game
                 if (GraphycsSettingsTab->OverallGraphycsIndex < 2)
                 {
                     UserSettings->SetShadowQuality(2);
                 }
             }
             UserSettings->ApplySettings(true);
+            UserSettings->LoadSettings(true);
+        }
+    }
+}
+
+void USettingsMenu::BackButtonClicked()
+{
+    if (!GetWorld()) return;
+
+    if (GeneralSettingsTab)
+    {
+        GeneralSettingsTab->RemoveFromParent();
+    }
+    if (GraphycsSettingsTab)
+    {
+        GraphycsSettingsTab->RemoveFromParent();
+    }
+    RemoveFromParent();
+
+    TArray<UUserWidget*> FoundWidgets;
+    UWidgetBlueprintLibrary::GetAllWidgetsOfClass(GetWorld(), FoundWidgets, UMenu::StaticClass(), true);
+    if (FoundWidgets.Num() > 0)
+    {
+        if (UMenu* Menu = Cast<UMenu>(FoundWidgets[0]))
+        {
+            Menu->SetVisibility(ESlateVisibility::Visible);
         }
     }
 }

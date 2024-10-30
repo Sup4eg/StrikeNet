@@ -15,7 +15,7 @@ class MULTIPLAYERSESSIONS_API USettingsMenu : public UUserWidget
     GENERATED_BODY()
 
 protected:
-    virtual bool Initialize() override;
+    virtual void NativeConstruct() override;
 
 private:
     UFUNCTION()
@@ -27,6 +27,9 @@ private:
     UFUNCTION()
     void ApplyButtonClicked();
 
+    UFUNCTION()
+    void BackButtonClicked();
+
     UPROPERTY(meta = (BindWidget))
     UButton* GeneralButton;
 
@@ -35,6 +38,9 @@ private:
 
     UPROPERTY(meta = (BindWidget))
     UButton* ApplyButton;
+
+    UPROPERTY(meta = (BindWidget))
+    UButton* BackButton;
 
     UPROPERTY(EditDefaultsOnly)
     TSubclassOf<UBaseSettingsTab> GeneralSettingsTabClass;

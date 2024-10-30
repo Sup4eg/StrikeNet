@@ -151,9 +151,9 @@ void UMenu::JoinButtonClicked()
 
 void UMenu::SettingsButtonClicked()
 {
-    if (!SettingsMenuClass) return;
+    if (!SettingsMenuClass || !GetWorld()) return;
     SetVisibility(ESlateVisibility::Collapsed);
-    if (USettingsMenu* SettingsMenu = CreateWidget<USettingsMenu>(this, SettingsMenuClass))
+    if (USettingsMenu* SettingsMenu = CreateWidget<USettingsMenu>(GetWorld(), SettingsMenuClass))
     {
         SettingsMenu->AddToViewport();
     }
