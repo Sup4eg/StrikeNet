@@ -4,39 +4,22 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "WeaponTypes.h"
+#include "CarryItem.h"
 #include "Weapon.generated.h"
 
-class USphereComponent;
-class UWidgetComponent;
 class UAnimationAsset;
 class ACasing;
 class UTexture2D;
 class UTexture;
-class ABlasterCharacter;
-class ABlasterPlayerController;
 class USoundBase;
-class UMaterialInterface;
-
-UENUM(BlueprintType)
-enum class EWeaponState : uint8
-{
-    EWS_Initial UMETA(DisplayName = "Initial State"),
-    EWS_Equipped UMETA(DisplayName = "Equiped"),
-    EWS_EquippedSecondary UMETA(DisplayName = "Backpack"),
-    EWS_Dropped UMETA(DisplayName = "Dropped"),
-    EWS_MAX UMETA(DisplayName = "DefaultMAX")
-};
 
 UCLASS()
-class BLASTER_API AWeapon : public AActor
+class BLASTER_API AWeapon : public ACarryItem
 {
     GENERATED_BODY()
 
 public:
     AWeapon();
-
-    virtual void Tick(float DeltaTime) override;
 
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -44,11 +27,7 @@ public:
 
     void SetHUDAmmo();
 
-    void ShowPickupWidget(bool bShowWidget);
-
     virtual void Fire(const FVector_NetQuantize100& HitTarget, const FVector_NetQuantize100& SocketLocation);
-
-    void Dropped();
 
     void AddAmmo(int32 AmmoToAdd);
 
@@ -103,41 +82,29 @@ public:
     UPROPERTY(EditAnywhere)
     FName SecondaryWeaponSocketName = "SecondaryWeaponSocket";
 
-    // For Invisibility effect
-    UPROPERTY(VisibleAnywhere)
-    bool bIsInvisible = false;
-
     UPROPERTY(EditAnywhere, Category = "Weapon Scatter")
     bool bUseScatter = false;
 
 protected:
     virtual void BeginPlay() override;
-    virtual void OnWeaponStateSet();
 
-    virtual void OnEquipped();
-    virtual void OnEquippedSecondary();
-    virtual void OnDropped();
-
-    bool IsBlasterOwnerCharacterValid();
-
-    bool IsBlasterOwnerControllerValid();
-
-    UFUNCTION()
     virtual void OnsphereOverlap(UPrimitiveComponent* OverlappedComponent,  //
         AActor* OtherActor,                                                 //
         UPrimitiveComponent* OtherComp,                                     //
         int32 OtherBodyIndex,                                               //
         bool bFromSweep,                                                    //
-        const FHitResult& SweepResult);
+        const FHitResult& SweepResult) override;
 
-    UFUNCTION()
     virtual void OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent,  //
         AActor* OtherActor,                                                    //
         UPrimitiveComponent* OtherComp,                                        //
-        int32 OtherBodyIndex);
+        int32 OtherBodyIndex) override;
 
-    UFUNCTION()
-    void OnPingTooHigh(bool bPingTooHigh);
+    virtual void OnEquipped() override;
+    virtual void OnEquippedSecondary() override;
+    virtual void OnDropped() override;
+
+    virtual void OnPingTooHigh(bool bPingTooHigh) override;
 
     /**
      * Trace end with scatter
@@ -154,12 +121,6 @@ protected:
     UPROPERTY(EditAnywhere)
     bool bUseServerSideRewindDefault = false;
 
-    UPROPERTY()
-    ABlasterCharacter* BlasterOwnerCharacter;
-
-    UPROPERTY()
-    ABlasterPlayerController* BlasterOwnerController;
-
 private:
     UFUNCTION(Client, Reliable)
     void ClientUpdateAmmo(int32 ServerAmmo);
@@ -168,21 +129,6 @@ private:
     void ClientAddAmmo(int32 AmmoToAdd);
 
     void SpendRound();
-
-    UPROPERTY(VisibleAnywhere, Category = "Weapon properties")
-    USkeletalMeshComponent* WeaponMesh;
-
-    UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
-    USphereComponent* AreaSphere;
-
-    UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
-    UWidgetComponent* PickupWidget;
-
-    UPROPERTY(ReplicatedUsing = OnRep_WeaponState, VisibleAnywhere, Category = "Weapon Properties")
-    EWeaponState WeaponState;
-
-    UFUNCTION()
-    void OnRep_WeaponState();
 
     UPROPERTY(EditAnywhere, Category = "Weapon properties")
     UAnimationAsset* FireAnimation;
@@ -219,35 +165,13 @@ private:
     UPROPERTY(EditAnywhere, Category = "Weapon Properties")
     EFireType FireType;
 
-    UPROPERTY(VisibleAnywhere);
-    TArray<UMaterialInterface*> InitializeMaterials;
-
     UPROPERTY(EditAnywhere)
     float AimSensitivity = 0.5f;
 
-    UPROPERTY(EditAnywhere, Category = "Sine Parameters")
-    float Amplitude = 0.2f;
-
-    UPROPERTY(EditAnywhere, Category = "Sine Parameters")
-    float TimeConstant = 3.5f;
-
-    float RunningTime;
-
-    float TransformedSin();
-
-    UPROPERTY(EditAnywhere)
-    bool bIsHovering = true;
-
 public:
-    void SetWeaponState(EWeaponState State);
     bool IsEmpty();
     bool IsFull();
 
-    void SetMaterial(UMaterialInterface* NewMaterial);
-    void SetDefaultMaterial();
-
-    FORCEINLINE USphereComponent* GetAreaSphere() const { return AreaSphere; }
-    FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; };
     FORCEINLINE float GetZoomedFOV() const { return ZoomedFOV; };
     FORCEINLINE float GetZoomInterpSpeed() const { return ZoomInterpSpeed; };
     FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; };

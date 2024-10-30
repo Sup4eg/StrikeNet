@@ -4,7 +4,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "Weapon/Weapon.h"
+#include "Weapon.h"
 #include "CombatState.h"
 #include "BlasterAnimInstance.h"
 
@@ -36,6 +36,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
     TurningInPlace = BlasterCharacter->GetTurningInPlace();
     bRotateRootBone = BlasterCharacter->ShouldRotateRootBone();
     bElimmed = BlasterCharacter->IsElimmed();
+    bHoldingTheFlag = BlasterCharacter->IsHoldingTheFlag();
 
     SetYawOffset(DeltaSeconds);
     SetLean(DeltaSeconds);
@@ -77,9 +78,9 @@ void UBlasterAnimInstance::SetLean(float DeltaTime)
 
 void UBlasterAnimInstance::SetHandsTransform(float DeltaTime)
 {
-    if (bWeaponEquipped && EquippedWeapon && EquippedWeapon->GetWeaponMesh() && BlasterCharacter->GetMesh())
+    if (bWeaponEquipped && EquippedWeapon && EquippedWeapon->GetItemMesh() && BlasterCharacter->GetMesh())
     {
-        LeftHandTransform = EquippedWeapon->GetWeaponMesh()->GetSocketTransform("LeftHandSocket", ERelativeTransformSpace::RTS_World);
+        LeftHandTransform = EquippedWeapon->GetItemMesh()->GetSocketTransform("LeftHandSocket", ERelativeTransformSpace::RTS_World);
         FVector OutPosition;
         FRotator OutRotation;
         BlasterCharacter->GetMesh()->TransformToBoneSpace(

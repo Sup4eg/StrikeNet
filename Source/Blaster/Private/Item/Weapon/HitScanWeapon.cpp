@@ -14,7 +14,7 @@
 #include "DrawDebugHelpers.h"
 #include "Components/DecalComponent.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
-#include "WeaponTypes.h"
+#include "CarryItemTypes.h"
 #include "LagCompensationComponent.h"
 #include "HitScanWeapon.h"
 
@@ -176,12 +176,12 @@ FImpactData AHitScanWeapon::GetImpactData(FHitResult& FireHit)
 
 FTransform AHitScanWeapon::GetLocalWeaponSocketTransform()
 {
-    if (GetWeaponMesh())
+    if (GetItemMesh())
     {
-        const USkeletalMeshSocket* MuzzleFlashSocket = GetWeaponMesh()->GetSocketByName(FName("MuzzleFlash"));
+        const USkeletalMeshSocket* MuzzleFlashSocket = GetItemMesh()->GetSocketByName(FName("MuzzleFlash"));
         if (MuzzleFlashSocket)
         {
-            FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetWeaponMesh());
+            FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetItemMesh());
             return SocketTransform;
         }
     }

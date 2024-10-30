@@ -1,11 +1,21 @@
 #pragma once
 
-#include "WeaponTypes.generated.h"
+#include "CarryItemTypes.generated.h"
 
 #define TRACE_LENGTH 80000
 #define CUSTOM_DEPTH_PURPLE 250
 #define CUSTOM_DEPTH_BLUE 251
 #define CUSTOM_DEPTH_TAN 252
+
+UENUM(BlueprintType)
+enum class ECarryItemState : uint8
+{
+    ECIS_Initial UMETA(DisplayName = "Initial State"),
+    ECIS_Equipped UMETA(DisplayName = "Equiped"),
+    ECIS_EquippedSecondary UMETA(DisplayName = "Equipped Secondary"),
+    ECIS_Dropped UMETA(DisplayName = "Dropped"),
+    ECIS_MAX UMETA(DisplayName = "DefaultMAX")
+};
 
 UENUM(BlueprintType)
 enum class EWeaponType : uint8

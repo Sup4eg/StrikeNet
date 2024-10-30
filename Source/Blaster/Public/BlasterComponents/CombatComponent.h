@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "BlasterHUD.h"
-#include "WeaponTypes.h"
+#include "CarryItemTypes.h"
 #include "CombatState.h"
 #include "CombatComponent.generated.h"
 
@@ -271,6 +271,8 @@ private:
 
     UPROPERTY(ReplicatedUsing = OnRep_CombatState)
     ECombatState CombatState = ECombatState::ECS_Unoccupied;
+
+    bool bHoldingTheFlag = false;
 
 public:
     bool ShouldSwapWeapons() const;

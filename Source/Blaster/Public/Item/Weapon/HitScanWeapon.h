@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Weapon.h"
-#include "Weapontypes.h"
+#include "CarryItemTypes.h"
 #include "HitScanWeapon.generated.h"
 
 class UParticleSystem;

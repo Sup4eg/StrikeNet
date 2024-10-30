@@ -149,7 +149,7 @@ void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
     HandleWeaponSpecificLogic(EquippedWeapon, WeaponToEquip);
     EquippedWeapon = WeaponToEquip;
     EquippedWeapon->SetOwner(BlasterCharacter);
-    EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+    EquippedWeapon->SetState(ECarryItemState::ECIS_Equipped);
 
     AttachWeaponToRightHand(EquippedWeapon);
     PlayEquipWeaponSound(EquippedWeapon);
@@ -174,7 +174,7 @@ void UCombatComponent::OnRep_EquippedWeapon(AWeapon* LastEquippedWeapon)
     BlasterCharacter->StopAllMontages();
     EquippedWeapon->SetIsHovering(false);
     HandleWeaponSpecificLogic(LastEquippedWeapon, EquippedWeapon);
-    EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+    EquippedWeapon->SetState(ECarryItemState::ECIS_Equipped);
     AttachWeaponToRightHand(EquippedWeapon);
     PlayEquipWeaponSound(EquippedWeapon);
     EquippedWeapon->SetHUDAmmo();
@@ -197,7 +197,7 @@ void UCombatComponent::EquipSecondaryWeapon(AWeapon* WeaponToEquip)
     WeaponToEquip->SetIsHovering(false);
     SecondaryWeapon = WeaponToEquip;
     SecondaryWeapon->SetOwner(BlasterCharacter);
-    SecondaryWeapon->SetWeaponState(EWeaponState::EWS_EquippedSecondary);
+    SecondaryWeapon->SetState(ECarryItemState::ECIS_EquippedSecondary);
     AttachWeaponToBackpack(WeaponToEquip);
     SetSecondaryWeaponInvisible();
 }
@@ -207,7 +207,7 @@ void UCombatComponent::OnRep_SecondaryWeapon(AWeapon* LastSecondaryWeapon)
     if (!SecondaryWeapon || !BlasterCharacter) return;
 
     SecondaryWeapon->SetIsHovering(false);
-    SecondaryWeapon->SetWeaponState(EWeaponState::EWS_EquippedSecondary);
+    SecondaryWeapon->SetState(ECarryItemState::ECIS_EquippedSecondary);
     AttachWeaponToBackpack(SecondaryWeapon);
     SetSecondaryWeaponInvisible();
     if (!LastSecondaryWeapon)
@@ -244,9 +244,9 @@ void UCombatComponent::AttachWeaponToRightHand(AWeapon* WeaponToAttach)
 {
     if (!BlasterCharacter || !BlasterCharacter->GetMesh() || !WeaponToAttach) return;
     const USkeletalMeshSocket* HandSocket = BlasterCharacter->GetMesh()->GetSocketByName("RightHandSocket");
-    if (HandSocket && WeaponToAttach->GetWeaponMesh())
+    if (HandSocket && WeaponToAttach->GetItemMesh())
     {
-        WeaponToAttach->GetWeaponMesh()->SetSimulatePhysics(false);
+        WeaponToAttach->GetItemMesh()->SetSimulatePhysics(false);
         HandSocket->AttachActor(WeaponToAttach, BlasterCharacter->GetMesh());
     }
 }
@@ -258,9 +258,9 @@ void UCombatComponent::AttachWeaponToLeftHand(AWeapon* WeaponToAttach)
                              WeaponToAttach->GetWeaponType() == EWeaponType::EWT_SMG);
     FName SocketName = bUsePistolSocket ? FName("LeftHandPistolSocket") : FName("LeftHandSocket");
     const USkeletalMeshSocket* HandSocket = BlasterCharacter->GetMesh()->GetSocketByName(SocketName);
-    if (HandSocket && WeaponToAttach->GetWeaponMesh())
+    if (HandSocket && WeaponToAttach->GetItemMesh())
     {
-        WeaponToAttach->GetWeaponMesh()->SetSimulatePhysics(false);
+        WeaponToAttach->GetItemMesh()->SetSimulatePhysics(false);
         HandSocket->AttachActor(WeaponToAttach, BlasterCharacter->GetMesh());
     }
 }
@@ -269,9 +269,9 @@ void UCombatComponent::AttachWeaponToBackpack(AWeapon* WeaponToAttach)
 {
     if (!BlasterCharacter || !BlasterCharacter->GetMesh() || !WeaponToAttach) return;
     const USkeletalMeshSocket* BackpackSocket = BlasterCharacter->GetMesh()->GetSocketByName(WeaponToAttach->SecondaryWeaponSocketName);
-    if (BackpackSocket && WeaponToAttach->GetWeaponMesh() && WeaponToAttach->GetAreaSphere())
+    if (BackpackSocket && WeaponToAttach->GetItemMesh() && WeaponToAttach->GetAreaSphere())
     {
-        WeaponToAttach->GetWeaponMesh()->SetSimulatePhysics(false);
+        WeaponToAttach->GetItemMesh()->SetSimulatePhysics(false);
         BackpackSocket->AttachActor(WeaponToAttach, BlasterCharacter->GetMesh());
     }
 }
@@ -867,12 +867,12 @@ void UCombatComponent::Fire()
 
 FVector UCombatComponent::GetWeaponSocketLocation()
 {
-    if (EquippedWeapon->GetWeaponMesh())
+    if (EquippedWeapon->GetItemMesh())
     {
-        const USkeletalMeshSocket* MuzzleFlashSocket = EquippedWeapon->GetWeaponMesh()->GetSocketByName(FName("MuzzleFlash"));
+        const USkeletalMeshSocket* MuzzleFlashSocket = EquippedWeapon->GetItemMesh()->GetSocketByName(FName("MuzzleFlash"));
         if (MuzzleFlashSocket)
         {
-            FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(EquippedWeapon->GetWeaponMesh());
+            FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(EquippedWeapon->GetItemMesh());
             return SocketTransform.GetLocation();
         }
     }

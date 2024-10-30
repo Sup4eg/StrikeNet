@@ -32,7 +32,7 @@
 #include "Blaster.h"
 #include "BlasterGameMode.h"
 #include "BlasterUtils.h"
-#include "Weapontypes.h"
+#include "CarryItemTypes.h"
 #include "GameFramework/Pawn.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
@@ -1044,13 +1044,13 @@ void ABlasterCharacter::HideCharacterIfCameraClose()
 void ABlasterCharacter::HideCamera(bool bIsHidden)
 {
     GetMesh()->SetVisibility(!bIsHidden);
-    if (IsWeaponEquipped() && CombatComp->EquippedWeapon->GetWeaponMesh())
+    if (IsWeaponEquipped() && CombatComp->EquippedWeapon->GetItemMesh())
     {
-        CombatComp->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = bIsHidden;
+        CombatComp->EquippedWeapon->GetItemMesh()->bOwnerNoSee = bIsHidden;
     }
-    if (IsSecondaryWeapon() && CombatComp->SecondaryWeapon->GetWeaponMesh())
+    if (IsSecondaryWeapon() && CombatComp->SecondaryWeapon->GetItemMesh())
     {
-        CombatComp->SecondaryWeapon->GetWeaponMesh()->bOwnerNoSee = bIsHidden;
+        CombatComp->SecondaryWeapon->GetItemMesh()->bOwnerNoSee = bIsHidden;
     }
 }
 
@@ -1199,9 +1199,14 @@ void ABlasterCharacter::SetMaterial(UMaterialInterface* NewMaterial)
     GetMesh()->SetMaterial(0, NewMaterial);
 }
 
-bool ABlasterCharacter::IsLocallyReloading()
+bool ABlasterCharacter::IsLocallyReloading() const
 {
     return CombatComp && CombatComp->bLocallyReloading;
+}
+
+bool ABlasterCharacter::IsHoldingTheFlag() const
+{
+    return CombatComp && CombatComp->bHoldingTheFlag;
 }
 
 bool ABlasterCharacter::IsControllerValid()

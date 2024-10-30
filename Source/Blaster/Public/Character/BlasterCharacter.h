@@ -520,7 +520,8 @@ public:
     void SetDefaultMaterial();
     void SetMaterial(UMaterialInterface* NewMaterial);
 
-    bool IsLocallyReloading();
+    bool IsLocallyReloading() const;
+    bool IsHoldingTheFlag() const;
 
     FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; };
     FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; };

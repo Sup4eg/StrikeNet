@@ -5,7 +5,7 @@
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Blaster.h"
-#include "WeaponTypes.h"
+#include "CarryItemTypes.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "BlasterCharacter.h"
