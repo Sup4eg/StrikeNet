@@ -87,19 +87,33 @@ void ACarryItem::OnRep_Owner()
 }
 
 void ACarryItem::OnsphereOverlap(UPrimitiveComponent* OverlappedComponent,  //
-    AActor* OtherActor,                                                      //
-    UPrimitiveComponent* OtherComp,                                          //
-    int32 OtherBodyIndex,                                                    //
-    bool bFromSweep,                                                         //
+    AActor* OtherActor,                                                     //
+    UPrimitiveComponent* OtherComp,                                         //
+    int32 OtherBodyIndex,                                                   //
+    bool bFromSweep,                                                        //
     const FHitResult& SweepResult)
 {
+    if (OtherActor && OtherActor->ActorHasTag("BlasterCharacter"))
+    {
+        if (ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(OtherActor))
+        {
+            if (!BlasterCharacter) return;
+            BlasterCharacter->SetOverlappingCarryItem(this);
+        }
+    }
 }
 
 void ACarryItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent,  //
-    AActor* OtherActor,                                                         //
-    UPrimitiveComponent* OtherComp,                                             //
+    AActor* OtherActor,                                                        //
+    UPrimitiveComponent* OtherComp,                                            //
     int32 OtherBodyIndex)
 {
+    if (OtherActor && OtherActor->ActorHasTag("BlasterCharacter"))
+    {
+        ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(OtherActor);
+        if (!BlasterCharacter) return;
+        BlasterCharacter->SetOverlappingCarryItem(nullptr);
+    }
 }
 
 void ACarryItem::OnPingTooHigh(bool bPingTooHigh) {}

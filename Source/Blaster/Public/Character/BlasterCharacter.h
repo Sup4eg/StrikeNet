@@ -18,6 +18,7 @@ class UInputMappingContext;
 class UInputAction;
 class UWidgetComponent;
 class AWeapon;
+class ACarryItem;
 class UCombatComponent;
 class UBuffComp;
 class ULagCompensationComponent;
@@ -271,7 +272,7 @@ protected:
 
 private:
     UFUNCTION()
-    void OnRep_OverlappingWeapon(AWeapon* LastWeapon);
+    void OnRep_OverlappingCarryItem(ACarryItem* LastCarryItem);
 
     UFUNCTION()
     void OnRep_Health();
@@ -339,8 +340,8 @@ private:
     UPROPERTY(VisibleAnywhere)
     ULagCompensationComponent* LagCompensationComp;
 
-    UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon, VisibleInstanceOnly)
-    AWeapon* OverlappingWeapon;
+    UPROPERTY(ReplicatedUsing = OnRep_OverlappingCarryItem, VisibleInstanceOnly)
+    ACarryItem* OverlappingCarryItem;
 
     float AO_Yaw;
 
@@ -505,7 +506,7 @@ private:
     bool bLeftGame = false;
 
 public:
-    void SetOverlappingWeapon(AWeapon* Weapon);
+    void SetOverlappingCarryItem(ACarryItem* CarryItem);
     bool IsWeaponEquipped();
     bool IsSecondaryWeapon();
     bool IsAiming();

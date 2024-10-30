@@ -21,6 +21,7 @@
 #include "Animation/AnimInstance.h"
 #include "Net/UnrealNetwork.h"
 #include "Weapon.h"
+#include "CarryItem.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "BlasterAnimInstance.h"
 #include "BlasterPlayerController.h"
@@ -339,7 +340,7 @@ void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-    DOREPLIFETIME_CONDITION(ABlasterCharacter, OverlappingWeapon, COND_OwnerOnly);
+    DOREPLIFETIME_CONDITION(ABlasterCharacter, OverlappingCarryItem, COND_OwnerOnly);
     DOREPLIFETIME(ABlasterCharacter, Health);
     DOREPLIFETIME(ABlasterCharacter, Shield);
     DOREPLIFETIME(ABlasterCharacter, RightHandRotation);
@@ -888,7 +889,7 @@ void ABlasterCharacter::Jump()
 
 void ABlasterCharacter::EquipButtonPressed()
 {
-    if (!OverlappingWeapon || !CombatComp) return;
+    if (!OverlappingCarryItem || !CombatComp) return;
     CombatComp->bLocallyReloading = false;
     if (CombatComp->CombatState != ECombatState::ECS_SwappingWeapons)
     {
@@ -898,7 +899,8 @@ void ABlasterCharacter::EquipButtonPressed()
 
 void ABlasterCharacter::ServerEquipButtonPressed_Implementation()
 {
-    if (!OverlappingWeapon || !CombatComp) return;
+    if (!OverlappingCarryItem || !CombatComp) return;
+
     CombatComp->EquipWeapon(OverlappingWeapon);
 }
 
@@ -1006,15 +1008,15 @@ bool ABlasterCharacter::IsCharacterGainedTheLead()
     return false;
 }
 
-void ABlasterCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
+void ABlasterCharacter::OnRep_OverlappingCarryItem(ACarryItem* LastCarryItem)
 {
-    if (OverlappingWeapon)
+    if (OverlappingCarryItem)
     {
-        OverlappingWeapon->ShowPickupWidget(true);
+        OverlappingCarryItem->ShowPickupWidget(true);
     }
-    if (LastWeapon)
+    if (LastCarryItem)
     {
-        LastWeapon->ShowPickupWidget(false);
+        LastCarryItem->ShowPickupWidget(false);
     }
 }
 
@@ -1119,15 +1121,15 @@ void ABlasterCharacter::TurnInPlace(float DeltaTime)
     }
 }
 
-void ABlasterCharacter::SetOverlappingWeapon(AWeapon* Weapon)
+void ABlasterCharacter::SetOverlappingCarryItem(ACarryItem* CarryItem)
 {
-    if (OverlappingWeapon)
+    if (OverlappingCarryItem)
     {
-        OverlappingWeapon->ShowPickupWidget(false);
+        OverlappingCarryItem->ShowPickupWidget(false);
     }
-    OverlappingWeapon = Weapon;
-    if (!IsLocallyControlled() || !OverlappingWeapon) return;
-    OverlappingWeapon->ShowPickupWidget(true);
+    OverlappingCarryItem = CarryItem;
+    if (!IsLocallyControlled() || !OverlappingCarryItem) return;
+    OverlappingCarryItem->ShowPickupWidget(true);
 }
 
 bool ABlasterCharacter::IsWeaponEquipped()
