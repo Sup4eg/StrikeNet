@@ -7,6 +7,7 @@
 #include "Net/UnrealNetwork.h"
 #include "BlasterCharacter.h"
 #include "BlasterPlayerController.h"
+#include "Kismet/GameplayStatics.h"
 #include "CarryItem.h"
 
 ACarryItem::ACarryItem()
@@ -16,7 +17,7 @@ ACarryItem::ACarryItem()
     bReplicates = true;
     SetReplicateMovement(true);
 
-    ItemMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Weapon Mesh"));
+    ItemMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Item Mesh"));
     SetRootComponent(ItemMesh);
     ItemMesh->SetupAttachment(AreaSphere);
     ItemMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
@@ -125,6 +126,11 @@ void ACarryItem::OnRep_State()
     OnStateSet();
 }
 
+void ACarryItem::SetIsHovering(bool IsHovering)
+{
+    bIsHovering = IsHovering;
+}
+
 void ACarryItem::SetState(ECarryItemState StateToSet)
 {
     if (!ItemMesh) return;
@@ -183,6 +189,14 @@ void ACarryItem::OnDropped()
     {
         SetDefaultMaterial();
         bIsInvisible = false;
+    }
+}
+
+void ACarryItem::PlayDropSound()
+{
+    if (DropSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(this, DropSound, GetActorLocation());
     }
 }
 

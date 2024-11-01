@@ -13,6 +13,7 @@ class USkeletalMeshComponent;
 class UMaterialInterface;
 class ABlasterCharacter;
 class ABlasterPlayerController;
+class USoundBase;
 
 UCLASS()
 class BLASTER_API ACarryItem : public AActor
@@ -38,9 +39,17 @@ public:
 
     void SetState(ECarryItemState StateToSet);
 
+    void SetIsHovering(bool IsHovering);
+
     // For Invisibility effect
     UPROPERTY(VisibleAnywhere)
     bool bIsInvisible = false;
+
+    UPROPERTY(EditAnywhere)
+    USoundBase* EquipSound;
+
+    UPROPERTY(EditAnywhere)
+    USoundBase* DropSound;
 
 protected:
     virtual void BeginPlay() override;
@@ -67,6 +76,8 @@ protected:
     virtual void OnEquipped();
     virtual void OnEquippedSecondary();
     virtual void OnDropped();
+
+    void PlayDropSound();
 
     bool IsBlasterOwnerCharacterValid();
 

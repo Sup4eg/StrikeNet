@@ -36,7 +36,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
     TurningInPlace = BlasterCharacter->GetTurningInPlace();
     bRotateRootBone = BlasterCharacter->ShouldRotateRootBone();
     bElimmed = BlasterCharacter->IsElimmed();
-    bHoldingTheFlag = BlasterCharacter->IsHoldingTheFlag();
+    bHoldingTheFlag = BlasterCharacter->GetFlag() != nullptr;
 
     SetYawOffset(DeltaSeconds);
     SetLean(DeltaSeconds);

@@ -509,8 +509,8 @@ public:
     void SetOverlappingCarryItem(ACarryItem* CarryItem);
     bool IsWeaponEquipped();
     bool IsSecondaryWeapon();
+    bool IsFlag();
     bool IsAiming();
-    AWeapon* GetEquippedWeapon();
     FVector GetHitTarget() const;
     void SetHitTarget(const FVector& NewHitTarget);
     ECombatState GetCombatState() const;
@@ -518,11 +518,12 @@ public:
 
     AWeapon* GetEquippedWeapon() const;
     AWeapon* GetSecondaryWeapon() const;
+    void SetFlag(ACarryItem* FlagToSet);
+    ACarryItem* GetFlag() const;
     void SetDefaultMaterial();
     void SetMaterial(UMaterialInterface* NewMaterial);
 
     bool IsLocallyReloading() const;
-    bool IsHoldingTheFlag() const;
 
     FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; };
     FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; };

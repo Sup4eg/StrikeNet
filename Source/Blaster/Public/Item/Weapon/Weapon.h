@@ -11,7 +11,6 @@ class UAnimationAsset;
 class ACasing;
 class UTexture2D;
 class UTexture;
-class USoundBase;
 
 UCLASS()
 class BLASTER_API AWeapon : public ACarryItem
@@ -67,9 +66,6 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Combat")
     bool bAutomatic = true;
-
-    UPROPERTY(EditAnywhere, Category = "Weapon properties")
-    USoundBase* EquipSound;
 
     /**
      * Enable / disable custom depth
@@ -180,6 +176,5 @@ public:
     FORCEINLINE int32 GetMagCapacity() const { return MagCapacity; };
     FORCEINLINE float GetAllowedGapToWall() const { return AllowedGapToWall; };
     FORCEINLINE float GetAimSensitivity() const { return AimSensitivity; };
-    FORCEINLINE void SetIsHovering(bool IsHovering) { bIsHovering = IsHovering; };
     FORCEINLINE void SetScatter(bool IsScatter) { bUseScatter = IsScatter; };
 };

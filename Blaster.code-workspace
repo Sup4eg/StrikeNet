@@ -20,7 +20,8 @@
 			"codecvt": "cpp",
 			"xlocale": "cpp",
 			"*.ipp": "cpp",
-			"__locale": "cpp"
+			"__locale": "cpp",
+			"fft": "cpp"
 		}
 	},
 	"extensions": {

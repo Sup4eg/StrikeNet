@@ -20,8 +20,6 @@
 #include "Engine/World.h"
 #include "Animation/AnimInstance.h"
 #include "Net/UnrealNetwork.h"
-#include "Weapon.h"
-#include "CarryItem.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "BlasterAnimInstance.h"
 #include "BlasterPlayerController.h"
@@ -30,7 +28,6 @@
 #include "Sound/SoundBase.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "BlasterPlayerState.h"
-#include "Blaster.h"
 #include "BlasterGameMode.h"
 #include "BlasterUtils.h"
 #include "CarryItemTypes.h"
@@ -39,6 +36,9 @@
 #include "NiagaraFunctionLibrary.h"
 #include "BlasterGameplayStatics.h"
 #include "BlasterGameState.h"
+#include "Weapon.h"
+#include "CarryItem.h"
+#include "Blaster.h"
 #include "BlasterCharacter.h"
 
 ABlasterCharacter::ABlasterCharacter()
@@ -407,6 +407,13 @@ void ABlasterCharacter::MulticastLostTheLead_Implementation()
 void ABlasterCharacter::RotateInPlace(float DeltaTime)
 {
 
+    if (GetCharacterMovement() && IsFlag())
+    {
+        bUseControllerRotationYaw = false;
+        GetCharacterMovement()->bOrientRotationToMovement = true;
+        TurningInPlace = ETurningInPlace::ETIP_NotTurning;
+        return;
+    }
     if (IsControllerValid() && GetIsGameplayDisabled())
     {
         bUseControllerRotationYaw = false;
@@ -880,6 +887,10 @@ void ABlasterCharacter::Jump()
     if (bIsCrouched)
     {
         UnCrouch();
+        if (IsFlag())
+        {
+            CombatComp->ServerDropFlag();
+        }
     }
     else
     {
@@ -900,13 +911,12 @@ void ABlasterCharacter::EquipButtonPressed()
 void ABlasterCharacter::ServerEquipButtonPressed_Implementation()
 {
     if (!OverlappingCarryItem || !CombatComp) return;
-
-    CombatComp->EquipWeapon(OverlappingWeapon);
+    CombatComp->EquipItem(OverlappingCarryItem);
 }
 
 void ABlasterCharacter::SwapWeaponButtonPressed()
 {
-    if (CombatComp->CombatState == ECombatState::ECS_Unoccupied && !IsLocallyReloading())
+    if (CombatComp->CombatState == ECombatState::ECS_Unoccupied && !IsLocallyReloading() && !IsFlag())
     {
         if (CombatComp->ShouldSwapWeapons() && !HasAuthority())
         {
@@ -934,6 +944,10 @@ void ABlasterCharacter::CrouchButtonPressed()
     if (bIsCrouched)
     {
         UnCrouch();
+        if (IsFlag())
+        {
+            CombatComp->ServerDropFlag();
+        }
     }
     else
     {
@@ -943,26 +957,33 @@ void ABlasterCharacter::CrouchButtonPressed()
 
 void ABlasterCharacter::AimButtonPressed()
 {
-    if (!CombatComp) return;
+    if (IsFlag()) return;
     CombatComp->SetAiming(true);
 }
 
 void ABlasterCharacter::AimButtonReleased()
 {
-    if (!CombatComp) return;
+    if (IsFlag()) return;
     CombatComp->SetAiming(false);
 }
 
 void ABlasterCharacter::ReloadButtonPressed()
 {
-    if (!CombatComp) return;
+    if (IsFlag()) return;
     CombatComp->Reload();
 }
 
 void ABlasterCharacter::FireButtonPressed()
 {
     if (!IsWeaponEquipped()) return;
-    CombatComp->FireButtonPressed(true);
+    if (!IsFlag())
+    {
+        CombatComp->FireButtonPressed(true);
+    }
+    else
+    {
+        CombatComp->ServerDropFlag();
+    }
 }
 
 void ABlasterCharacter::FireButtonReleased()
@@ -973,7 +994,7 @@ void ABlasterCharacter::FireButtonReleased()
 
 void ABlasterCharacter::ThrowGrenadeButtonPressed()
 {
-    if (!CombatComp) return;
+    if (!CombatComp || IsFlag()) return;
     CombatComp->ThrowGrenade();
 }
 
@@ -1142,15 +1163,14 @@ bool ABlasterCharacter::IsSecondaryWeapon()
     return CombatComp && CombatComp->SecondaryWeapon;
 }
 
+bool ABlasterCharacter::IsFlag()
+{
+    return CombatComp && CombatComp->Flag;
+}
+
 bool ABlasterCharacter::IsAiming()
 {
     return CombatComp && CombatComp->bAiming;
-}
-
-AWeapon* ABlasterCharacter::GetEquippedWeapon()
-{
-    if (!CombatComp) return nullptr;
-    return CombatComp->EquippedWeapon;
 }
 
 FVector ABlasterCharacter::GetHitTarget() const
@@ -1189,6 +1209,18 @@ AWeapon* ABlasterCharacter::GetSecondaryWeapon() const
     return CombatComp->SecondaryWeapon;
 }
 
+void ABlasterCharacter::SetFlag(ACarryItem* FlagToSet)
+{
+    if (!CombatComp) return;
+    CombatComp->Flag = FlagToSet;
+}
+
+ACarryItem* ABlasterCharacter::GetFlag() const
+{
+    if (!CombatComp) return nullptr;
+    return CombatComp->Flag;
+}
+
 void ABlasterCharacter::SetDefaultMaterial()
 {
     if (!GetMesh()) return;
@@ -1204,11 +1236,6 @@ void ABlasterCharacter::SetMaterial(UMaterialInterface* NewMaterial)
 bool ABlasterCharacter::IsLocallyReloading() const
 {
     return CombatComp && CombatComp->bLocallyReloading;
-}
-
-bool ABlasterCharacter::IsHoldingTheFlag() const
-{
-    return CombatComp && CombatComp->bHoldingTheFlag;
 }
 
 bool ABlasterCharacter::IsControllerValid()

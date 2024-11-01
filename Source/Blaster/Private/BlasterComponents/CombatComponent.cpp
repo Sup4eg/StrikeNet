@@ -72,6 +72,68 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
     DOREPLIFETIME_CONDITION(UCombatComponent, CarriedAmmo, COND_OwnerOnly);
     DOREPLIFETIME(UCombatComponent, CombatState);
     DOREPLIFETIME(UCombatComponent, Grenades);
+    DOREPLIFETIME(UCombatComponent, Flag);
+}
+
+void UCombatComponent::EquipItem(ACarryItem* ItemToEquip)
+{
+    if (ItemToEquip && ItemToEquip->ActorHasTag("Weapon"))
+    {
+        if (AWeapon* WeaponToEquip = Cast<AWeapon>(ItemToEquip))
+        {
+            EquipWeapon(WeaponToEquip);
+        }
+    }
+    else if (ItemToEquip && ItemToEquip->ActorHasTag("Flag"))
+    {
+        EquipFlag(ItemToEquip);
+    }
+}
+
+void UCombatComponent::EquipFlag(ACarryItem* FlagToEquip)
+{
+    if (!BlasterCharacter || !FlagToEquip) return;
+    Flag = FlagToEquip;
+    CombatState = ECombatState::ECS_Unoccupied;
+    HandleEquipFlag();
+    BlasterCharacter->Crouch();
+    Flag->SetOwner(BlasterCharacter);
+    Flag->SetState(ECarryItemState::ECIS_Equipped);
+}
+
+void UCombatComponent::OnRep_Flag()
+{
+    if (!BlasterCharacter) return;
+    if (Flag)
+    {
+        HandleEquipFlag();
+        if (BlasterCharacter->IsLocallyControlled())
+        {
+            BlasterCharacter->Crouch();
+        }
+    }
+    else
+    {
+        BlasterCharacter->bUseControllerRotationYaw = true;
+        if (BlasterCharacter->GetCharacterMovement())
+        {
+            BlasterCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
+        }
+    }
+}
+
+void UCombatComponent::HandleEquipFlag()
+{
+    if (!BlasterCharacter) return;
+    BlasterCharacter->StopAllMontages();
+    AttachItemToLeftHand(Flag, FName("FlagSocket"));
+    BlasterCharacter->GetCharacterMovement()->bOrientRotationToMovement = true;
+    BlasterCharacter->bUseControllerRotationYaw = false;
+    PlayEquipSound(Flag);
+    if (bAiming && BlasterCharacter->IsLocallyControlled())
+    {
+        SetAiming(false);
+    }
 }
 
 void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
@@ -81,12 +143,13 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
     if (EquippedWeapon && !SecondaryWeapon)
     {
         EquipSecondaryWeapon(WeaponToEquip);
-        PlayEquipWeaponSound(SecondaryWeapon);
+        PlayEquipSound(SecondaryWeapon);
     }
     else
     {
         CombatState = ECombatState::ECS_Unoccupied;
         BlasterCharacter->StopAllMontages();
+        DropFlag();
         DropEquippedWeapon();
         EquipPrimaryWeapon(WeaponToEquip);
         ReloadEmptyWeapon();
@@ -141,6 +204,11 @@ void UCombatComponent::CachePendingSwapWeapons()
     PendingSwapSecondaryWeapon = EquippedWeapon;
 }
 
+void UCombatComponent::ServerDropFlag_Implementation()
+{
+    DropFlag();
+}
+
 void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
 {
     if (!WeaponToEquip || !BlasterCharacter) return;
@@ -152,7 +220,7 @@ void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
     EquippedWeapon->SetState(ECarryItemState::ECIS_Equipped);
 
     AttachWeaponToRightHand(EquippedWeapon);
-    PlayEquipWeaponSound(EquippedWeapon);
+    PlayEquipSound(EquippedWeapon);
 
     EquippedWeapon->SetHUDAmmo();
 
@@ -176,7 +244,7 @@ void UCombatComponent::OnRep_EquippedWeapon(AWeapon* LastEquippedWeapon)
     HandleWeaponSpecificLogic(LastEquippedWeapon, EquippedWeapon);
     EquippedWeapon->SetState(ECarryItemState::ECIS_Equipped);
     AttachWeaponToRightHand(EquippedWeapon);
-    PlayEquipWeaponSound(EquippedWeapon);
+    PlayEquipSound(EquippedWeapon);
     EquippedWeapon->SetHUDAmmo();
     BlasterCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
     BlasterCharacter->bUseControllerRotationYaw = true;
@@ -212,7 +280,7 @@ void UCombatComponent::OnRep_SecondaryWeapon(AWeapon* LastSecondaryWeapon)
     SetSecondaryWeaponInvisible();
     if (!LastSecondaryWeapon)
     {
-        PlayEquipWeaponSound(SecondaryWeapon);
+        PlayEquipSound(SecondaryWeapon);
     }
 }
 
@@ -240,6 +308,19 @@ void UCombatComponent::DropEquippedWeapon()
     }
 }
 
+void UCombatComponent::DropFlag()
+{
+    if (Flag)
+    {
+        Flag->Dropped();
+    }
+
+    if (!BlasterCharacter || !BlasterCharacter->GetCharacterMovement()) return;
+    BlasterCharacter->SetFlag(nullptr);
+    BlasterCharacter->bUseControllerRotationYaw = true;
+    BlasterCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
+}
+
 void UCombatComponent::AttachWeaponToRightHand(AWeapon* WeaponToAttach)
 {
     if (!BlasterCharacter || !BlasterCharacter->GetMesh() || !WeaponToAttach) return;
@@ -248,6 +329,17 @@ void UCombatComponent::AttachWeaponToRightHand(AWeapon* WeaponToAttach)
     {
         WeaponToAttach->GetItemMesh()->SetSimulatePhysics(false);
         HandSocket->AttachActor(WeaponToAttach, BlasterCharacter->GetMesh());
+    }
+}
+
+void UCombatComponent::AttachItemToLeftHand(ACarryItem* ItemToAttach, FName SocketName)
+{
+    if (!BlasterCharacter || !BlasterCharacter->GetMesh() || !ItemToAttach) return;
+    const USkeletalMeshSocket* HandSocket = BlasterCharacter->GetMesh()->GetSocketByName(SocketName);
+    if (HandSocket && ItemToAttach->GetItemMesh())
+    {
+        ItemToAttach->GetItemMesh()->SetSimulatePhysics(false);
+        HandSocket->AttachActor(ItemToAttach, BlasterCharacter->GetMesh());
     }
 }
 
@@ -284,11 +376,11 @@ void UCombatComponent::ReloadEmptyWeapon()
     }
 }
 
-void UCombatComponent::PlayEquipWeaponSound(AWeapon* WeaponToEquip)
+void UCombatComponent::PlayEquipSound(ACarryItem* ItemToEquip)
 {
-    if (BlasterCharacter && WeaponToEquip && WeaponToEquip->EquipSound)
+    if (BlasterCharacter && ItemToEquip && ItemToEquip->EquipSound)
     {
-        UGameplayStatics::PlaySoundAtLocation(this, WeaponToEquip->EquipSound, BlasterCharacter->GetActorLocation());
+        UGameplayStatics::PlaySoundAtLocation(this, ItemToEquip->EquipSound, BlasterCharacter->GetActorLocation());
     }
 }
 
@@ -519,25 +611,6 @@ void UCombatComponent::ShotgunShellReload()
     {
         UpdateShotgunAmmoValues();
     }
-    if (BlasterCharacter && !BlasterCharacter->HasAuthority() && BlasterCharacter->IsLocallyControlled())
-    {
-        // EquippedWeapon->AddAmmo(1);
-        // bCanFire = true;
-        // if (EquippedWeapon->IsFull() || CarriedAmmo == 0)
-        // {
-
-        //     BlasterCharacter->PlayMontage(BlasterCharacter->GetReloadMontage(), FName("ShotgunEnd"));
-        // }
-    }
-
-    // if (BlasterCharacter &&                             //
-    //     !BlasterCharacter->HasAuthority() &&            //
-    //     BlasterCharacter->IsLocallyControlled() &&      //
-    //     (EquippedWeapon->IsFull() || CarriedAmmo == 0)  //
-    // )
-    // {
-    //     bLocallyReloading = false;
-    // }
 }
 
 void UCombatComponent::ThrowGrenadeFinished()

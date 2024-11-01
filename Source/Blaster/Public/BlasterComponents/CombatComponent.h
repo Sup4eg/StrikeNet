@@ -16,6 +16,7 @@ class ABlasterCharacter;
 class ABlasterPlayerController;
 class ABlasterHUD;
 class AProjectile;
+class ACarryItem;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class BLASTER_API UCombatComponent : public UActorComponent
@@ -30,7 +31,7 @@ public:
 
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-    void EquipWeapon(AWeapon* WeaponToEquip);
+    void EquipItem(ACarryItem* ItemToEquip);
     void SwapWeapons();
     void Reload();
 
@@ -66,6 +67,9 @@ public:
 
     void CachePendingSwapWeapons();
 
+    UFUNCTION(Server, Reliable)
+    void ServerDropFlag();
+
     bool bLocallyReloading = false;
 
 protected:
@@ -76,6 +80,9 @@ protected:
 
     UFUNCTION()
     void OnRep_EquippedWeapon(AWeapon* LastEquippedWeapon);
+
+    UFUNCTION()
+    void OnRep_Flag();
 
     UFUNCTION()
     void OnRep_SecondaryWeapon(AWeapon* LastSecondaryWeapon);
@@ -110,20 +117,27 @@ protected:
     void ServerThrowGrenade();
 
     void DropEquippedWeapon();
+    void DropFlag();
     void AttachWeaponToRightHand(AWeapon* WeaponToAttach);
     void AttachWeaponToLeftHand(AWeapon* WeaponToAttach);
     void AttachWeaponToBackpack(AWeapon* WeaponToAttach);
+    void AttachItemToLeftHand(ACarryItem* ItemToAttach, FName SocketName);
+
     void SetCarriedAmmo();
-    void PlayEquipWeaponSound(AWeapon* WeaponToEquip);
+    void PlayEquipSound(ACarryItem* ItemToEquip);
     void ReloadEmptyWeapon();
     void ShowAttachedGrenade(bool bShowAttachedGrenade);
     void EquipPrimaryWeapon(AWeapon* WeaponToEquip);
     void EquipSecondaryWeapon(AWeapon* WeaponToEquip);
+    void EquipFlag(ACarryItem* FlagToEquip);
+    void HandleEquipFlag();
 
     UPROPERTY(EditAnywhere)
     TSubclassOf<AProjectile> GrenadeClass;
 
 private:
+    void EquipWeapon(AWeapon* WeaponToEquip);
+
     float GetCrosshairsSpread(float DeltaTime);
     void InterpFOV(float DeltaTime);
     void Fire();
@@ -183,6 +197,9 @@ private:
 
     UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon)
     AWeapon* EquippedWeapon;
+
+    UPROPERTY(ReplicatedUsing = OnRep_Flag, VisibleAnywhere)
+    ACarryItem* Flag;
 
     UPROPERTY(ReplicatedUsing = OnRep_SecondaryWeapon)
     AWeapon* SecondaryWeapon;
@@ -271,8 +288,6 @@ private:
 
     UPROPERTY(ReplicatedUsing = OnRep_CombatState)
     ECombatState CombatState = ECombatState::ECS_Unoccupied;
-
-    bool bHoldingTheFlag = false;
 
 public:
     bool ShouldSwapWeapons() const;

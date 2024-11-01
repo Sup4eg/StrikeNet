@@ -18,20 +18,14 @@ AWeapon::AWeapon()
 
     EnableCustomDepth(true);
 
-    if (ItemMesh)
-    {
-        ItemMesh->SetCustomDepthStencilValue(CUSTOM_DEPTH_BLUE);
-        ItemMesh->MarkRenderStateDirty();
-    }
-
-    if (PickupWidget)
-    {
-        PickupWidget->AddLocalOffset(FVector(0.f, 0.f, 60.f));
-    }
+    ItemMesh->SetCustomDepthStencilValue(CUSTOM_DEPTH_BLUE);
+    ItemMesh->MarkRenderStateDirty();
+    PickupWidget->AddLocalOffset(FVector(0.f, 0.f, 60.f));
 }
 
 void AWeapon::BeginPlay()
 {
+    Super::BeginPlay();
     Tags.Add("Weapon");
 }
 
