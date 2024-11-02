@@ -155,6 +155,7 @@ protected:
     void RotateInPlace(float DeltaTime);
     void SimProxiesTurn();
     // Poll for any relevan classess and initialize out HUD
+    void OnPlayerStateInitialized();
     void PollInit();
 
     void DropOrDestroyWeapon(AWeapon* Weapon);
@@ -524,6 +525,7 @@ public:
     void SetMaterial(UMaterialInterface* NewMaterial);
 
     bool IsLocallyReloading() const;
+    ETeam GetTeam();
 
     FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; };
     FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; };

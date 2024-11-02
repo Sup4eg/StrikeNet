@@ -13,14 +13,8 @@
 		"typescript.tsc.autoDetect": "off",
 		"npm.autoDetect": "off",
 		"files.associations": {
+			"vector": "cpp",
 			"*.rh": "cpp",
-			"xtr1common": "cpp",
-			"type_traits": "cpp",
-			"chrono": "cpp",
-			"codecvt": "cpp",
-			"xlocale": "cpp",
-			"*.ipp": "cpp",
-			"__locale": "cpp",
 			"fft": "cpp"
 		}
 	},

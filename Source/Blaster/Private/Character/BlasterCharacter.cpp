@@ -642,6 +642,7 @@ void ABlasterCharacter::Elim(bool bPlayerLeftGame)
     {
         DropOrDestroyWeapon(CombatComp->EquippedWeapon);
         DropOrDestroyWeapon(CombatComp->SecondaryWeapon);
+        CombatComp->ServerDropFlag();
     }
     MulticastElim(bPlayerLeftGame);
 }
@@ -1005,16 +1006,21 @@ void ABlasterCharacter::PollInit()
         BlasterPlayerState = GetPlayerState<ABlasterPlayerState>();
         if (BlasterPlayerState)
         {
-            BlasterPlayerState->AddToScore(0.f);
-            BlasterPlayerState->AddToDefeats(0);
-            BlasterPlayerState->SetKilledBy(FName());
-            SetTeamColor(BlasterPlayerState->GetTeam());
+            OnPlayerStateInitialized();
             if (IsCharacterGainedTheLead())
             {
                 MulticastGainedTheLead();
             }
         }
     }
+}
+
+void ABlasterCharacter::OnPlayerStateInitialized()
+{
+    BlasterPlayerState->AddToScore(0.f);
+    BlasterPlayerState->AddToDefeats(0);
+    BlasterPlayerState->SetKilledBy(FName());
+    SetTeamColor(BlasterPlayerState->GetTeam());
 }
 
 bool ABlasterCharacter::IsCharacterGainedTheLead()
@@ -1236,6 +1242,16 @@ void ABlasterCharacter::SetMaterial(UMaterialInterface* NewMaterial)
 bool ABlasterCharacter::IsLocallyReloading() const
 {
     return CombatComp && CombatComp->bLocallyReloading;
+}
+
+ETeam ABlasterCharacter::GetTeam()
+{
+    BlasterPlayerState = BlasterPlayerState == nullptr ? GetPlayerState<ABlasterPlayerState>() : BlasterPlayerState;
+    if (BlasterPlayerState)
+    {
+        return BlasterPlayerState->GetTeam();
+    }
+    return ETeam::ET_NoTeam;
 }
 
 bool ABlasterCharacter::IsControllerValid()

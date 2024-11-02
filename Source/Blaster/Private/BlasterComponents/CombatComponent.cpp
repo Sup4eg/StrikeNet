@@ -310,13 +310,14 @@ void UCombatComponent::DropEquippedWeapon()
 
 void UCombatComponent::DropFlag()
 {
+    // Called only on server
     if (Flag)
     {
         Flag->Dropped();
     }
 
     if (!BlasterCharacter || !BlasterCharacter->GetCharacterMovement()) return;
-    BlasterCharacter->SetFlag(nullptr);
+    Flag = nullptr;
     BlasterCharacter->bUseControllerRotationYaw = true;
     BlasterCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
 }

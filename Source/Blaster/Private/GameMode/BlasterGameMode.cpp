@@ -77,24 +77,22 @@ void ABlasterGameMode::OnMatchStateSet()
     }
 }
 
-bool ABlasterGameMode::ShouldSpawnAtStartSpot(AController* Player)
+bool ABlasterGameMode::ShouldSpawnAtStartSpot(AController* PlayerController)
 {
     // Test purposes (Start from player start)
     if (GIsEditor)
     {
-        return Super::ShouldSpawnAtStartSpot(Player);
+        return Super::ShouldSpawnAtStartSpot(PlayerController);
     }
     TArray<AActor*> PlayerStarts;
-    TArray<AActor*> BlasterCharacters;
     UGameplayStatics::GetAllActorsOfClass(this, APlayerStart::StaticClass(), PlayerStarts);
-    UGameplayStatics::GetAllActorsOfClass(this, ABlasterCharacter::StaticClass(), BlasterCharacters);
-    AActor* BestPlayerStart = GetBestPlayerStart(PlayerStarts, BlasterCharacters);
+    AActor* BestPlayerStart = GetBestInitializePoint(PlayerStarts, PlayerController);
     if (BestPlayerStart)
     {
-        Player->StartSpot = GetBestPlayerStart(PlayerStarts, BlasterCharacters);
+        PlayerController->StartSpot = BestPlayerStart;
         return true;
     }
-    return Super::ShouldSpawnAtStartSpot(Player);
+    return Super::ShouldSpawnAtStartSpot(PlayerController);
 }
 
 void ABlasterGameMode::PlayerElimmed(            //
@@ -161,10 +159,10 @@ void ABlasterGameMode::RequestRespawn(ACharacter* ElimmedCharacter, AController*
     if (ElimmedController)
     {
         TArray<AActor*> PlayerStarts;
-        TArray<AActor*> BlasterCharacters;
+        TArray<AActor*> Players;
         UGameplayStatics::GetAllActorsOfClass(this, APlayerStart::StaticClass(), PlayerStarts);
-        UGameplayStatics::GetAllActorsOfClass(this, ABlasterCharacter::StaticClass(), BlasterCharacters);
-        AActor* BestPlayerStart = GetBestPlayerStart(PlayerStarts, BlasterCharacters);
+        UGameplayStatics::GetAllActorsOfClass(this, ABlasterCharacter::StaticClass(), Players);
+        AActor* BestPlayerStart = GetBestRespawnPoint(PlayerStarts, Players, ElimmedController);
         if (BestPlayerStart)
         {
 
@@ -192,14 +190,43 @@ float ABlasterGameMode::CalculateDamage(AController* Attacker, AController* Vict
     return BaseDamage;
 }
 
-AActor* ABlasterGameMode::GetBestPlayerStart(TArray<AActor*>& PlayerStarts, TArray<AActor*>& BlasterCharacters)
+AActor* ABlasterGameMode::GetBestInitializePoint(TArray<AActor*>& PlayerStarts, AController* PlayerController)
 {
+    if (PlayerStarts.IsEmpty()) return nullptr;
+    const APawn* PawnToFit = ABlasterCharacter::StaticClass()->GetDefaultObject<APawn>();
+    AActor* BestPlayerStart = nullptr;
+    ShuffleActorArray(PlayerStarts);
+    for (AActor* PlayerStart : PlayerStarts)
+    {
+        if (GetWorld() &&
+            GetWorld()->EncroachingBlockingGeometry(PawnToFit, PlayerStart->GetActorLocation(), PlayerStart->GetActorRotation()))
+        {
+            continue;
+        }
+        BestPlayerStart = PlayerStart;
+        break;
+    }
+    return BestPlayerStart;
+}
+
+AActor* ABlasterGameMode::GetBestRespawnPoint(TArray<AActor*>& PlayerStarts, TArray<AActor*>& Players, AController* PlayerContoller)
+{
+    if (PlayerStarts.IsEmpty() || Players.IsEmpty()) return nullptr;
+
+    const APawn* PawnToFit = ABlasterCharacter::StaticClass()->GetDefaultObject<APawn>();
+
     float MaxDistanceToAllStarts = -1.f;
     AActor* BestPlayerStart = nullptr;
     for (AActor* PlayerStart : PlayerStarts)
     {
+        if (GetWorld() &&
+            GetWorld()->EncroachingBlockingGeometry(PawnToFit, PlayerStart->GetActorLocation(), PlayerStart->GetActorRotation()))
+        {
+            continue;
+        }
+
         float MinDistanceToOneStart = INFINITY;
-        for (AActor* BlasterCharacter : BlasterCharacters)
+        for (AActor* BlasterCharacter : Players)
         {
             float Dist = FVector::Dist(PlayerStart->GetActorLocation(), BlasterCharacter->GetActorLocation());
             MinDistanceToOneStart = FMath::Min(MinDistanceToOneStart, Dist);
@@ -210,5 +237,20 @@ AActor* ABlasterGameMode::GetBestPlayerStart(TArray<AActor*>& PlayerStarts, TArr
             BestPlayerStart = PlayerStart;
         }
     }
+    // no room for player start
+    if (!BestPlayerStart)
+    {
+        BestPlayerStart = PlayerStarts[FMath::RandRange(0, PlayerStarts.Num() - 1)];
+    }
     return BestPlayerStart;
+}
+
+void ABlasterGameMode::ShuffleActorArray(TArray<AActor*>& ActorArr)
+{
+    int32 LastIndex = ActorArr.Num() - 1;
+    for (int32 i = LastIndex; i > 0; --i)
+    {
+        int32 RandomIndex = FMath::RandRange(0, i);
+        ActorArr.Swap(i, RandomIndex);
+    }
 }

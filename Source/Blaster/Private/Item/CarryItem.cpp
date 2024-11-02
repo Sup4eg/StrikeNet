@@ -98,7 +98,6 @@ void ACarryItem::OnsphereOverlap(UPrimitiveComponent* OverlappedComponent,  //
     {
         if (ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(OtherActor))
         {
-            if (!BlasterCharacter) return;
             BlasterCharacter->SetOverlappingCarryItem(this);
         }
     }
@@ -111,9 +110,10 @@ void ACarryItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent,  /
 {
     if (OtherActor && OtherActor->ActorHasTag("BlasterCharacter"))
     {
-        ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(OtherActor);
-        if (!BlasterCharacter) return;
-        BlasterCharacter->SetOverlappingCarryItem(nullptr);
+        if (ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(OtherActor))
+        {
+            BlasterCharacter->SetOverlappingCarryItem(nullptr);
+        }
     }
 }
 
@@ -143,12 +143,19 @@ void ACarryItem::OnStateSet()
 {
     switch (State)
     {
+        case ECarryItemState::ECIS_Initial: OnInitialized(); break;
         case ECarryItemState::ECIS_Equipped: OnEquipped(); break;
         case ECarryItemState::ECIS_EquippedSecondary: OnEquippedSecondary(); break;
         case ECarryItemState::ECIS_Dropped: OnDropped(); break;
         default: break;
     }
 }
+
+void ACarryItem::Initialized() {
+
+}
+
+void ACarryItem::OnInitialized() {}
 
 void ACarryItem::OnEquipped()
 {
@@ -177,6 +184,9 @@ void ACarryItem::OnDropped()
     }
     if (!ItemMesh) return;
 
+    FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
+    ItemMesh->DetachFromComponent(DetachRules);
+
     ItemMesh->SetSimulatePhysics(true);
     ItemMesh->SetEnableGravity(true);
     ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -202,15 +212,12 @@ void ACarryItem::PlayDropSound()
 
 void ACarryItem::Dropped()
 {
-    if (!ItemMesh) return;
-
     SetState(ECarryItemState::ECIS_Dropped);
-    FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
-    ItemMesh->DetachFromComponent(DetachRules);
     SetOwner(nullptr);
     BlasterOwnerCharacter = nullptr;
     BlasterOwnerController = nullptr;
 }
+
 
 bool ACarryItem::IsBlasterOwnerCharacterValid()
 {

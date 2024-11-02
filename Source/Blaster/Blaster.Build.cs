@@ -38,7 +38,8 @@ public class Blaster : ModuleRules
 			"Blaster/Public/PlayerState",
 			"Blaster/Public/GameState",
 			"Blaster/Public/Pickups",
-			"Blaster/Public/LevelActors"
+			"Blaster/Public/LevelActors",
+			"Blaster/Public/PlayerStart"
 		});
 	}
 }

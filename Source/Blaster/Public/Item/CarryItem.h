@@ -33,6 +33,8 @@ public:
 
     void Dropped();
 
+    virtual void Initialized();
+
     virtual void SetDefaultMaterial();
 
     virtual void SetMaterial(UMaterialInterface* NewMaterial);
@@ -73,6 +75,7 @@ protected:
 
     virtual void OnStateSet();
 
+    virtual void OnInitialized();
     virtual void OnEquipped();
     virtual void OnEquippedSecondary();
     virtual void OnDropped();

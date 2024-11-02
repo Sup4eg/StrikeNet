@@ -4,6 +4,8 @@
 #include "BlasterPlayerState.h"
 #include "BlasterPlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "BlasterCharacter.h"
+#include "TeamPlayerStart.h"
 #include "TeamsGameMode.h"
 
 ATeamsGameMode::ATeamsGameMode()
@@ -37,22 +39,6 @@ void ATeamsGameMode::Logout(AController* Exiting)
     }
 
     Super::Logout(Exiting);
-}
-
-void ATeamsGameMode::HandleMatchHasStarted()
-{
-    Super::HandleMatchHasStarted();
-
-    if (ABlasterGameState* BlasterGameState = Cast<ABlasterGameState>(UGameplayStatics::GetGameState(this)))
-    {
-        for (auto& PlayerState : BlasterGameState->PlayerArray)
-        {
-            if (ABlasterPlayerState* BlasterPlayerState = Cast<ABlasterPlayerState>(PlayerState))
-            {
-                SortPlayerToTeam(BlasterPlayerState, BlasterGameState);
-            }
-        }
-    }
 }
 
 void ATeamsGameMode::SortPlayerToTeam(ABlasterPlayerState* BlasterPlayerState, ABlasterGameState* BlasterGameState)
@@ -98,18 +84,81 @@ void ATeamsGameMode::PlayerElimmed(              //
 {
     Super::PlayerElimmed(ElimmedCharacter, VictimController, AttackerController);
 
-    //nullptr controllers or suicide
+    // nullptr controllers or suicide
     if (!VictimController || !AttackerController || VictimController == AttackerController) return;
 
     ABlasterGameState* BlasterGameState = Cast<ABlasterGameState>(UGameplayStatics::GetGameState(this));
-    ABlasterPlayerState* AttackerPlayerState =
-        AttackerController ? Cast<ABlasterPlayerState>(AttackerController->PlayerState) : nullptr;
+    ABlasterPlayerState* AttackerPlayerState = AttackerController ? Cast<ABlasterPlayerState>(AttackerController->PlayerState) : nullptr;
     if (BlasterGameState && AttackerPlayerState)
     {
-        if (AttackerPlayerState->GetTeam() == ETeam::ET_BlueTeam) {
+        if (AttackerPlayerState->GetTeam() == ETeam::ET_BlueTeam)
+        {
             BlasterGameState->BlueTeamScores();
-        } else if (AttackerPlayerState->GetTeam() == ETeam::ET_RedTeam) {
+        }
+        else if (AttackerPlayerState->GetTeam() == ETeam::ET_RedTeam)
+        {
             BlasterGameState->RedTeamScores();
+        }
+    }
+}
+
+AActor* ATeamsGameMode::GetBestInitializePoint(TArray<AActor*>& PlayerStarts, AController* PlayerController)
+{
+    if (PlayerStarts.IsEmpty()) return nullptr;
+    if (ABlasterPlayerState* BPlayerState = PlayerController->GetPlayerState<ABlasterPlayerState>())
+    {
+        if (ABlasterGameState* BGameState = Cast<ABlasterGameState>(UGameplayStatics::GetGameState(this)))
+        {
+            SortPlayerToTeam(BPlayerState, BGameState);
+        }
+
+        ETeam PlayerTeam = BPlayerState->GetTeam();
+        TArray<AActor*> TeamPlayerStarts;
+        FilterPlayerStarts(TeamPlayerStarts, PlayerStarts, PlayerTeam);
+        return Super::GetBestInitializePoint(TeamPlayerStarts, PlayerController);
+    }
+    return nullptr;
+}
+
+AActor* ATeamsGameMode::GetBestRespawnPoint(TArray<AActor*>& PlayerStarts, TArray<AActor*>& Players, AController* PlayerController)
+{
+    if (PlayerStarts.IsEmpty() || Players.IsEmpty()) return nullptr;
+    if (ABlasterPlayerState* BPlayerState = PlayerController->GetPlayerState<ABlasterPlayerState>())
+    {
+        ETeam PlayerTeam = BPlayerState->GetTeam();
+        TArray<AActor*> TeamPlayerStarts;
+        TArray<AActor*> OppositePlayers;
+        FilterPlayerStarts(TeamPlayerStarts, PlayerStarts, PlayerTeam);
+        FilterOppositePlayers(OppositePlayers, Players, PlayerTeam);
+        return Super::GetBestRespawnPoint(TeamPlayerStarts, OppositePlayers, PlayerController);
+    }
+    return nullptr;
+}
+
+void ATeamsGameMode::FilterPlayerStarts(TArray<AActor*>& OutTeamPlayerStarts, TArray<AActor*>& PlayerStarts, ETeam PlayerTeam)
+{
+    for (AActor* PlayerStart : PlayerStarts)
+    {
+        if (ATeamPlayerStart* TeamPlayerStart = Cast<ATeamPlayerStart>(PlayerStart))
+        {
+            if (TeamPlayerStart->Team == PlayerTeam)
+            {
+                OutTeamPlayerStarts.Add(TeamPlayerStart);
+            }
+        }
+    }
+}
+
+void ATeamsGameMode::FilterOppositePlayers(TArray<AActor*>& OutOppositePlayers, TArray<AActor*>& Players, ETeam PlayerTeam)
+{
+    for (AActor* Player : Players)
+    {
+        if (ABlasterCharacter* BCharacter = Cast<ABlasterCharacter>(Player))
+        {
+            if (BCharacter->GetTeam() != PlayerTeam)
+            {
+                OutOppositePlayers.Add(BCharacter);
+            }
         }
     }
 }

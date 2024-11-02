@@ -53,17 +53,19 @@ public:
 protected:
     virtual void BeginPlay() override;
     virtual void OnMatchStateSet() override;
-    virtual bool ShouldSpawnAtStartSpot(AController* Player) override;
+    virtual bool ShouldSpawnAtStartSpot(AController* PlayerController) override;
+    virtual AActor* GetBestInitializePoint(TArray<AActor*>& PlayerStarts, AController* PlayerController);
+    virtual AActor* GetBestRespawnPoint(TArray<AActor*>& PlayerStarts, TArray<AActor*>& Players, AController* PlayerController);
 
     // TODO : use ENUM here??
     bool bTeamsMatch = false;
 
 private:
-    float CountDownTime = 0.f;
-
-    AActor* GetBestPlayerStart(TArray<AActor*>& PlayerStarts, TArray<AActor*>& BlasterCharacters);
-
     void SetUpMatchState();
+
+    void ShuffleActorArray(TArray<AActor*>& ActorArr);
+
+    float CountDownTime = 0.f;
 
 public:
     FORCEINLINE float GetCountdownTime() const { return CountDownTime; };
