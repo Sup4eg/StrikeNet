@@ -80,10 +80,10 @@ void ABlasterGameMode::OnMatchStateSet()
 bool ABlasterGameMode::ShouldSpawnAtStartSpot(AController* PlayerController)
 {
     // Test purposes (Start from player start)
-    if (GIsEditor)
-    {
-        return Super::ShouldSpawnAtStartSpot(PlayerController);
-    }
+    // if (GIsEditor)
+    // {
+    //     return Super::ShouldSpawnAtStartSpot(PlayerController);
+    // }
     TArray<AActor*> PlayerStarts;
     UGameplayStatics::GetAllActorsOfClass(this, APlayerStart::StaticClass(), PlayerStarts);
     AActor* BestPlayerStart = GetBestInitializePoint(PlayerStarts, PlayerController);

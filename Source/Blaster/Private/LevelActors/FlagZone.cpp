@@ -12,6 +12,10 @@ AFlagZone::AFlagZone()
 
     ZoneSphere = CreateDefaultSubobject<USphereComponent>(TEXT("ZoneSphere"));
     SetRootComponent(ZoneSphere);
+    ZoneSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    ZoneSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Overlap);
+    ZoneSphere->SetCollisionResponseToChannel(ECC_IK_Visibility, ECollisionResponse::ECR_Ignore);
+    ZoneSphere->SetGenerateOverlapEvents(true);
 }
 
 void AFlagZone::BeginPlay()

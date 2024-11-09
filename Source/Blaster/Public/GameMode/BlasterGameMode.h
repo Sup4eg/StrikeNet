@@ -69,4 +69,5 @@ private:
 
 public:
     FORCEINLINE float GetCountdownTime() const { return CountDownTime; };
+    FORCEINLINE bool GetIsTeamsMatch() const { return bTeamsMatch; };
 };

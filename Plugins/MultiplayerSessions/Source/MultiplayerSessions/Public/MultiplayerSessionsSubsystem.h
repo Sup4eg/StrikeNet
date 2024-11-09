@@ -47,6 +47,8 @@ public:
     FMultiplayerOnDestroySessionComplete MultiplayerOnDestroySessionComplete;
     FMultiplayerOnStartSessionComplete MultiplayerOnStartSessionComplete;
 
+    FString DesiredMatchType = "";
+
 protected:
     /*
         Internal callbacks for the delegates we'll add to the Online Session Interface delegate list.

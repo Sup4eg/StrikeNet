@@ -3,25 +3,28 @@
 #include "Engine/World.h"
 #include "Engine/Engine.h"
 #include "Components/Button.h"
+#include "Components/CheckBox.h"
 #include "Engine/GameInstance.h"
 #include "MultiplayerSessionsSubsystem.h"
 #include "OnlineSessionSettings.h"
 #include "SettingsMenu.h"
 #include "Menu.h"
 
-void UMenu::MenuSetup(int32 NumberOfPublicConnections, FString TypeOfMatch, FString LobbyPath)
+void UMenu::MenuSetup(int32 NumberOfPublicConnections, FString LobbyPath)
 {
     if (!GetWorld() || !GetWorld()->GetFirstPlayerController() || !GetGameInstance()) return;
 
     PathToLobby = FString::Printf(TEXT("%s?listen"), *LobbyPath);
     NumPublicConnections = NumberOfPublicConnections;
-    MatchType = TypeOfMatch;
 
     AddToViewport();
     SetUpWidgetSettings();
 
     UGameInstance* GameInstance = GetGameInstance();
-    MultiplayerSessionsSubsystem = GameInstance->GetSubsystem<UMultiplayerSessionsSubsystem>();
+    if (GameInstance)
+    {
+        MultiplayerSessionsSubsystem = GameInstance->GetSubsystem<UMultiplayerSessionsSubsystem>();
+    }
     if (MultiplayerSessionsSubsystem)
     {
         MultiplayerSessionsSubsystem->MultiplayerOnCreateSessionComplete.AddDynamic(this, &ThisClass::OnCreateSession);
@@ -32,18 +35,29 @@ void UMenu::MenuSetup(int32 NumberOfPublicConnections, FString TypeOfMatch, FStr
     }
 }
 
-bool UMenu::Initialize()
+void UMenu::NativeConstruct()
 {
-    bool Result = Super::Initialize();
-    check(GEngine);
-    check(GetWorld());
+    Super::NativeConstruct();
     if (HostButton && JoinButton && SettingsButton)
     {
         HostButton->OnClicked.AddDynamic(this, &ThisClass::HostButtonClicked);
         JoinButton->OnClicked.AddDynamic(this, &ThisClass::JoinButtonClicked);
         SettingsButton->OnClicked.AddDynamic(this, &ThisClass::SettingsButtonClicked);
     }
-    return Result;
+
+    // CheckBoxes
+    if (DeathMatchCheckBox && TeamsCheckBox && CTFCheckBox)
+    {
+        DeathMatchCheckBox->OnCheckStateChanged.AddDynamic(this, &ThisClass::DeathMatchCheckBoxClicked);
+        TeamsCheckBox->OnCheckStateChanged.AddDynamic(this, &ThisClass::TeamsCheckBoxClicked);
+        CTFCheckBox->OnCheckStateChanged.AddDynamic(this, &ThisClass::CTFCheckBoxClicked);
+    }
+
+    if (DeathMatchCheckBox && DeathMatchCheckBox->OnCheckStateChanged.IsBound())
+    {
+        DeathMatchCheckBox->SetIsChecked(true);
+        DeathMatchCheckBox->OnCheckStateChanged.Broadcast(true);
+    }
 }
 
 void UMenu::NativeDestruct()
@@ -54,10 +68,14 @@ void UMenu::NativeDestruct()
 
 void UMenu::OnCreateSession(bool bWasSuccessful)
 {
+    if (!GEngine) return;
     if (bWasSuccessful)
     {
         GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Yellow, TEXT("Session created successfully"));
-        GetWorld()->ServerTravel(PathToLobby);
+        if (GetWorld())
+        {
+            GetWorld()->ServerTravel(PathToLobby);
+        }
         if (MultiplayerSessionsSubsystem)
         {
             MultiplayerSessionsSubsystem->StartSession();
@@ -111,12 +129,15 @@ void UMenu::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
 
 void UMenu::OnDestorySession(bool bWasSuccessful)
 {
-    GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Black, FString::Printf(TEXT("Destroyed Session Successfully Menu call")));
+    if (GEngine)
+    {
+        GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Black, FString::Printf(TEXT("Destroyed Session Successfully Menu call")));
+    }
 }
 
 void UMenu::OnStartSession(bool bWasSuccessful)
 {
-    if (bWasSuccessful)
+    if (bWasSuccessful && GEngine)
     {
         GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Black, FString::Printf(TEXT("Started Session Successfully Menu call")));
     }
@@ -126,6 +147,7 @@ void UMenu::SetUpWidgetSettings()
 {
     SetVisibility(ESlateVisibility::Visible);
     SetIsFocusable(true);
+    if (!GetWorld()) return;
 
     APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
     FInputModeUIOnly InputModeData;
@@ -156,6 +178,54 @@ void UMenu::SettingsButtonClicked()
     if (USettingsMenu* SettingsMenu = CreateWidget<USettingsMenu>(GetWorld(), SettingsMenuClass))
     {
         SettingsMenu->AddToViewport();
+    }
+}
+
+void UMenu::DeathMatchCheckBoxClicked(bool bIsChecked)
+{
+    if (bIsChecked)
+    {
+        MatchType = "DeathMatch";
+        if (TeamsCheckBox)
+        {
+            TeamsCheckBox->SetIsChecked(false);
+        }
+        if (CTFCheckBox)
+        {
+            CTFCheckBox->SetIsChecked(false);
+        }
+    }
+}
+
+void UMenu::TeamsCheckBoxClicked(bool bIsChecked)
+{
+    if (bIsChecked)
+    {
+        MatchType = "Teams";
+        if (DeathMatchCheckBox)
+        {
+            DeathMatchCheckBox->SetIsChecked(false);
+        }
+        if (CTFCheckBox)
+        {
+            CTFCheckBox->SetIsChecked(false);
+        }
+    }
+}
+
+void UMenu::CTFCheckBoxClicked(bool bIsChecked)
+{
+    if (bIsChecked)
+    {
+        MatchType = "CTF";
+        if (DeathMatchCheckBox)
+        {
+            DeathMatchCheckBox->SetIsChecked(false);
+        }
+        if (TeamsCheckBox)
+        {
+            TeamsCheckBox->SetIsChecked(false);
+        }
     }
 }
 

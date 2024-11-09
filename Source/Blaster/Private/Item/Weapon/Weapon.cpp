@@ -9,17 +9,21 @@
 #include "Casing.h"
 #include "BlasterPlayerController.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "TimerManager.h"
 #include "Weapon.h"
 
 AWeapon::AWeapon()
 {
     bReplicates = false;
+    SetReplicateMovement(false);
+
     PrimaryActorTick.bCanEverTick = true;
 
     EnableCustomDepth(true);
 
     ItemMesh->SetCustomDepthStencilValue(CUSTOM_DEPTH_BLUE);
     ItemMesh->MarkRenderStateDirty();
+    ItemMesh->SetReceivesDecals(false);
     PickupWidget->AddLocalOffset(FVector(0.f, 0.f, 60.f));
 }
 
@@ -27,6 +31,7 @@ void AWeapon::BeginPlay()
 {
     Super::BeginPlay();
     Tags.Add("Weapon");
+    InitialTransform = GetTransform();
 }
 
 void AWeapon::EnableCustomDepth(bool bEnable)
@@ -70,10 +75,48 @@ void AWeapon::OnSphereEndOverlap(
     Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
 }
 
+void AWeapon::Initialized()
+{
+    Super::Initialized();
+    SetState(ECarryItemState::ECIS_Initial);
+    SetOwner(nullptr);
+    BlasterOwnerCharacter = nullptr;
+    BlasterOwnerController = nullptr;
+}
+
+void AWeapon::OnInitialized()
+{
+    Super::OnInitialized();
+    if (!ItemMesh) return;
+
+    SetIsHovering(true);
+    ShowPickupWidget(false);
+    ItemMesh->SetSimulatePhysics(false);
+    ItemMesh->SetEnableGravity(false);
+
+    EnableCustomDepth(true);
+    ItemMesh->SetCustomDepthStencilValue(CUSTOM_DEPTH_BLUE);
+    ItemMesh->MarkRenderStateDirty();
+
+    ItemMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+    ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+    ItemMesh->SetCollisionResponseToChannel(ECC_IK_Visibility, ECollisionResponse::ECR_Ignore);
+    ItemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    if (HasAuthority())
+    {
+        GetWorldTimerManager().ClearTimer(ReternToBaseTimer);
+        bReplicates = false;
+        SetReplicateMovement(false);
+    }
+    SetActorTransform(InitialTransform);
+}
+
 void AWeapon::OnEquipped()
 {
     Super::OnEquipped();
     if (!ItemMesh) return;
+
     if (WeaponType == EWeaponType::EWT_SMG)
     {
         ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -89,6 +132,11 @@ void AWeapon::OnEquipped()
         !BlasterOwnerCharacter->IsLocallyControlled())
     {
         BlasterOwnerController->HighPingDelegate.AddDynamic(this, &ThisClass::OnPingTooHigh);
+    }
+    if (HasAuthority())
+    {
+        SetReplicateMovement(true);
+        GetWorldTimerManager().ClearTimer(ReternToBaseTimer);
     }
 }
 
@@ -114,6 +162,12 @@ void AWeapon::OnEquippedSecondary()
     {
         BlasterOwnerController->HighPingDelegate.RemoveDynamic(this, &ThisClass::OnPingTooHigh);
     }
+
+    if (HasAuthority())
+    {
+        SetReplicateMovement(true);
+        GetWorldTimerManager().ClearTimer(ReternToBaseTimer);
+    }
 }
 
 void AWeapon::OnDropped()
@@ -133,6 +187,15 @@ void AWeapon::OnDropped()
     )
     {
         BlasterOwnerController->HighPingDelegate.RemoveDynamic(this, &ThisClass::OnPingTooHigh);
+    }
+
+    if (HasAuthority())
+    {
+        SetReplicateMovement(true);
+        if (!bDestroyWeapon)
+        {
+            SetReturnToBaseTimer();
+        }
     }
 }
 

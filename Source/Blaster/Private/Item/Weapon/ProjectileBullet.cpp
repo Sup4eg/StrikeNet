@@ -59,7 +59,6 @@ void AProjectileBullet::OnHit(
 
                 if (OtherActor && OtherActor->ActorHasTag("BlasterCharacter"))
                 {
-                    // TODO, Potantial LEAK HERE, Damage and damage causer must be validated
                     if (bUseServerSideRewind && OwnerCharacter->GetLagCompensationComponent() && OwnerCharacter->IsLocallyControlled())
                     {
 

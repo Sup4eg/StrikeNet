@@ -66,6 +66,10 @@ void AFlag::Initialized()
     if (IsBlasterOwnerCharacterValid())
     {
         BlasterOwnerCharacter->SetFlag(nullptr);
+        if (BlasterOwnerCharacter->IsLocallyControlled())
+        {
+            BlasterOwnerCharacter->UnCrouch();
+        }
     }
     SetOwner(nullptr);
     BlasterOwnerCharacter = nullptr;
@@ -119,6 +123,7 @@ void AFlag::OnEquipped()
     ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECR_Ignore);
     ItemMesh->SetCollisionResponseToChannel(ECC_SkeletalMesh, ECR_Ignore);
     ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Overlap);
+    ItemMesh->SetGenerateOverlapEvents(true);
     if (DropEffect)
     {
         DropEffect->Activate();
@@ -165,14 +170,4 @@ void AFlag::OnSphereEndOverlap(                //
             }
         }
     }
-}
-
-void AFlag::SetReturnToBaseTimer()
-{
-    GetWorldTimerManager().SetTimer(ReternToBaseTimer, this, &ThisClass::ReturnToBaseTimerFinished, ReturnToBaseDelay);
-}
-
-void AFlag::ReturnToBaseTimerFinished()
-{
-    Initialized();
 }

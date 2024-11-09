@@ -131,6 +131,7 @@ private:
     bool IsAnnouncementWidgetValid();
     void ShowHUDAnnouncement();
     void SetHUDCountdown(float CountdownTime, UTextBlock* TimeTextBlock);
+    void ShowTeamScores(bool bTeamsMatch);
     void SetLogicDependsOnMatchState();
     bool IsBlasterCharacterValid();
 
@@ -153,7 +154,8 @@ private:
         float Match,                            //
         float StartingTime,                     //
         float TimeOfCooldown,                   //
-        float TimeOfMatchLeftAlert);            //
+        float TimeOfMatchLeftAlert,             //
+        bool bTeamsMatch);
 
     bool IsGameModeValid();
 

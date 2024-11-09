@@ -8,6 +8,7 @@
 #include "BlasterCharacter.h"
 #include "BlasterPlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "TimerManager.h"
 #include "CarryItem.h"
 
 ACarryItem::ACarryItem()
@@ -151,9 +152,7 @@ void ACarryItem::OnStateSet()
     }
 }
 
-void ACarryItem::Initialized() {
-
-}
+void ACarryItem::Initialized() {}
 
 void ACarryItem::OnInitialized() {}
 
@@ -193,6 +192,7 @@ void ACarryItem::OnDropped()
     ItemMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
     ItemMesh->SetCollisionResponseToChannel(ECC_IK_Visibility, ECollisionResponse::ECR_Ignore);
     ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+    ItemMesh->SetCollisionResponseToChannel(ECC_SkeletalMesh, ECollisionResponse::ECR_Ignore);
     ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 
     if (bIsInvisible)
@@ -217,7 +217,6 @@ void ACarryItem::Dropped()
     BlasterOwnerCharacter = nullptr;
     BlasterOwnerController = nullptr;
 }
-
 
 bool ACarryItem::IsBlasterOwnerCharacterValid()
 {
@@ -252,4 +251,14 @@ void ACarryItem::ShowPickupWidget(bool bShowWidget)
 {
     if (!PickupWidget) return;
     PickupWidget->SetVisibility(bShowWidget);
+}
+
+void ACarryItem::SetReturnToBaseTimer()
+{
+    GetWorldTimerManager().SetTimer(ReternToBaseTimer, this, &ThisClass::ReturnToBaseTimerFinished, ReturnToBaseDelay);
+}
+
+void ACarryItem::ReturnToBaseTimerFinished()
+{
+    Initialized();
 }

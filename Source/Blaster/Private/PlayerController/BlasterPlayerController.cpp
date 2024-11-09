@@ -405,14 +405,16 @@ void ABlasterPlayerController::HideTeamScores()
 
 void ABlasterPlayerController::InitTeamScores()
 {
-    bool bHUDValid = IsCharacterOverlayValid() &&                   //
-                     BlasterHUD->CharacterOverlay->RedTeamScore &&  //
-                     BlasterHUD->CharacterOverlay->BlueTeamScore;   //
+    bool bHUDValid = IsCharacterOverlayValid() &&                    //
+                     BlasterHUD->CharacterOverlay->TeamScoreInfo &&  //
+                     BlasterHUD->CharacterOverlay->RedTeamScore &&   //
+                     BlasterHUD->CharacterOverlay->BlueTeamScore;    //
 
     if (bHUDValid)
     {
         BlasterHUD->CharacterOverlay->RedTeamScore->SetText(FText::FromString("0"));
         BlasterHUD->CharacterOverlay->BlueTeamScore->SetText(FText::FromString("0"));
+        BlasterHUD->CharacterOverlay->TeamScoreInfo->SetVisibility(ESlateVisibility::Visible);
     }
 }
 
@@ -796,7 +798,7 @@ void ABlasterPlayerController::ServerCheckMatchState_Implementation()
     LevelStartingTime = GameMode->LevelStartingTime;
     MatchState = GameMode->GetMatchState();
     CooldownTime = GameMode->CooldownTime;
-    ClientJoinMidgame(MatchState, WarmupTime, MatchTime, LevelStartingTime, CooldownTime, MatchTimeLeftAlert);
+    ClientJoinMidgame(MatchState, WarmupTime, MatchTime, LevelStartingTime, CooldownTime, MatchTimeLeftAlert, GameMode->GetIsTeamsMatch());
 
     if (BlasterHUD && MatchState == MatchState::WaitingToStart)
     {
@@ -809,7 +811,9 @@ void ABlasterPlayerController::ClientJoinMidgame_Implementation(FName StateOfMat
     float Match,                                                                     //
     float StartingTime,                                                              //
     float TimeOfCooldown,                                                            //
-    float TimeOfMatchLeftAlert)
+    float TimeOfMatchLeftAlert,                                                      //
+    bool bTeamsMatch                                                                 //
+)
 {
     WarmupTime = Warmup;
     MatchTime = Match;
@@ -822,6 +826,10 @@ void ABlasterPlayerController::ClientJoinMidgame_Implementation(FName StateOfMat
     if (BlasterHUD && MatchState == MatchState::WaitingToStart)
     {
         BlasterHUD->AddAnnouncementWidget();
+    }
+    if (MatchState == MatchState::InProgress)
+    {
+        ShowTeamScores(bTeamsMatch);
     }
 }
 
@@ -894,7 +902,12 @@ void ABlasterPlayerController::ClientElimAnnouncement_Implementation(APlayerStat
 
 void ABlasterPlayerController::OnRep_ShowTeamScores()
 {
-    if (bShowTeamScores)
+    ShowTeamScores(bShowTeamScores);
+}
+
+void ABlasterPlayerController::ShowTeamScores(bool bIsVisible)
+{
+    if (bIsVisible)
     {
         InitTeamScores();
     }

@@ -8,6 +8,7 @@
 #include "Menu.generated.h"
 
 class UButton;
+class UCheckBox;
 class UMultiplayerSessionsSubsystem;
 class FOnlineSessionSearchResult;
 class USettingsMenu;
@@ -19,11 +20,10 @@ class MULTIPLAYERSESSIONS_API UMenu : public UUserWidget
 
 public:
     UFUNCTION(BlueprintCallable)
-    void MenuSetup(
-        int32 NumberOfPublicConnections = 4, FString TypeOfMatch = "FreeForAll", FString LobbyPath = "/Game/ThirdPerson/Maps/Lobby");
+    void MenuSetup(int32 NumberOfPublicConnections = 4, FString LobbyPath = "/Game/ThirdPerson/Maps/Lobby");
 
 protected:
-    virtual bool Initialize() override;
+    virtual void NativeConstruct() override;
     virtual void NativeDestruct() override;
 
     /*
@@ -50,6 +50,15 @@ private:
     UPROPERTY(meta = (BindWidget))
     UButton* SettingsButton;
 
+    UPROPERTY(meta = (BindWidget))
+    UCheckBox* DeathMatchCheckBox;
+
+    UPROPERTY(meta = (BindWidget))
+    UCheckBox* TeamsCheckBox;
+
+    UPROPERTY(meta = (BindWidget))
+    UCheckBox* CTFCheckBox;
+
     UFUNCTION()
     void HostButtonClicked();
 
@@ -59,13 +68,22 @@ private:
     UFUNCTION()
     void SettingsButtonClicked();
 
+    UFUNCTION()
+    void DeathMatchCheckBoxClicked(bool bIsChecked);
+
+    UFUNCTION()
+    void TeamsCheckBoxClicked(bool bIsChecked);
+
+    UFUNCTION()
+    void CTFCheckBoxClicked(bool bIsChecked);
+
     void MenuTearDown();
 
     // the subsystem designed to handle all online session functionality
     UMultiplayerSessionsSubsystem* MultiplayerSessionsSubsystem;
 
-    int32 NumPublicConnections = 4;
-    FString MatchType = "FreeForAll";
+    int32 NumPublicConnections = 10;
+    FString MatchType = "DeathMatch";
     FString PathToLobby = "";
 
     UPROPERTY(EditDefaultsOnly)

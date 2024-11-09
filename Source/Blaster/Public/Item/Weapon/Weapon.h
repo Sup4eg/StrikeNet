@@ -20,6 +20,8 @@ class BLASTER_API AWeapon : public ACarryItem
 public:
     AWeapon();
 
+    virtual void Initialized() override;
+
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
     virtual void OnRep_Owner() override;
@@ -95,6 +97,8 @@ protected:
         AActor* OtherActor,                                                    //
         UPrimitiveComponent* OtherComp,                                        //
         int32 OtherBodyIndex) override;
+
+    virtual void OnInitialized() override;
 
     virtual void OnEquipped() override;
     virtual void OnEquippedSecondary() override;

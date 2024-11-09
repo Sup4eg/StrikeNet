@@ -99,9 +99,9 @@ public:
 
     bool IsControllerValid();
 
-    bool IsBlasterGameModeValid();
-
     bool IsBlasterAnimInstanceValid();
+
+    bool IsBlasterGameModeValid();
 
     UFUNCTION(Server, Unreliable)
     void ServerUpdateRightHandTransform(const FRotator& NewRightHandRotation);
@@ -552,7 +552,7 @@ public:
     FORCEINLINE UTimelineComponent* GetInvisibilityTimeLine() const { return InvisibilityTimeline; };
     FORCEINLINE void SetCurrentSensitivity(float NewSensitivity) { CurrentSensitivity = NewSensitivity; };
     FORCEINLINE ABlasterPlayerController* GetBlasterPlayerController() const { return BlasterPlayerController; };
-    FORCEINLINE void SetRightHandRotation(const FRotator& NewRightHandRotation) { RightHandRotation = NewRightHandRotation; };
     FORCEINLINE UInputMappingContext* GetLastMappingContext() const { return LastMappingContext; };
     FORCEINLINE UNiagaraComponent* GetCrownComponent() const { return CrownComponent; };
+    FORCEINLINE void SetRightHandRotation(FRotator NewRightHandRotation) { RightHandRotation = NewRightHandRotation; };
 };

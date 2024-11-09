@@ -119,6 +119,10 @@ void UCombatComponent::OnRep_Flag()
         {
             BlasterCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
         }
+        if (BlasterCharacter->IsLocallyControlled())
+        {
+            BlasterCharacter->UnCrouch();
+        }
     }
 }
 
@@ -315,8 +319,11 @@ void UCombatComponent::DropFlag()
     {
         Flag->Dropped();
     }
-
     if (!BlasterCharacter || !BlasterCharacter->GetCharacterMovement()) return;
+    if (BlasterCharacter->IsLocallyControlled())
+    {
+        BlasterCharacter->UnCrouch();
+    }
     Flag = nullptr;
     BlasterCharacter->bUseControllerRotationYaw = true;
     BlasterCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;

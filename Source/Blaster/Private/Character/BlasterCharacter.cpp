@@ -21,7 +21,6 @@
 #include "Animation/AnimInstance.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "BlasterAnimInstance.h"
 #include "BlasterPlayerController.h"
 #include "TimerManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -36,6 +35,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "BlasterGameplayStatics.h"
 #include "BlasterGameState.h"
+#include "BlasterAnimInstance.h"
 #include "Weapon.h"
 #include "CarryItem.h"
 #include "Blaster.h"
@@ -343,8 +343,8 @@ void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
     DOREPLIFETIME_CONDITION(ABlasterCharacter, OverlappingCarryItem, COND_OwnerOnly);
     DOREPLIFETIME(ABlasterCharacter, Health);
     DOREPLIFETIME(ABlasterCharacter, Shield);
-    DOREPLIFETIME(ABlasterCharacter, RightHandRotation);
     DOREPLIFETIME(ABlasterCharacter, bGameplayDisabled);
+    DOREPLIFETIME(ABlasterCharacter, RightHandRotation);
 }
 
 void ABlasterCharacter::PostInitializeComponents()
@@ -414,11 +414,21 @@ void ABlasterCharacter::RotateInPlace(float DeltaTime)
         TurningInPlace = ETurningInPlace::ETIP_NotTurning;
         return;
     }
+
     if (IsControllerValid() && GetIsGameplayDisabled())
     {
         bUseControllerRotationYaw = false;
         TurningInPlace = ETurningInPlace::ETIP_NotTurning;
         return;
+    }
+
+    if (IsWeaponEquipped())
+    {
+        bUseControllerRotationYaw = true;
+        if (GetCharacterMovement())
+        {
+            GetCharacterMovement()->bOrientRotationToMovement = false;
+        }
     }
 
     if (GetLocalRole() > ENetRole::ROLE_SimulatedProxy && IsLocallyControlled())

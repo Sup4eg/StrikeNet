@@ -86,6 +86,10 @@ protected:
 
     bool IsBlasterOwnerControllerValid();
 
+    void SetReturnToBaseTimer();
+
+    void ReturnToBaseTimerFinished();
+
     UPROPERTY(VisibleAnywhere, Category = "Item properties")
     USkeletalMeshComponent* ItemMesh;
 
@@ -113,6 +117,13 @@ protected:
 
     UPROPERTY()
     ABlasterPlayerController* BlasterOwnerController;
+
+    UPROPERTY(EditAnywhere)
+    float ReturnToBaseDelay = 120.f;
+
+    FTransform InitialTransform;
+
+    FTimerHandle ReternToBaseTimer;
 
 private:
     UFUNCTION()

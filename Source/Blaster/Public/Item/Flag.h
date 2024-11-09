@@ -41,9 +41,6 @@ protected:
     virtual void OnEquipped() override;
 
 private:
-    void SetReturnToBaseTimer();
-
-    void ReturnToBaseTimerFinished();
 
     UPROPERTY(VisibleAnywhere)
     USkeletalMeshComponent* CanvasMesh;
@@ -52,14 +49,7 @@ private:
     UNiagaraComponent* DropEffect;
 
     UPROPERTY(EditAnywhere)
-    float ReturnToBaseDelay = 120.f;
-
-    UPROPERTY(EditAnywhere)
     ETeam Team;
-
-    FTransform InitialTransform;
-
-    FTimerHandle ReternToBaseTimer;
 
 public:
     FORCEINLINE ETeam GetTeam() const { return Team; }
