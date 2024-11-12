@@ -84,6 +84,7 @@ bool ABlasterGameMode::ShouldSpawnAtStartSpot(AController* PlayerController)
     // {
     //     return Super::ShouldSpawnAtStartSpot(PlayerController);
     // }
+
     TArray<AActor*> PlayerStarts;
     UGameplayStatics::GetAllActorsOfClass(this, APlayerStart::StaticClass(), PlayerStarts);
     AActor* BestPlayerStart = GetBestInitializePoint(PlayerStarts, PlayerController);

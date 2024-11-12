@@ -16,10 +16,14 @@ ATeamsGameMode::ATeamsGameMode()
 void ATeamsGameMode::PostLogin(APlayerController* NewPlayer)
 {
     Super::PostLogin(NewPlayer);
-    if (!NewPlayer) return;
-    ABlasterGameState* BlasterGameState = Cast<ABlasterGameState>(UGameplayStatics::GetGameState(this));
-    ABlasterPlayerState* NewBlasterPlayerState = NewPlayer->GetPlayerState<ABlasterPlayerState>();
-    SortPlayerToTeam(NewBlasterPlayerState, BlasterGameState);
+
+    if (!NewPlayer || !NewPlayer->GetPawn()) return;
+    if (Super::ShouldSpawnAtStartSpot(NewPlayer) && NewPlayer->StartSpot.IsValid())
+    {
+        AActor* StartSpot = NewPlayer->StartSpot.Get();
+        NewPlayer->GetPawn()->SetActorLocation(StartSpot->GetActorLocation());
+        NewPlayer->GetPawn()->SetActorRotation(StartSpot->GetActorRotation());
+    }
 }
 
 void ATeamsGameMode::Logout(AController* Exiting)
@@ -36,6 +40,7 @@ void ATeamsGameMode::Logout(AController* Exiting)
         {
             BlasterGameState->BlueTeam.Remove(ExitingBlasterPlayerState);
         }
+        ExitingBlasterPlayerState->SetTeam(ETeam::ET_NoTeam);
     }
 
     Super::Logout(Exiting);
@@ -48,13 +53,13 @@ void ATeamsGameMode::SortPlayerToTeam(ABlasterPlayerState* BlasterPlayerState, A
     {
         if (BlasterGameState->BlueTeam.Num() >= BlasterGameState->RedTeam.Num())
         {
-            BlasterGameState->RedTeam.AddUnique(BlasterPlayerState);
             BlasterPlayerState->SetTeam(ETeam::ET_RedTeam);
+            BlasterGameState->RedTeam.AddUnique(BlasterPlayerState);
         }
         else
         {
-            BlasterGameState->BlueTeam.AddUnique(BlasterPlayerState);
             BlasterPlayerState->SetTeam(ETeam::ET_BlueTeam);
+            BlasterGameState->BlueTeam.AddUnique(BlasterPlayerState);
         }
     }
 }
@@ -100,6 +105,15 @@ void ATeamsGameMode::PlayerElimmed(              //
             BlasterGameState->RedTeamScores();
         }
     }
+}
+
+bool ATeamsGameMode::ShouldSpawnAtStartSpot(AController* PlayerController)
+{
+    if (MatchState == MatchState::EnteringMap || MatchState == MatchState::WaitingToStart)
+    {
+        return Super::ShouldSpawnAtStartSpot(PlayerController);
+    }
+    return false;
 }
 
 AActor* ATeamsGameMode::GetBestInitializePoint(TArray<AActor*>& PlayerStarts, AController* PlayerController)
