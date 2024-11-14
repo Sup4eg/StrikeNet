@@ -797,8 +797,10 @@ FName ABlasterCharacter::GetDirectionalHitReactSection(double Theta) const
 
 void ABlasterCharacter::ElimTimerFinished()
 {
+    UE_LOG(LogTemp, Warning, TEXT("We are here and elim timer finished"));
     if (IsBlasterGameModeValid() && !bLeftGame)
     {
+        UE_LOG(LogTemp, Warning, TEXT("Request respawn!!!"));
         BlasterGameMode->RequestRespawn(this, Controller);
     }
     if (bLeftGame && IsLocallyControlled())

@@ -212,7 +212,12 @@ AActor* ABlasterGameMode::GetBestInitializePoint(TArray<AActor*>& PlayerStarts, 
 
 AActor* ABlasterGameMode::GetBestRespawnPoint(TArray<AActor*>& PlayerStarts, TArray<AActor*>& Players, AController* PlayerContoller)
 {
-    if (PlayerStarts.IsEmpty() || Players.IsEmpty()) return nullptr;
+    if (PlayerStarts.IsEmpty()) return nullptr;
+    ShuffleActorArray(PlayerStarts);
+    if (Players.IsEmpty())
+    {
+        return PlayerStarts[0];
+    }
 
     const APawn* PawnToFit = ABlasterCharacter::StaticClass()->GetDefaultObject<APawn>();
 

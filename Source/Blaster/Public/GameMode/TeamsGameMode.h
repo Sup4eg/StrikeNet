@@ -30,8 +30,6 @@ public:
     virtual float CalculateDamage(AController* Attacker, AController* Victim, float BaseDamage) override;
 
 protected:
-    virtual bool ShouldSpawnAtStartSpot(AController* PlayerController) override;
-
     virtual AActor* GetBestInitializePoint(TArray<AActor*>& PlayerStarts, AController* PlayerController) override;
     virtual AActor* GetBestRespawnPoint(
         TArray<AActor*>& PlayerStarts, TArray<AActor*>& BlasterCharacters, AController* PlayerController) override;

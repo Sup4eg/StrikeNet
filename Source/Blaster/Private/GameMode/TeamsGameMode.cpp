@@ -16,14 +16,10 @@ ATeamsGameMode::ATeamsGameMode()
 void ATeamsGameMode::PostLogin(APlayerController* NewPlayer)
 {
     Super::PostLogin(NewPlayer);
-
-    if (!NewPlayer || !NewPlayer->GetPawn()) return;
-    if (Super::ShouldSpawnAtStartSpot(NewPlayer) && NewPlayer->StartSpot.IsValid())
-    {
-        AActor* StartSpot = NewPlayer->StartSpot.Get();
-        NewPlayer->GetPawn()->SetActorLocation(StartSpot->GetActorLocation());
-        NewPlayer->GetPawn()->SetActorRotation(StartSpot->GetActorRotation());
-    }
+    if (!NewPlayer) return;
+    ABlasterGameState* BlasterGameState = Cast<ABlasterGameState>(UGameplayStatics::GetGameState(this));
+    ABlasterPlayerState* NewBlasterPlayerState = NewPlayer->GetPlayerState<ABlasterPlayerState>();
+    SortPlayerToTeam(NewBlasterPlayerState, BlasterGameState);
 }
 
 void ATeamsGameMode::Logout(AController* Exiting)
@@ -107,15 +103,6 @@ void ATeamsGameMode::PlayerElimmed(              //
     }
 }
 
-bool ATeamsGameMode::ShouldSpawnAtStartSpot(AController* PlayerController)
-{
-    if (MatchState == MatchState::EnteringMap || MatchState == MatchState::WaitingToStart)
-    {
-        return Super::ShouldSpawnAtStartSpot(PlayerController);
-    }
-    return false;
-}
-
 AActor* ATeamsGameMode::GetBestInitializePoint(TArray<AActor*>& PlayerStarts, AController* PlayerController)
 {
     if (PlayerStarts.IsEmpty()) return nullptr;
@@ -136,7 +123,7 @@ AActor* ATeamsGameMode::GetBestInitializePoint(TArray<AActor*>& PlayerStarts, AC
 
 AActor* ATeamsGameMode::GetBestRespawnPoint(TArray<AActor*>& PlayerStarts, TArray<AActor*>& Players, AController* PlayerController)
 {
-    if (PlayerStarts.IsEmpty() || Players.IsEmpty()) return nullptr;
+    if (PlayerStarts.IsEmpty()) return nullptr;
     if (ABlasterPlayerState* BPlayerState = PlayerController->GetPlayerState<ABlasterPlayerState>())
     {
         ETeam PlayerTeam = BPlayerState->GetTeam();
