@@ -82,7 +82,9 @@ private:
     // the subsystem designed to handle all online session functionality
     UMultiplayerSessionsSubsystem* MultiplayerSessionsSubsystem;
 
+    UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     int32 NumPublicConnections = 10;
+    
     FString MatchType = "DeathMatch";
     FString PathToLobby = "";
 

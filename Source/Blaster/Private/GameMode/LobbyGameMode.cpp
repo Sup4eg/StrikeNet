@@ -17,7 +17,7 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
     {
         UMultiplayerSessionsSubsystem* Subsystem = GameInstance->GetSubsystem<UMultiplayerSessionsSubsystem>();
         check(Subsystem);
-        if (NumberOfPlayers == AllowedNumberOfPlayers)
+        if (NumberOfPlayers == Subsystem->DesiredNumPublicConnections)
         {
             bUseSeamlessTravel = true;
             FString MatchType = Subsystem->DesiredMatchType;
