@@ -23,7 +23,7 @@ public class MultiplayerSessions : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core",
+				"Core",	
 				"OnlineSubsystem",
 				"OnlineSubsystemSteam"
 			}

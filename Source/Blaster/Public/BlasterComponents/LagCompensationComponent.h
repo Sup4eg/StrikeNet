@@ -26,6 +26,8 @@ struct FBoxInformation
     FVector BoxExtent;
 };
 
+
+
 USTRUCT(BlueprintType)
 struct FFramePackage
 {
@@ -40,6 +42,7 @@ struct FFramePackage
     UPROPERTY();
     ABlasterCharacter* Character;
 };
+
 
 USTRUCT(BlueprintType)
 struct FServerSideRewindResult

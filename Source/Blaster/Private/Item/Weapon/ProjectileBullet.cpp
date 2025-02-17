@@ -7,6 +7,7 @@
 #include "BlasterCharacter.h"
 #include "BlasterPlayerController.h"
 #include "LagCompensationComponent.h"
+#include "Engine/World.h"
 #include "Weapon.h"
 #include "ProjectileBullet.h"
 
@@ -37,6 +38,7 @@ void AProjectileBullet::PostEditChangeProperty(FPropertyChangedEvent& Event)
 }
 #endif
 
+
 void AProjectileBullet::OnHit(
     UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
@@ -51,7 +53,8 @@ void AProjectileBullet::OnHit(
                     UPhysicalMaterial* PhysMat = Hit.PhysMaterial.Get();
                     if (HitCharacter->DamageModifiers.Contains(PhysMat))
                     {
-                        UGameplayStatics::ApplyDamage(OtherActor, Damage * HitCharacter->DamageModifiers[PhysMat], OwnerController, OwningWeapon, UDamageType::StaticClass());
+                        UGameplayStatics::ApplyDamage(OtherActor, Damage * HitCharacter->DamageModifiers[PhysMat], OwnerController,
+                            OwningWeapon, UDamageType::StaticClass());
                         Super::OnHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
                         return;
                     }

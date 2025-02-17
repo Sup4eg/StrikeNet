@@ -22,6 +22,8 @@ void AHitScanWeapon::Fire(const FVector_NetQuantize100& HitTarget, const FVector
 {
     Super::Fire(HitTarget, SocketLocation);
 
+    //DrawDebugLine(GetWorld(), SocketLocation, HitTarget, FColor::Red, true, 5.f, 0, 5.f);
+
     APawn* OwnerPawn = Cast<APawn>(GetOwner());
     if (!OwnerPawn) return;
     AController* InstigatorController = OwnerPawn->GetController();

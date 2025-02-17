@@ -741,7 +741,7 @@ void ULagCompensationComponent::SaveFramePackage()
         FrameHistory.AddHead(ThisFrame);
 
         // Debug purpose
-        // ShowFramePackage(ThisFrame, FColor::Red);
+        //ShowFramePackage(ThisFrame, FColor::Red);
     }
 }
 

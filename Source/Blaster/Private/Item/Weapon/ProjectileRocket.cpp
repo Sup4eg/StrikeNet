@@ -52,22 +52,22 @@ void AProjectileRocket::BeginPlay()
 
     // Debug purpose
 
-    // FPredictProjectilePathParams PathParams;
-    // PathParams.bTraceWithChannel = true;
-    // PathParams.bTraceWithCollision = true;
-    // PathParams.MaxSimTime = 4.f;
-    // PathParams.LaunchVelocity = GetActorForwardVector() * InitialSpeed;
-    // PathParams.OverrideGravityZ = GetWorld()->GetGravityZ() * RocketMovementComponent->ProjectileGravityScale;
-    // PathParams.StartLocation = GetActorLocation();
-    // PathParams.SimFrequency = 15.f;
-    // PathParams.ProjectileRadius = 5.f;
-    // PathParams.TraceChannel = ECC_Visibility;
-    // PathParams.ActorsToIgnore.Add(this);
-    // PathParams.DrawDebugTime = 5.f;
-    // PathParams.DrawDebugType = EDrawDebugTrace::ForDuration;
+     //FPredictProjectilePathParams PathParams;
+     //PathParams.bTraceWithChannel = true;
+     //PathParams.bTraceWithCollision = true;
+     //PathParams.MaxSimTime = 4.f;
+     //PathParams.LaunchVelocity = GetActorForwardVector() * InitialSpeed;
+     //PathParams.OverrideGravityZ = GetWorld()->GetGravityZ() * RocketMovementComponent->ProjectileGravityScale;
+     //PathParams.StartLocation = GetActorLocation();
+     //PathParams.SimFrequency = 15.f;
+     //PathParams.ProjectileRadius = 5.f;
+     //PathParams.TraceChannel = ECC_Visibility;
+     //PathParams.ActorsToIgnore.Add(this);
+     //PathParams.DrawDebugTime = 5.f;
+     //PathParams.DrawDebugType = EDrawDebugTrace::ForDuration;
 
-    // FPredictProjectilePathResult PathResult;
-    // UGameplayStatics::PredictProjectilePath(this, PathParams, PathResult);
+     //FPredictProjectilePathResult PathResult;
+     //UGameplayStatics::PredictProjectilePath(this, PathParams, PathResult);
 }
 
 #if WITH_EDITOR
@@ -95,6 +95,9 @@ void AProjectileRocket::OnHit(
     if (OtherActor == GetOwner()) return;
 
     ExplodeDamage(Hit.ImpactPoint);
+  
+    //DrawDebugSphere(GetWorld(), Hit.Location, DamageInnerRadius, 12, FColor::Red, true, 5.f);
+    
     StartDestoryTimer();
     SpawnImpactFXAndSound(Hit);
 
