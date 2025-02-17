@@ -84,7 +84,6 @@ private:
 
     UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     int32 NumPublicConnections = 10;
-
     FString MatchType = "DeathMatch";
     FString PathToLobby = "";
 
