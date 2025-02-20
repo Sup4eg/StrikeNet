@@ -86,11 +86,12 @@ void UPauseWidget::OnDestroySession(bool bWasSuccessful)
     // }
     if (GameMode)
     {
-        GameMode->ReturnToMainMenuHost();
+        GetWorld()->ServerTravel("/Game/Maps/GameStartupMap");
     }
     else if (IsBlasterPlayerControllerValid())
     {
         BlasterPlayerController->ClientReturnToMainMenuWithTextReason(FText());
+        BlasterPlayerController->ClientTravel("/Game/Maps/GameStartupMap", ETravelType::TRAVEL_Absolute);
     }
 }
 
