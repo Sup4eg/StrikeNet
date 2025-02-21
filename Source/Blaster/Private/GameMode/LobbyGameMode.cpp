@@ -4,6 +4,7 @@
 #include "Engine/World.h"
 #include "Engine/GameInstance.h"
 #include "MultiplayerSessionsSubsystem.h"
+#include "BlasterCharacter.h"
 #include "LobbyGameMode.h"
 
 void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
@@ -34,5 +35,17 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
                 GetWorld()->ServerTravel("/Game/Maps/CTFMap?listen");
             }
         }
+    }
+}
+
+void ALobbyGameMode::RequestRespawn(ACharacter* ElimmedCharacter, AController* ElimmedController) {
+    if (ElimmedCharacter)
+    {
+        ElimmedCharacter->Reset();
+        ElimmedCharacter->Destroy();
+    }
+    if (ElimmedController)
+    {
+        RestartPlayer(ElimmedController);
     }
 }

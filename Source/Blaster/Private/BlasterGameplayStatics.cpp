@@ -9,6 +9,7 @@
 #include "BlasterCharacter.h"
 #include "Engine/DamageEvents.h"
 #include "BlasterGameMode.h"
+#include "LobbyGameMode.h"
 #include "GameFramework/Character.h"
 #include "BlasterGameplayStatics.h"
 
@@ -169,7 +170,12 @@ void UBlasterGameplayStatics::SelfDestruction(ABlasterCharacter* CharacterToKill
 {
     if (CharacterToKill && CharacterToKill->HasAuthority())
     {
-        if (ABlasterGameMode* GameMode = Cast<ABlasterGameMode>(UGameplayStatics::GetGameMode(CharacterToKill)))
+        ALobbyGameMode* LobbyGameMode = Cast<ALobbyGameMode>(UGameplayStatics::GetGameMode(CharacterToKill));
+        if (LobbyGameMode)
+        {
+            CharacterToKill->Elim(false);
+        }
+        else if (ABlasterGameMode* GameMode = Cast<ABlasterGameMode>(UGameplayStatics::GetGameMode(CharacterToKill)))
         {
             if (!CharacterToKill->IsControllerValid()) return;
 

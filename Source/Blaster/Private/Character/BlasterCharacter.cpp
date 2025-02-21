@@ -38,6 +38,7 @@
 #include "BlasterAnimInstance.h"
 #include "Weapon.h"
 #include "CarryItem.h"
+#include "LobbyGameMode.h"
 #include "Blaster.h"
 #include "BlasterCharacter.h"
 
@@ -797,14 +798,20 @@ FName ABlasterCharacter::GetDirectionalHitReactSection(double Theta) const
 
 void ABlasterCharacter::ElimTimerFinished()
 {
-    UE_LOG(LogTemp, Warning, TEXT("We are here and elim timer finished"));
-    if (IsBlasterGameModeValid() && !bLeftGame)
+    if (!GetWorld()) return;
+    ALobbyGameMode* LobbyGameMode = Cast<ALobbyGameMode>(GetWorld()->GetAuthGameMode());
+    if (LobbyGameMode && !bLeftGame)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Request respawn!!!"));
+        LobbyGameMode->RequestRespawn(this, Controller);
+    }
+    else if (IsBlasterGameModeValid() && !bLeftGame)
+    {
+        // UE_LOG(LogTemp, Warning, TEXT("Request respawn!!!"));
         BlasterGameMode->RequestRespawn(this, Controller);
     }
     if (bLeftGame && IsLocallyControlled())
     {
+        //UE_LOG(LogTemp, Warning, TEXT("Player is trying to leave game!!!"));
         OnLeftGame.Broadcast();
     }
 }
@@ -812,10 +819,18 @@ void ABlasterCharacter::ElimTimerFinished()
 void ABlasterCharacter::ServerLeaveGame_Implementation()
 {
     if (!GetWorld()) return;
-    BlasterPlayerState = BlasterPlayerState == nullptr ? GetPlayerState<ABlasterPlayerState>() : BlasterPlayerState;
-    if (IsBlasterGameModeValid() && BlasterPlayerState)
+    ALobbyGameMode* LobbyGameMode = GetWorld()->GetAuthGameMode<ALobbyGameMode>();
+    if (LobbyGameMode)
     {
-        BlasterGameMode->PlayerLeftGame(BlasterPlayerState);
+        Elim(true);
+    }
+    else
+    {
+        BlasterPlayerState = BlasterPlayerState == nullptr ? GetPlayerState<ABlasterPlayerState>() : BlasterPlayerState;
+        if (IsBlasterGameModeValid() && BlasterPlayerState)
+        {
+            BlasterGameMode->PlayerLeftGame(BlasterPlayerState);
+        }
     }
 }
 

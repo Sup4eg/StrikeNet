@@ -137,11 +137,11 @@ void ABlasterPlayerController::ShowPauseWidget(ABlasterCharacter* PlayerCharacte
                 PlayerCharacter->SetIsGameplayDisabled(PlayerCharacter->GetIsElimmed());
                 SetUpInputMappingContext(PlayerCharacter->GetLastMappingContext());
             }
-            else
-            {
-                PlayerCharacter->SetIsGameplayDisabled(false);
-                SetUpInputMappingContext(InGameMappingContext);
-            }
+            //else
+            //{
+            //    PlayerCharacter->SetIsGameplayDisabled(false);
+            //    SetUpInputMappingContext(InGameMappingContext);
+            //}
             LastMappingContext = nullptr;
         }
     }
