@@ -65,13 +65,20 @@ void UMultiplayerSessionsSubsystem::FindSessions(int32 MaxSearchResults)
 
 void UMultiplayerSessionsSubsystem::JoinSession(const FOnlineSessionSearchResult& SearchResult)
 {
+  FOnlineSessionSearchResult Result = SearchResult;
     if (!SessionInterface.IsValid())
     {
         MultiplayerOnJoinSessionComplete.Broadcast(EOnJoinSessionCompleteResult::UnknownError);
         return;
     }
     JoinSessionCompleteDelegateHandle = SessionInterface->AddOnJoinSessionCompleteDelegate_Handle(JoinSessionCompleteDelegate);
-    if (!SessionInterface->JoinSession(*GetLocalPlayer()->GetPreferredUniqueNetId(), NAME_GameSession, SearchResult))
+
+    Result.Session.SessionSettings.bUseLobbiesIfAvailable = true;
+    Result.Session.SessionSettings.bUsesPresence = true;
+
+    const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
+
+    if (!SessionInterface->JoinSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, Result))
     {
         SessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(JoinSessionCompleteDelegateHandle);
         MultiplayerOnJoinSessionComplete.Broadcast(EOnJoinSessionCompleteResult::UnknownError);

@@ -82,8 +82,8 @@ ABlasterCharacter::ABlasterCharacter()
     GetMesh()->SetReceivesDecals(false);
 
     TurningInPlace = ETurningInPlace::ETIP_NotTurning;
-    NetUpdateFrequency = 66.f;
-    MinNetUpdateFrequency = 33.f;
+    SetNetUpdateFrequency(66.f);
+    SetMinNetUpdateFrequency(33.f);
 
     DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>("DissolveTimelineComponent");
     InvisibilityTimeline = CreateDefaultSubobject<UTimelineComponent>("InvisibilityTimelineComponent");
