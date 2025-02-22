@@ -27,6 +27,7 @@ void UMenu::MenuSetup(int32 NumberOfPublicConnections, FString LobbyPath)
     }
     if (MultiplayerSessionsSubsystem)
     {
+        MultiplayerSessionsSubsystem->DestroySession();
         MultiplayerSessionsSubsystem->MultiplayerOnCreateSessionComplete.AddDynamic(this, &ThisClass::OnCreateSession);
         MultiplayerSessionsSubsystem->MultiplayerOnFindSessionsComplete.AddUObject(this, &ThisClass::OnFindSessions);
         MultiplayerSessionsSubsystem->MultiplayerOnJoinSessionComplete.AddUObject(this, &ThisClass::OnJoinSession);
@@ -90,7 +91,11 @@ void UMenu::OnCreateSession(bool bWasSuccessful)
 
 void UMenu::OnFindSessions(const TArray<FOnlineSessionSearchResult>& SessionResults, bool bWasSuccessful)
 {
-    if (!MultiplayerSessionsSubsystem) return;
+    if (!MultiplayerSessionsSubsystem)
+    {
+        JoinButton->SetIsEnabled(true);
+        return;
+    }
     for (auto Result : SessionResults)
     {
         FString SettingsValue;
@@ -101,10 +106,7 @@ void UMenu::OnFindSessions(const TArray<FOnlineSessionSearchResult>& SessionResu
             return;
         }
     }
-    if (!bWasSuccessful || SessionResults.Num() <= 0)
-    {
-        JoinButton->SetIsEnabled(true);
-    }
+    JoinButton->SetIsEnabled(true);
 }
 
 void UMenu::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
