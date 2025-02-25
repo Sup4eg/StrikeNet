@@ -8,6 +8,7 @@
 #include "BlasterCharacter.h"
 #include "BlasterGameState.h"
 #include "BlasterGameMode.h"
+#include <Engine/Engine.h>
 
 namespace MatchState
 {
@@ -79,11 +80,17 @@ void ABlasterGameMode::OnMatchStateSet()
 
 bool ABlasterGameMode::ShouldSpawnAtStartSpot(AController* PlayerController)
 {
+    //Debug
     // Test purposes (Start from player start)
     // if (GIsEditor)
     // {
     //     return Super::ShouldSpawnAtStartSpot(PlayerController);
     // }
+
+    if (MatchState == MatchState::EnteringMap)
+    {
+        return Super::ShouldSpawnAtStartSpot(PlayerController);
+    }
 
     TArray<AActor*> PlayerStarts;
     UGameplayStatics::GetAllActorsOfClass(this, APlayerStart::StaticClass(), PlayerStarts);

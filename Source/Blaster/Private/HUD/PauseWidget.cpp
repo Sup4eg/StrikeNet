@@ -79,19 +79,13 @@ void UPauseWidget::OnDestroySession(bool bWasSuccessful)
 
     if (!GetWorld()) return;
     AGameModeBase* GameMode = GetWorld()->GetAuthGameMode<AGameModeBase>();
-    // Debug
-    // if (GEngine)
-    // {
-    //     GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Try to shutdown session!!!"));
-    // }
     if (GameMode)
     {
-        GetWorld()->ServerTravel("/Game/Maps/GameStartupMap");
+        GameMode->ReturnToMainMenuHost();
     }
     else if (IsBlasterPlayerControllerValid())
     {
         BlasterPlayerController->ClientReturnToMainMenuWithTextReason(FText());
-        BlasterPlayerController->ClientTravel("/Game/Maps/GameStartupMap", ETravelType::TRAVEL_Absolute);
     }
 }
 
